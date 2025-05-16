@@ -105,6 +105,7 @@ export default class Level extends Phaser.Scene {
     private waveText!: Phaser.GameObjects.Text;
     private mapData!: ServerMapData;
     public gameStarted: boolean = false;
+    private scrollSpeed: number = 1;
 
     create() {
         this.socket = this.registry.get("socket");
@@ -118,7 +119,15 @@ export default class Level extends Phaser.Scene {
 
         this.player.setDepth(1000);
 
-        this.cameras.main.setBounds(0, 0, this.level1Map.widthInPixels, this.level1Map.heightInPixels);
+        // this.cameras.main.setBounds(0, 0, this.level1Map.widthInPixels, this.level1Map.heightInPixels);
+        this.cameras.main.setBounds(
+            0,
+            0,
+            // this.level1Map.widthInPixels,
+            // this.level1Map.heightInPixels
+            2000,
+            2000
+        );
 
         const colliderBox = this.physics.add.staticGroup();
         const box1 = colliderBox.create(0, 0, null);
@@ -144,7 +153,6 @@ export default class Level extends Phaser.Scene {
 
         this.physics.add.collider(this.player, colliderBox);
 
-        this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
         this.cameras.main.setZoom(1.5);
         const interfaceimg = this.add.image(500, 600, "interfaceimg");
         interfaceimg.setOrigin(0, 1);
@@ -320,8 +328,12 @@ export default class Level extends Phaser.Scene {
         const graphics = this.add.graphics();
         graphics.lineStyle(3, 0xffffff, 1);
     }
-
+    cameraScroll(cameraScrollspeed: number) {
+        this.cameras.main.scrollX += cameraScrollspeed;
+    }
     update(time: number, delta: number): void {
+        // Camera scroll
+        this.cameraScroll(this.scrollSpeed);
         this.player.update(time);
         this.base?.update(time, delta);
     }
