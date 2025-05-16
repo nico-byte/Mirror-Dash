@@ -10,6 +10,7 @@ export class Lobby extends Scene {
         this.playerName = "Player_" + Math.floor(Math.random() * 1000);
         this.currentLobbyId = null;
         this.inLobby = false;
+        this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
     }
 
     init(data) {
@@ -28,6 +29,9 @@ export class Lobby extends Scene {
             this.playerName = data.playerName;
         }
 
+        // Generate a new default lobby name for each session
+        this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
+
         this.setupSocketListeners();
     }
 
@@ -41,7 +45,7 @@ export class Lobby extends Scene {
         // Listen for lobby state updates (when in a lobby)
         this.socket.on("lobbyState", lobby => {
             console.log("Received lobby state:", lobby);
-            if (lobby.id === this.currentLobbyId) {
+            if (lobby && lobby.id === this.currentLobbyId) {
                 this.inLobby = true;
                 this.updateLobbyState(lobby);
             }
@@ -216,7 +220,10 @@ export class Lobby extends Scene {
         this.lobbyUI = this.add.container(512, 450);
         this.lobbyUI.setVisible(false);
 
-        // Lobby info background with better styling
+        // Create separate background and foreground elements for proper layering
+        // This prevents text from appearing behind other UI elements
+
+        // Main lobby panel
         const lobbyInfoBg = this.add.rectangle(0, 0, 700, 320, 0x222266, 0.8);
         this.lobbyUI.add(lobbyInfoBg);
 
@@ -254,7 +261,7 @@ export class Lobby extends Scene {
         const titleUnderline = this.add.rectangle(0, -60, 200, 2, 0xffffff, 0.7);
         this.lobbyUI.add(titleUnderline);
 
-        // Container for player list
+        // Container for player list - this will be populated dynamically
         this.playerListContainer = this.add.container(0, 0);
         this.lobbyUI.add(this.playerListContainer);
 
@@ -310,11 +317,22 @@ export class Lobby extends Scene {
 
         // Request initial lobby list
         this.socket.emit("getLobbyList");
+
+        // Debug setting - only show if debug mode is enabled
+        const debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
+        if (debugMode) {
+            this.debugText = this.add.text(10, 10, "Debug: Lobby Scene", {
+                fontSize: "12px",
+                fill: "#ffffff",
+                backgroundColor: "#000000",
+            });
+        }
     }
 
     createNewLobby() {
-        const lobbyName = prompt("Enter lobby name:");
+        const lobbyName = prompt("Enter lobby name:", this.defaultLobbyName);
         if (lobbyName && lobbyName.trim() !== "") {
+            console.log("Creating lobby with name:", lobbyName.trim());
             this.socket.emit(
                 "createLobby",
                 {
@@ -323,9 +341,15 @@ export class Lobby extends Scene {
                 },
                 response => {
                     if (response.success) {
+                        console.log("Lobby created successfully:", response.lobbyId);
                         this.currentLobbyId = response.lobbyId;
                         this.inLobby = true;
                         this.showLobbyUI();
+
+                        // Request lobby state to ensure UI is updated
+                        this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
+                    } else {
+                        console.error("Failed to create lobby:", response);
                     }
                 }
             );
@@ -333,6 +357,7 @@ export class Lobby extends Scene {
     }
 
     joinLobby(lobbyId) {
+        console.log("Joining lobby:", lobbyId);
         this.socket.emit(
             "joinLobby",
             {
@@ -341,9 +366,15 @@ export class Lobby extends Scene {
             },
             response => {
                 if (response.success) {
+                    console.log("Successfully joined lobby:", response.lobbyId);
                     this.currentLobbyId = response.lobbyId;
                     this.inLobby = true;
                     this.showLobbyUI();
+
+                    // Request lobby state to ensure UI is updated
+                    this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
+                } else {
+                    console.error("Failed to join lobby:", response);
                 }
             }
         );
@@ -351,6 +382,7 @@ export class Lobby extends Scene {
 
     leaveLobby() {
         if (this.inLobby) {
+            console.log("Leaving lobby:", this.currentLobbyId);
             this.socket.emit("leaveLobby", { lobbyId: this.currentLobbyId });
             this.inLobby = false;
             this.currentLobbyId = null;
@@ -485,6 +517,13 @@ export class Lobby extends Scene {
     }
 
     updateLobbyState(lobby) {
+        if (!lobby) {
+            console.error("Invalid lobby state received:", lobby);
+            return;
+        }
+
+        console.log("Updating lobby state, players:", Object.keys(lobby.players));
+
         // Update lobby name with better styling
         this.lobbyNameText.setText(`Lobby: ${lobby.name}`);
 
@@ -502,6 +541,11 @@ export class Lobby extends Scene {
 
         playerIds.forEach((playerId, index) => {
             const player = lobby.players[playerId];
+            if (!player) {
+                console.error("Invalid player data:", playerId, player);
+                return;
+            }
+
             const isPlayerHost = playerId === lobby.host;
             const isCurrentPlayer = playerId === this.socket.id;
 
@@ -515,8 +559,10 @@ export class Lobby extends Scene {
             }
 
             const prefix = isPlayerHost ? "👑 " : "";
+            const playerName = player.name || `Player_${playerId.substring(0, 4)}`;
+
             const text = this.add
-                .text(0, yPos, `${prefix}${player.name}`, {
+                .text(0, yPos, `${prefix}${playerName}`, {
                     fontFamily: "Arial",
                     fontSize: 22,
                     color: isCurrentPlayer ? "#88ff88" : "#ffffff",
@@ -548,6 +594,17 @@ export class Lobby extends Scene {
                 .setOrigin(0.5);
 
             this.playerListContainer.add(waitingText);
+        }
+    }
+
+    update() {
+        // If in debug mode, update debug text
+        if (this.debugText) {
+            this.debugText.setText(
+                `Socket ID: ${this.socket.id}\n` +
+                    `In Lobby: ${this.inLobby}\n` +
+                    `Lobby ID: ${this.currentLobbyId || "None"}`
+            );
         }
     }
 }

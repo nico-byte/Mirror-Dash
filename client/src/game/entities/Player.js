@@ -1,10 +1,10 @@
 export class Player {
     constructor(scene, x, y, name, isMainPlayer = false) {
         this.scene = scene;
-        this.name = name;
+        this.name = name || "Player";
         this.isMainPlayer = isMainPlayer;
 
-        // Create a sprite for the player
+        // Create a sprite for the player with different colors based on player type
         this.sprite = scene.add.circle(x, y, 20, isMainPlayer ? 0xff0000 : 0x0000ff);
 
         // Apply physics to the main player
@@ -17,7 +17,7 @@ export class Player {
             this.sprite.body.setCollideWorldBounds(true); // Don't fall out of the world
             this.sprite.body.setDrag(300, 0); // Horizontal drag for smooth stopping
 
-            console.log("Created physics body for player");
+            console.log("Created physics body for player:", name);
         }
 
         // Add player name text
@@ -37,6 +37,8 @@ export class Player {
         this.y = y;
         this.animation = "idle";
         this.direction = "right";
+
+        console.log("Player created:", name, x, y, isMainPlayer);
     }
 
     update() {
@@ -48,6 +50,10 @@ export class Player {
             } catch (error) {
                 console.error("Error updating player position from physics body:", error);
             }
+        } else {
+            // For non-main players, update sprite position from player position
+            this.sprite.x = this.x;
+            this.sprite.y = this.y;
         }
 
         // Update text position to follow sprite
@@ -59,7 +65,7 @@ export class Player {
 
         try {
             const speed = 300;
-            const jumpStrength = 300; // Further reduced jump strength for a lower jump
+            const jumpStrength = 300; // Jump strength for a lower jump
 
             let moved = false;
             let prevAnimation = this.animation;
@@ -101,6 +107,17 @@ export class Player {
     moveTo(x, y, animation = "idle", direction = "right") {
         if (this.isMainPlayer) return; // Don't tween the main player
 
+        if (typeof x !== "number" || typeof y !== "number") {
+            console.error("Invalid position for player move:", x, y);
+            return;
+        }
+
+        // Store the target position
+        this.x = x;
+        this.y = y;
+        this.animation = animation;
+        this.direction = direction;
+
         // Use tweens for smooth movement of other players
         this.scene.tweens.add({
             targets: this.sprite,
@@ -109,11 +126,6 @@ export class Player {
             duration: 100,
             ease: "Linear",
         });
-
-        this.x = x;
-        this.y = y;
-        this.animation = animation;
-        this.direction = direction;
     }
 
     destroy() {

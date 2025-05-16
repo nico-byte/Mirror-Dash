@@ -59,13 +59,14 @@ export class Game extends Scene {
     }
 
     setupSocketListeners() {
-        // If we don't have a lobby ID and we're coming from the old quick play,
-        // we need to create a lobby on the fly
-        if (!this.lobbyId) {
-            this.socket.on("connect", () => {
-                console.log("Connected to server");
-                this.connected = true;
+        // Socket connection event
+        this.socket.on("connect", () => {
+            console.log("Connected to server with ID:", this.socket.id);
+            this.connected = true;
 
+            // If we don't have a lobby ID and we're coming from the old quick play,
+            // we need to create a lobby on the fly
+            if (!this.lobbyId) {
                 // Create a quick play lobby
                 this.socket.emit(
                     "createLobby",
@@ -77,27 +78,36 @@ export class Game extends Scene {
                         if (response.success) {
                             this.lobbyId = response.lobbyId;
                             console.log("Created quick play lobby:", this.lobbyId);
+                            // Important: Request the lobby state again after creating it
+                            this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
                         } else {
                             alert("Failed to create a quick play session.");
                             this.scene.start("MainMenu");
                         }
                     }
                 );
-            });
-        }
+            } else {
+                // If we already have a lobby ID, request its state
+                this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
+            }
+        });
 
         // Receive lobby state updates (contains player information)
         this.socket.on("lobbyState", lobby => {
             console.log("Received lobby state in game:", lobby);
-            if (lobby.id === this.lobbyId) {
+            if (lobby && lobby.id === this.lobbyId) {
                 this.updateGameState(lobby);
             }
         });
 
         // Other player moved
         this.socket.on("playerMoved", playerInfo => {
-            // console.log("Player moved:", playerInfo);
-            this.updateOtherPlayer(playerInfo);
+            if (playerInfo && playerInfo.id) {
+                // Skip our own player updates
+                if (playerInfo.id !== this.socket.id) {
+                    this.updateOtherPlayer(playerInfo);
+                }
+            }
         });
 
         // Handle lobby error event
@@ -175,10 +185,19 @@ export class Game extends Scene {
                 backgroundColor: "#000000",
             });
         }
+
+        // Make sure we're receiving lobby updates
+        if (this.socket && this.lobbyId) {
+            console.log("Requesting lobby state in create method");
+            this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
+        }
     }
 
     updateGameState(lobby) {
-        if (!lobby || !lobby.players) return;
+        if (!lobby || !lobby.players) {
+            console.error("Invalid lobby state:", lobby);
+            return;
+        }
 
         console.log("Updating game state with lobby:", lobby);
         console.log("Current player ID:", this.socket.id);
@@ -188,6 +207,7 @@ export class Game extends Scene {
         Object.keys(this.otherPlayers).forEach(id => {
             if (!lobby.players[id] || id === this.socket.id) {
                 if (this.otherPlayers[id]) {
+                    console.log("Removing player", id);
                     this.otherPlayers[id].destroy();
                     delete this.otherPlayers[id];
                 }
@@ -196,14 +216,13 @@ export class Game extends Scene {
 
         // Add new players and update existing ones
         Object.keys(lobby.players).forEach(playerId => {
-            const playerInfo = lobby.players[playerId];
-
             // Skip our own player
             if (playerId === this.socket.id) {
                 return;
             }
 
-            console.log("Processing player:", playerId, playerInfo.name);
+            const playerInfo = lobby.players[playerId];
+            console.log("Processing player:", playerId, playerInfo);
 
             if (!this.otherPlayers[playerId]) {
                 // New player joined
@@ -212,11 +231,12 @@ export class Game extends Scene {
                     this,
                     playerInfo.x || 230,
                     playerInfo.y || 250,
-                    playerInfo.name,
+                    playerInfo.name || `Player_${playerId.substring(0, 4)}`,
                     false
                 );
             } else {
                 // Update existing player
+                console.log("Updating existing player:", playerId);
                 this.updateOtherPlayer({
                     id: playerId,
                     ...playerInfo,
@@ -226,12 +246,17 @@ export class Game extends Scene {
     }
 
     updateOtherPlayer(playerInfo) {
-        // Make sure the player ID is set
-        if (!playerInfo.id) {
-            console.error("Player info missing ID:", playerInfo);
+        if (!playerInfo || !playerInfo.id) {
+            console.error("Invalid player info:", playerInfo);
             return;
         }
 
+        if (playerInfo.id === this.socket.id) {
+            // Don't update ourselves
+            return;
+        }
+
+        // If we have this player in our list
         if (this.otherPlayers[playerInfo.id]) {
             const otherPlayer = this.otherPlayers[playerInfo.id];
             otherPlayer.moveTo(
@@ -240,8 +265,20 @@ export class Game extends Scene {
                 playerInfo.animation || "idle",
                 playerInfo.direction || "right"
             );
+        } else if (playerInfo.x && playerInfo.y) {
+            // We don't have this player yet but we have position data, so create them
+            console.log("Creating missing player from update:", playerInfo.id);
+            this.otherPlayers[playerInfo.id] = new Player(
+                this,
+                playerInfo.x,
+                playerInfo.y,
+                playerInfo.name || `Player_${playerInfo.id.substring(0, 4)}`,
+                false
+            );
         } else {
-            console.warn("Received update for non-existent player:", playerInfo.id);
+            console.warn("Cannot update non-existent player:", playerInfo.id);
+            // Request lobby state to try to get complete player info
+            this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
         }
     }
 
@@ -256,7 +293,7 @@ export class Game extends Scene {
         // Apply player movement based on input
         const moved = this.player.applyMovement(this.cursors, this.wasd);
 
-        // Always send updates to server, even if player is not moving
+        // Send updates to server regardless of movement
         this.socket.emit("playerUpdate", {
             lobbyId: this.lobbyId,
             x: this.player.x,
@@ -266,15 +303,24 @@ export class Game extends Scene {
         });
 
         // Update other players
-        Object.values(this.otherPlayers).forEach(player => {
-            player.update();
+        Object.entries(this.otherPlayers).forEach(([id, player]) => {
+            if (player && typeof player.update === "function") {
+                player.update();
+            }
         });
 
         // Update debug text if enabled
         if (this.debugMode && this.debugText) {
+            const otherPlayerInfo = Object.entries(this.otherPlayers)
+                .map(([id, player]) => `${id.substring(0, 4)}: (${Math.round(player.x)}, ${Math.round(player.y)})`)
+                .join("\n");
+
             this.debugText.setText(
-                `Player: (${Math.round(this.player.x)}, ${Math.round(this.player.y)})` +
+                `Player: ${this.socket.id.substring(0, 6)} (${Math.round(this.player.x)}, ${Math.round(
+                    this.player.y
+                )})` +
                     `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
+                    (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
                     `\nLobby: ${this.lobbyId}`
             );
         }

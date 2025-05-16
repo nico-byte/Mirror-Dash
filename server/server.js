@@ -11,6 +11,14 @@ const io = new Server(httpServer, {
 });
 
 const MAX_PLAYERS_PER_LOBBY = 2;
+const DEBUG_MODE = process.env.DEBUG === "true"; // Set to true to enable debug logs
+
+// Helper function for logging in debug mode
+function debugLog(...args) {
+    if (DEBUG_MODE) {
+        console.log(...args);
+    }
+}
 
 // Store all lobbies
 const lobbies = {};
@@ -18,6 +26,8 @@ const lobbies = {};
 // Create a new lobby
 const createLobby = (socket, lobbyName, playerName) => {
     const lobbyId = uuid();
+    console.log(`Creating lobby: ${lobbyName} (${lobbyId})`);
+
     lobbies[lobbyId] = {
         id: lobbyId,
         name: lobbyName,
@@ -37,11 +47,13 @@ const addPlayerToLobby = (socket, lobbyId, playerName) => {
     const lobby = lobbies[lobbyId];
 
     if (!lobby) {
+        console.error(`Lobby not found: ${lobbyId}`);
         socket.emit("lobbyError", { message: "Lobby not found." });
         return false;
     }
 
     if (Object.keys(lobby.players).length >= MAX_PLAYERS_PER_LOBBY) {
+        console.error(`Lobby is full: ${lobbyId}`);
         socket.emit("lobbyError", { message: "Lobby is full." });
         return false;
     }
@@ -65,6 +77,7 @@ const addPlayerToLobby = (socket, lobbyId, playerName) => {
     };
 
     lobby.players[socket.id] = player;
+    console.log(`Player ${playerName} (${socket.id}) joined lobby ${lobby.name} (${lobbyId})`);
 
     // Send updated lobby state to all players in this lobby
     io.to(lobbyId).emit("lobbyState", lobby);
@@ -80,10 +93,14 @@ const removePlayerFromLobby = (playerId, lobbyId) => {
     const lobby = lobbies[lobbyId];
     if (!lobby) return;
 
+    const playerName = lobby.players[playerId]?.name || "Unknown";
+    console.log(`Player ${playerName} (${playerId}) left lobby ${lobby.name} (${lobbyId})`);
+
     delete lobby.players[playerId];
 
     // If lobby is empty, remove it
     if (Object.keys(lobby.players).length === 0) {
+        console.log(`Removing empty lobby: ${lobby.name} (${lobbyId})`);
         delete lobbies[lobbyId];
     }
     // If host left, assign a new host
@@ -91,6 +108,7 @@ const removePlayerFromLobby = (playerId, lobbyId) => {
         const remainingPlayers = Object.keys(lobby.players);
         if (remainingPlayers.length > 0) {
             lobby.host = remainingPlayers[0];
+            console.log(`New host assigned in lobby ${lobby.name}: ${lobby.players[lobby.host].name} (${lobby.host})`);
         }
     }
 
@@ -133,8 +151,9 @@ const updatePlayerInLobby = (socket, lobbyId, playerData) => {
     });
 
     // Periodically send full lobby state to ensure sync
-    if (timestamp % 30 === 0) {
-        // Every ~30ms send full sync
+    if (timestamp % 1000 < 20) {
+        // Every ~1 second send full sync
+        debugLog(`Sending full sync for lobby: ${lobby.name} (${lobbyId})`);
         io.to(lobbyId).emit("lobbyState", lobby);
     }
 };
@@ -170,13 +189,18 @@ const startGame = lobbyId => {
     const lobby = lobbies[lobbyId];
     if (!lobby) return;
 
+    console.log(`Starting game in lobby: ${lobby.name} (${lobbyId})`);
+
     // Only start if there are enough players
-    if (Object.keys(lobby.players).length === MAX_PLAYERS_PER_LOBBY) {
+    if (Object.keys(lobby.players).length >= 2) {
         lobby.gameStarted = true;
         io.to(lobbyId).emit("gameStart", lobby);
+        console.log(`Game started in lobby: ${lobby.name} (${lobbyId})`);
 
         // Update the lobbies list for all clients in the main menu
         updateLobbiesList();
+    } else {
+        console.log(`Cannot start game, not enough players in lobby: ${lobby.name} (${lobbyId})`);
     }
 };
 
@@ -204,11 +228,20 @@ io.on("connection", socket => {
         removePlayerFromLobby(socket.id, lobbyId);
     });
 
+    // Request current lobbies list
+    socket.on("getLobbyList", () => {
+        socket.emit("lobbiesList", getAvailableLobbies());
+    });
+
     // Request specific lobby state
     socket.on("requestLobbyState", ({ lobbyId }) => {
         const lobby = lobbies[lobbyId];
         if (lobby) {
+            debugLog(`Sending lobby state for ${lobby.name} (${lobbyId}) to ${socket.id}`);
             socket.emit("lobbyState", lobby);
+        } else {
+            console.error(`Requested lobby not found: ${lobbyId}`);
+            socket.emit("lobbyError", { message: "Lobby not found." });
         }
     });
 
@@ -217,6 +250,10 @@ io.on("connection", socket => {
         const lobby = lobbies[lobbyId];
         if (lobby && lobby.host === socket.id) {
             startGame(lobbyId);
+        } else if (!lobby) {
+            console.error(`Game start requested for non-existent lobby: ${lobbyId}`);
+        } else {
+            console.error(`Non-host player ${socket.id} tried to start game in lobby: ${lobbyId}`);
         }
     });
 
@@ -231,6 +268,32 @@ io.on("connection", socket => {
         removePlayerFromAllLobbies(socket.id);
     });
 });
+
+// Clean up inactive lobbies periodically
+setInterval(() => {
+    const now = Date.now();
+    const MAX_IDLE_TIME = 3600000; // 1 hour in milliseconds
+
+    for (const lobbyId in lobbies) {
+        const lobby = lobbies[lobbyId];
+        if (now - lobby.createdAt > MAX_IDLE_TIME) {
+            // Check if any player has updated recently
+            let hasActivePlayer = false;
+            for (const playerId in lobby.players) {
+                if (now - lobby.players[playerId].lastUpdate < MAX_IDLE_TIME) {
+                    hasActivePlayer = true;
+                    break;
+                }
+            }
+
+            if (!hasActivePlayer) {
+                console.log(`Removing inactive lobby: ${lobby.name} (${lobbyId})`);
+                delete lobbies[lobbyId];
+                updateLobbiesList();
+            }
+        }
+    }
+}, 300000); // Run every 5 minutes
 
 const PORT = process.env.PORT || 9000;
 httpServer.listen(PORT, () => {
