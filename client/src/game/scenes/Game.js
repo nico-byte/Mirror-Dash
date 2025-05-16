@@ -79,11 +79,6 @@ export class Game extends Scene {
             D: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
             Space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
         };
-
-        // Setup camera to follow player
-        if (this.player && this.player.sprite) {
-            this.cameras.main.startFollow(this.player.sprite, true, 0.08, 0.08);
-        }
     }
 
     updateGameState(gameState) {
