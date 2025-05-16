@@ -12,9 +12,17 @@ export class Game extends Scene {
         this.wasd = null;
         this.playerName = "Player_" + Math.floor(Math.random() * 1000);
         this.connected = false;
-        this.scrollSpeed = 0; // 1.0 for scrolling on, 0 for no scrolling
         this.lobbyId = null;
-        this.debugMode = false; // Set to true to enable coordinate display
+        this.debugMode = false;
+
+        // Split screen properties
+        this.splitLine = null;
+        this.topCamera = null;
+        this.bottomCamera = null;
+
+        // Level properties
+        this.platforms = null;
+        this.jumpPads = null;
     }
 
     init(data) {
@@ -118,26 +126,20 @@ export class Game extends Scene {
     }
 
     create() {
-        // Basic setup
-        this.cameras.main.setBackgroundColor(0x00ff00);
-        this.cameras.main.setBounds(0, 0, 2000, 2000);
+        // Setup cameras for split screen
+        this.setupCameras();
 
-        this.add.image(512, 384, "background").setAlpha(0.5);
+        // Create level
+        this.createLevel();
 
-        // Create ground
-        this.platforms = this.physics.add.staticGroup();
+        // Create main player at platform position
+        this.player = new Player(this, 230, 500, this.playerName, true);
 
-        // Add a ground platform
-        const ground = this.add.rectangle(512, 730, 1024, 60, 0x333333);
-        this.physics.add.existing(ground, true); // true means static
+        // Add collision between player and platforms
+        this.physics.add.collider(this.player.sprite, this.platforms);
 
-        // Create main player
-        this.player = new Player(this, 230, 250, this.playerName, true);
-
-        // Add collision between player and ground
-        if (this.player && this.player.sprite) {
-            this.physics.add.collider(this.player.sprite, ground);
-        }
+        // Add collision with jump pads and special effect
+        this.physics.add.overlap(this.player.sprite, this.jumpPads, this.handleJumpPad, null, this);
 
         // Setup input
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -155,6 +157,7 @@ export class Game extends Scene {
         const backButton = this.add
             .rectangle(100, 50, 150, 40, 0x222222, 0.7)
             .setInteractive()
+            .setScrollFactor(0) // Fixed to camera
             .on("pointerdown", () => {
                 if (this.lobbyId) {
                     this.socket.emit("leaveLobby", { lobbyId: this.lobbyId });
@@ -175,15 +178,19 @@ export class Game extends Scene {
                 fontSize: 14,
                 color: "#ffffff",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setScrollFactor(0); // Fixed to camera
 
         // Add debug text only if debug mode is enabled
         if (this.debugMode) {
-            this.debugText = this.add.text(10, 10, "Debug Mode: On", {
-                fontSize: "12px",
-                fill: "#ffffff",
-                backgroundColor: "#000000",
-            });
+            this.debugText = this.add
+                .text(10, 10, "Debug Mode: On", {
+                    fontSize: "12px",
+                    fill: "#ffffff",
+                    backgroundColor: "#000000",
+                })
+                .setScrollFactor(0) // Fixed to camera
+                .setDepth(100);
         }
 
         // Make sure we're receiving lobby updates
@@ -191,6 +198,184 @@ export class Game extends Scene {
             console.log("Requesting lobby state in create method");
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
         }
+    }
+
+    setupCameras() {
+        // Modify the main camera for the top half
+        this.cameras.main.setViewport(0, 0, this.scale.width, this.scale.height / 2);
+        this.cameras.main.setBackgroundColor(0x87ceeb); // Light blue sky
+        this.cameras.main.setName("topCamera");
+        this.cameras.main.setBounds(0, 0, 2000, 1000);
+        this.topCamera = this.cameras.main; // Store a reference to main camera as topCamera
+
+        // Calculate the midpoint of the screen height
+        const screenHeight = this.scale.height;
+        const midPoint = screenHeight / 2;
+
+        // Create bottom camera for the mirrored view
+        this.bottomCamera = this.cameras.add(0, midPoint, this.scale.width, midPoint);
+        this.bottomCamera.setBackgroundColor(0x87ceeb); // Light blue sky
+        this.bottomCamera.setName("bottomCamera");
+        this.bottomCamera.setBounds(0, 0, 2000, 1000);
+
+        // Since setFlipY isn't available, we'll handle the mirroring through graphics transformations
+        // We'll use a render texture for the bottom half of the screen (implemented in createLevel)
+
+        // Add a line to separate the screens
+        this.splitLine = this.add.rectangle(this.scale.width / 2, midPoint, this.scale.width, 4, 0x000000);
+        this.splitLine.setDepth(100); // Ensure it's on top
+        this.splitLine.setScrollFactor(0); // Fixed to camera
+    }
+
+    createLevel() {
+        // Get screen dimensions for mirroring
+        const screenHeight = this.scale.height;
+        const midPoint = screenHeight / 2;
+
+        // Create physics groups
+        this.platforms = this.physics.add.staticGroup();
+        this.jumpPads = this.physics.add.staticGroup();
+
+        // Regular platforms (top view)
+
+        // Main ground platform
+        const ground = this.platforms
+            .create(512, 700, null)
+            .setScale(30, 1)
+            .setSize(30, 30)
+            .setDisplaySize(30 * 30, 30)
+            .setTint(0x009900)
+            .refreshBody();
+
+        // Platform 1 - Starting platform
+        const plat1 = this.platforms
+            .create(230, 550, null)
+            .setScale(5, 1)
+            .setSize(30, 30)
+            .setDisplaySize(5 * 30, 30)
+            .setTint(0x888888)
+            .refreshBody();
+
+        // Platform 2 - Middle jump
+        const plat2 = this.platforms
+            .create(400, 450, null)
+            .setScale(4, 1)
+            .setSize(30, 30)
+            .setDisplaySize(4 * 30, 30)
+            .setTint(0x888888)
+            .refreshBody();
+
+        // Platform 3 - High jump
+        const plat3 = this.platforms
+            .create(600, 350, null)
+            .setScale(3, 1)
+            .setSize(30, 30)
+            .setDisplaySize(3 * 30, 30)
+            .setTint(0x888888)
+            .refreshBody();
+
+        // Platform 4 - Final platform
+        const plat4 = this.platforms
+            .create(800, 500, null)
+            .setScale(6, 1)
+            .setSize(30, 30)
+            .setDisplaySize(6 * 30, 30)
+            .setTint(0x888888)
+            .refreshBody();
+
+        // Add jump pads
+        const jumpPad1 = this.createJumpPad(320, 670, 0xffff00);
+        const jumpPad2 = this.createJumpPad(500, 430, 0xffff00);
+        const jumpPad3 = this.createJumpPad(700, 330, 0xffff00);
+
+        // Create mirrored versions of all platforms for the bottom view
+        // These are just visual, without physics
+
+        // Create mirrored ground
+        const mirrorGround = this.add
+            .rectangle(
+                ground.x,
+                screenHeight - ground.y + midPoint,
+                ground.displayWidth,
+                ground.displayHeight,
+                0x009900
+            )
+            .setDepth(-1);
+
+        // Create mirrored platforms
+        const mirrorPlat1 = this.add
+            .rectangle(plat1.x, screenHeight - plat1.y + midPoint, plat1.displayWidth, plat1.displayHeight, 0x888888)
+            .setDepth(-1);
+
+        const mirrorPlat2 = this.add
+            .rectangle(plat2.x, screenHeight - plat2.y + midPoint, plat2.displayWidth, plat2.displayHeight, 0x888888)
+            .setDepth(-1);
+
+        const mirrorPlat3 = this.add
+            .rectangle(plat3.x, screenHeight - plat3.y + midPoint, plat3.displayWidth, plat3.displayHeight, 0x888888)
+            .setDepth(-1);
+
+        const mirrorPlat4 = this.add
+            .rectangle(plat4.x, screenHeight - plat4.y + midPoint, plat4.displayWidth, plat4.displayHeight, 0x888888)
+            .setDepth(-1);
+
+        // Create mirrored jump pads
+        this.jumpPads.getChildren().forEach(jumpPad => {
+            const mirrorJumpPad = this.add
+                .rectangle(
+                    jumpPad.x,
+                    screenHeight - jumpPad.y + midPoint,
+                    jumpPad.displayWidth,
+                    jumpPad.displayHeight,
+                    jumpPad.fillColor || 0xffff00
+                )
+                .setDepth(-1);
+
+            // Create mirrored arrow indicators
+            const mirrorArrow = this.add
+                .triangle(jumpPad.x, screenHeight - (jumpPad.y - 20) + midPoint, 0, -15, 15, 15, 30, -15, 0xffffff)
+                .setDepth(-1);
+        });
+
+        // Set visibility for cameras
+        [mirrorGround, mirrorPlat1, mirrorPlat2, mirrorPlat3, mirrorPlat4].forEach(obj => {
+            if (this.topCamera) this.topCamera.ignore(obj);
+        });
+
+        // Make regular platforms invisible in bottom camera
+        this.platforms.getChildren().forEach(obj => {
+            if (this.bottomCamera) this.bottomCamera.ignore(obj);
+        });
+
+        // Make jump pads invisible in bottom camera
+        this.jumpPads.getChildren().forEach(obj => {
+            if (this.bottomCamera) this.bottomCamera.ignore(obj);
+        });
+    }
+
+    createJumpPad(x, y, color) {
+        const jumpPad = this.jumpPads.create(x, y, null);
+        jumpPad.setScale(2, 0.5).setSize(30, 15).setDisplaySize(60, 15).setTint(color).refreshBody();
+
+        // Add an indicator arrow
+        const arrow = this.add.triangle(x, y - 20, 0, 15, 15, -15, 30, 15, 0xffffff);
+        arrow.setDepth(1);
+
+        return jumpPad;
+    }
+
+    handleJumpPad(playerSprite, jumpPad) {
+        // Apply strong upward velocity when player touches a jump pad
+        playerSprite.body.setVelocityY(-600);
+
+        // Visual feedback
+        this.tweens.add({
+            targets: jumpPad,
+            scaleY: 0.3,
+            duration: 100,
+            yoyo: true,
+            ease: "Power1",
+        });
     }
 
     updateGameState(lobby) {
@@ -230,10 +415,22 @@ export class Game extends Scene {
                 this.otherPlayers[playerId] = new Player(
                     this,
                     playerInfo.x || 230,
-                    playerInfo.y || 250,
+                    playerInfo.y || 550,
                     playerInfo.name || `Player_${playerId.substring(0, 4)}`,
                     false
                 );
+
+                // Add collision between other player and platforms
+                if (this.otherPlayers[playerId].sprite) {
+                    this.physics.add.collider(this.otherPlayers[playerId].sprite, this.platforms);
+                    this.physics.add.overlap(
+                        this.otherPlayers[playerId].sprite,
+                        this.jumpPads,
+                        this.handleJumpPad,
+                        null,
+                        this
+                    );
+                }
             } else {
                 // Update existing player
                 console.log("Updating existing player:", playerId);
@@ -275,6 +472,18 @@ export class Game extends Scene {
                 playerInfo.name || `Player_${playerInfo.id.substring(0, 4)}`,
                 false
             );
+
+            // Add collision between the new player and platforms
+            if (this.otherPlayers[playerInfo.id].sprite) {
+                this.physics.add.collider(this.otherPlayers[playerInfo.id].sprite, this.platforms);
+                this.physics.add.overlap(
+                    this.otherPlayers[playerInfo.id].sprite,
+                    this.jumpPads,
+                    this.handleJumpPad,
+                    null,
+                    this
+                );
+            }
         } else {
             console.warn("Cannot update non-existent player:", playerInfo.id);
             // Request lobby state to try to get complete player info
@@ -285,13 +494,37 @@ export class Game extends Scene {
     update() {
         if (!this.player || !this.connected || !this.lobbyId) return;
 
-        this.cameras.main.scrollX += this.scrollSpeed;
-
         // Update main player
         this.player.update();
 
         // Apply player movement based on input
         const moved = this.player.applyMovement(this.cursors, this.wasd);
+
+        // Update the top camera to follow the main player
+        if (this.topCamera && this.player.sprite) {
+            if (!this.topCamera._follow) {
+                this.topCamera.startFollow(this.player.sprite, true, 0.1, 0.1);
+            }
+        }
+
+        // Update the bottom camera to follow appropriate sprite
+        if (this.bottomCamera) {
+            const otherPlayerIds = Object.keys(this.otherPlayers);
+            if (otherPlayerIds.length > 0 && this.otherPlayers[otherPlayerIds[0]].mirrorSprite) {
+                // Follow other player's mirrored sprite in bottom camera
+                if (
+                    !this.bottomCamera._follow ||
+                    this.bottomCamera._follow !== this.otherPlayers[otherPlayerIds[0]].mirrorSprite
+                ) {
+                    this.bottomCamera.startFollow(this.otherPlayers[otherPlayerIds[0]].mirrorSprite, true, 0.1, 0.1);
+                }
+            } else if (this.player.mirrorSprite) {
+                // If no other player, follow the main player's mirrored sprite
+                if (!this.bottomCamera._follow || this.bottomCamera._follow !== this.player.mirrorSprite) {
+                    this.bottomCamera.startFollow(this.player.mirrorSprite, true, 0.1, 0.1);
+                }
+            }
+        }
 
         // Send updates to server regardless of movement
         this.socket.emit("playerUpdate", {

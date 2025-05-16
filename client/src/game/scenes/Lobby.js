@@ -516,6 +516,9 @@ export class Lobby extends Scene {
         });
     }
 
+    // Fixed section for the Lobby updateLobbyState method to handle button state safely
+    // This is just the part that needs to be fixed - you should integrate it into your Lobby.js file
+
     updateLobbyState(lobby) {
         if (!lobby) {
             console.error("Invalid lobby state received:", lobby);
@@ -532,8 +535,15 @@ export class Lobby extends Scene {
 
         // Determine if current player is host
         const isHost = lobby.host === this.socket.id;
-        this.startGameButton.setVisible(isHost);
-        this.startGameText.setVisible(isHost);
+
+        // Safely update the start button visibility
+        if (this.startGameButton) {
+            this.startGameButton.setVisible(isHost);
+        }
+
+        if (this.startGameText) {
+            this.startGameText.setVisible(isHost);
+        }
 
         // Draw each player with better styling
         const playerIds = Object.keys(lobby.players);
@@ -577,8 +587,48 @@ export class Lobby extends Scene {
 
         // Update start button state based on player count
         const canStart = playerIds.length >= 2 && isHost;
-        this.startGameButton.setFillStyle(canStart ? 0x00aa00 : 0x555555, canStart ? 1 : 0.5);
-        this.startGameButton.input.enabled = canStart;
+
+        // Completely recreate the start button to avoid issues with interactivity
+        if (this.startGameButton) {
+            // Remove old button
+            this.startGameButton.destroy();
+
+            // Create new button with proper interactivity
+            this.startGameButton = this.add
+                .rectangle(0, 100, 240, 60, canStart ? 0x00aa00 : 0x555555, canStart ? 1 : 0.5)
+                .setVisible(isHost);
+
+            // Only make it interactive if canStart is true
+            if (canStart) {
+                this.startGameButton
+                    .setInteractive()
+                    .on("pointerdown", () => {
+                        this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
+                    })
+                    .on("pointerover", () => this.startGameButton.setFillStyle(0x00cc00))
+                    .on("pointerout", () => this.startGameButton.setFillStyle(0x00aa00));
+            }
+
+            // Add the button to the container
+            this.lobbyUI.add(this.startGameButton);
+
+            // Update the text
+            if (this.startGameText) {
+                this.startGameText.destroy();
+            }
+
+            this.startGameText = this.add
+                .text(0, 100, "Start Game", {
+                    fontFamily: "Arial Black",
+                    fontSize: 22,
+                    color: "#ffffff",
+                    align: "center",
+                })
+                .setOrigin(0.5)
+                .setVisible(isHost);
+
+            this.lobbyUI.add(this.startGameText);
+        }
 
         // Add status message if waiting for more players
         if (playerIds.length < 2) {
