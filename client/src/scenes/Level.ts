@@ -6,7 +6,7 @@
 import { Base } from "../classes/Base";
 import { Player } from "../classes/Player";
 import { type Socket } from "socket.io-client";
-import type { GameState, MapData as ServerMapData } from "../../types/ServerTypes";
+import type { GameState } from "../../types/ServerTypes";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -105,7 +105,7 @@ export default class Level extends Phaser.Scene {
     private waveText!: Phaser.GameObjects.Text;
     private mapData!: ServerMapData;
     public gameStarted: boolean = false;
-    private scrollSpeed: number = 1;
+    private scrollSpeed: number = 1; // Adjust this value to control the scroll speed
 
     create() {
         this.socket = this.registry.get("socket");
@@ -209,49 +209,6 @@ export default class Level extends Phaser.Scene {
             fill: "white",
         });
 
-        const bubble1 = this.add.sprite(140, 80, "bubbles");
-        const bubble2 = this.add.sprite(195, 95, "bubbles");
-
-        bubble1.play("bubbles");
-        bubble2.flipX = true;
-        bubble2.playAfterDelay("bubbles", 100);
-
-        this.mapData = {
-            enemySpawnPoints: [
-                [1200, 100],
-                [1200, 300],
-                [1200, 500],
-                [1200, 700],
-            ],
-            enemyPath: [
-                [1200, 430],
-                [1082, 430],
-                [1082, 208],
-                [820, 208],
-                [820, 620],
-                [975, 620],
-                [955, 130],
-                [615, 140],
-                [590, 530],
-                [180, 530],
-                [160, 150],
-            ],
-            bubbleSpawnPoint: [1200, 100],
-            bubblePath: [
-                [1200, 430],
-                [1082, 430],
-                [1082, 208],
-                [820, 208],
-                [820, 620],
-                [975, 620],
-                [955, 130],
-                [615, 140],
-                [590, 530],
-                [180, 530],
-                [160, 150],
-            ],
-        };
-
         this.startGameButton.on("pointerdown", () => {
             this.startGameButton.alpha = 0.5;
             this.startGameButton.disableInteractive();
@@ -269,9 +226,6 @@ export default class Level extends Phaser.Scene {
             this.otherPlayers.forEach(player => player.destroy());
             this.otherPlayers.forEach(player => player.label.destroy());
             this.otherPlayers.clear();
-
-            this.waveNumber = gameState.wave;
-            this.waveText.setText(this.waveNumber.toString());
 
             this.gameStarted = gameState.gameStarted;
 
@@ -291,13 +245,12 @@ export default class Level extends Phaser.Scene {
             });
         });
 
-        this.socket.on("waveFinished", (wave: number) => {
+        this.socket.on("levelFinished", (wave: number) => {
             this.gameStarted = false;
 
             this.waveNumber = wave;
             this.waveText.setText(this.waveNumber.toString());
 
-            this.player.health = 100;
             this.input.keyboard.enabled = true;
 
             const mapData = this.mapData;
@@ -328,6 +281,7 @@ export default class Level extends Phaser.Scene {
         const graphics = this.add.graphics();
         graphics.lineStyle(3, 0xffffff, 1);
     }
+
     cameraScroll(cameraScrollspeed: number) {
         this.cameras.main.scrollX += cameraScrollspeed;
     }

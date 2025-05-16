@@ -16,6 +16,7 @@
     "scripts": {
         "install-server": "docker run -it --rm -v \"$PWD\"/../server:/usr/src/app -w /usr/src/app node npm install",
         "start-dev": "vite --config vite/config.dev.mjs & cd ../server && npm run nodemon",
+        "dev": "vite --config vite/config.dev.mjs",
         "stop": "docker stop $(docker ps -q)",
         "build": "vite build --config vite/config.prod.mjs && phaser-asset-pack-hashing -j -r dist",
         "format": "npx prettier --write ."
