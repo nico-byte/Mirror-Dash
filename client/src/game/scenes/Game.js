@@ -11,6 +11,7 @@ export class Game extends Scene {
         this.cursors = null;
         this.playerName = "Player_" + Math.floor(Math.random() * 1000);
         this.connected = false;
+        this.scrollSpeed = 1.0;
     }
 
     init() {
@@ -41,6 +42,11 @@ export class Game extends Scene {
     create() {
         // Basic setup
         this.cameras.main.setBackgroundColor(0x00ff00);
+        this.cameras.main.setBounds(0,
+            0,
+            2000,
+            2000);
+
         this.add.image(512, 384, "background").setAlpha(0.5);
 
         // Create ground
@@ -60,11 +66,6 @@ export class Game extends Scene {
 
         // Setup input
         this.cursors = this.input.keyboard.createCursorKeys();
-
-        // Setup camera to follow player
-        if (this.player && this.player.sprite) {
-            this.cameras.main.startFollow(this.player.sprite, true, 0.08, 0.08);
-        }
     }
 
     updateGameState(gameState) {
@@ -102,6 +103,8 @@ export class Game extends Scene {
 
     update() {
         if (!this.player || !this.connected) return;
+
+        this.cameras.main.scrollX += this.scrollSpeed;
 
         // Update main player
         this.player.update();
