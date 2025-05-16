@@ -516,10 +516,12 @@ export default class Level extends Phaser.Scene {
     getCoins() {
         return this.player.coins
     }
-
+    cameraScroll(cameraScrollspeed: number) {
+        this.cameras.main.scrollX += cameraScrollspeed
+    }
     update(time: number, delta: number): void {
         // Camera scroll
-        this.cameras.main.scrollX += this.scrollSpeed
+        this.cameraScroll(this.scrollSpeed)
 
         this.player.update(time, delta)
         this.base?.update(time, delta)
