@@ -30,12 +30,12 @@ export class Preloader extends Scene {
     }
 
     create() {
-        // Check if the environment variable SKIP_MENU is set to true
-        if (import.meta.env.VITE_START_DIRECTLY === "0") {
+        // Check if the environment variable SKIP_MENU is set
+        if (import.meta.env.VITE_START_DIRECTLY === "1") {
             // Directly start the Game scene
             this.scene.start("Game");
         } else {
-            // Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
+            // Move to the MainMenu
             this.scene.start("MainMenu");
         }
     }

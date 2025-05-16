@@ -3,6 +3,7 @@ import { Game as MainGame } from "./scenes/Game";
 import { GameOver } from "./scenes/GameOver";
 import { MainMenu } from "./scenes/MainMenu";
 import { Preloader } from "./scenes/Preloader";
+import { Lobby } from "./scenes/Lobby";
 import { AUTO, Game, Scale } from "phaser";
 
 //  Find out more information about the Game Config at:
@@ -25,7 +26,14 @@ const config = {
             debug: false,
         },
     },
-    scene: [Boot, Preloader, MainMenu, MainGame, GameOver],
+    scene: [Boot, Preloader, MainMenu, Lobby, MainGame, GameOver],
+    // Add explicit input configuration to ensure touch/mouse works properly
+    input: {
+        activePointers: 2, // Enable multi-touch
+        keyboard: true,
+        mouse: true,
+        touch: true,
+    },
 };
 
 const StartGame = parent => {

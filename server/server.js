@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import { createServer } from "http";
+import { uuid } from "uuidv4";
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
@@ -9,18 +10,47 @@ const io = new Server(httpServer, {
     },
 });
 
-const MAX_LOBBY_SIZE = 2;
+const MAX_PLAYERS_PER_LOBBY = 2;
 
-let gameState = {
-    gameStarted: false,
-    players: {},
+// Store all lobbies
+const lobbies = {};
+
+// Create a new lobby
+const createLobby = (socket, lobbyName, playerName) => {
+    const lobbyId = uuid();
+    lobbies[lobbyId] = {
+        id: lobbyId,
+        name: lobbyName,
+        host: socket.id,
+        gameStarted: false,
+        players: {},
+        createdAt: Date.now(),
+    };
+
+    // Add the creating player to the lobby
+    addPlayerToLobby(socket, lobbyId, playerName);
+    return lobbyId;
 };
 
-const addPlayer = (socket, playerName) => {
-    if (Object.keys(gameState.players).length >= MAX_LOBBY_SIZE) {
-        socket.emit("lobbyFull", { message: "Lobby is full. Please try again later." });
-        return;
+// Add a player to a lobby
+const addPlayerToLobby = (socket, lobbyId, playerName) => {
+    const lobby = lobbies[lobbyId];
+
+    if (!lobby) {
+        socket.emit("lobbyError", { message: "Lobby not found." });
+        return false;
     }
+
+    if (Object.keys(lobby.players).length >= MAX_PLAYERS_PER_LOBBY) {
+        socket.emit("lobbyError", { message: "Lobby is full." });
+        return false;
+    }
+
+    // Remove player from any other lobbies they might be in
+    removePlayerFromAllLobbies(socket.id);
+
+    // Join the socket to the lobby room
+    socket.join(lobbyId);
 
     const player = {
         id: socket.id,
@@ -33,78 +63,173 @@ const addPlayer = (socket, playerName) => {
         velocityY: 0,
         lastUpdate: Date.now(),
     };
-    gameState.players[socket.id] = player;
-    io.emit("gameState", gameState);
+
+    lobby.players[socket.id] = player;
+
+    // Send updated lobby state to all players in this lobby
+    io.to(lobbyId).emit("lobbyState", lobby);
+
+    // Update the lobbies list for all clients in the main menu
+    updateLobbiesList();
+
+    return true;
 };
 
-const updatePlayer = (socket, { x, y, direction, animation, velocityX, velocityY }) => {
-    if (gameState.players[socket.id]) {
-        const player = gameState.players[socket.id];
-        const timestamp = Date.now();
+// Remove a player from a specific lobby
+const removePlayerFromLobby = (playerId, lobbyId) => {
+    const lobby = lobbies[lobbyId];
+    if (!lobby) return;
 
-        // Store the current state
-        Object.assign(player, {
-            x,
-            y,
-            direction,
-            animation,
-            velocityX: velocityX || 0,
-            velocityY: velocityY || 0,
-            lastUpdate: timestamp,
-        });
+    delete lobby.players[playerId];
 
-        // Broadcast update to other players
-        socket.broadcast.emit("playerMoved", {
-            id: socket.id,
-            x,
-            y,
-            direction,
-            animation,
-            velocityX: velocityX || 0,
-            velocityY: velocityY || 0,
-            timestamp,
-        });
+    // If lobby is empty, remove it
+    if (Object.keys(lobby.players).length === 0) {
+        delete lobbies[lobbyId];
+    }
+    // If host left, assign a new host
+    else if (lobby.host === playerId) {
+        const remainingPlayers = Object.keys(lobby.players);
+        if (remainingPlayers.length > 0) {
+            lobby.host = remainingPlayers[0];
+        }
+    }
+
+    // Send updated lobby state to all players in this lobby
+    io.to(lobbyId).emit("lobbyState", lobby);
+
+    // Update the lobbies list for all clients in the main menu
+    updateLobbiesList();
+};
+
+// Remove a player from all lobbies
+const removePlayerFromAllLobbies = playerId => {
+    for (const lobbyId in lobbies) {
+        if (lobbies[lobbyId].players[playerId]) {
+            removePlayerFromLobby(playerId, lobbyId);
+        }
     }
 };
 
-const removePlayer = socket => {
-    delete gameState.players[socket.id];
-    io.emit("gameState", gameState);
+// Update player position and state in a lobby
+const updatePlayerInLobby = (socket, lobbyId, playerData) => {
+    const lobby = lobbies[lobbyId];
+    if (!lobby || !lobby.players[socket.id]) return;
 
-    if (Object.keys(gameState.players).length === 0) {
-        resetGameState();
+    const player = lobby.players[socket.id];
+    const timestamp = Date.now();
+
+    // Update player state
+    Object.assign(player, {
+        ...playerData,
+        lastUpdate: timestamp,
+    });
+
+    // Send player movement to all other players in the same lobby
+    socket.to(lobbyId).emit("playerMoved", {
+        id: socket.id,
+        name: player.name, // Include name to ensure it's available for new players
+        ...playerData,
+        timestamp,
+    });
+
+    // Periodically send full lobby state to ensure sync
+    if (timestamp % 30 === 0) {
+        // Every ~30ms send full sync
+        io.to(lobbyId).emit("lobbyState", lobby);
     }
 };
 
-const resetGameState = () => {
-    gameState = {
-        gameStarted: false,
-        players: {},
-    };
+// Get a list of all available (not started) lobbies
+const getAvailableLobbies = () => {
+    const availableLobbies = {};
+
+    for (const lobbyId in lobbies) {
+        const lobby = lobbies[lobbyId];
+        if (!lobby.gameStarted && Object.keys(lobby.players).length < MAX_PLAYERS_PER_LOBBY) {
+            availableLobbies[lobbyId] = {
+                id: lobby.id,
+                name: lobby.name,
+                playerCount: Object.keys(lobby.players).length,
+                maxPlayers: MAX_PLAYERS_PER_LOBBY,
+                host: lobby.host,
+            };
+        }
+    }
+
+    return availableLobbies;
 };
 
-const startGame = () => {
-    if (!gameState.gameStarted) {
-        gameState.gameStarted = true;
-        io.emit("gameState", gameState);
-        io.emit("disableStartButton");
+// Send updated lobbies list to all clients in the main menu
+const updateLobbiesList = () => {
+    const availableLobbies = getAvailableLobbies();
+    io.emit("lobbiesList", availableLobbies);
+};
+
+// Start a game in a specific lobby
+const startGame = lobbyId => {
+    const lobby = lobbies[lobbyId];
+    if (!lobby) return;
+
+    // Only start if there are enough players
+    if (Object.keys(lobby.players).length === MAX_PLAYERS_PER_LOBBY) {
+        lobby.gameStarted = true;
+        io.to(lobbyId).emit("gameStart", lobby);
+
+        // Update the lobbies list for all clients in the main menu
+        updateLobbiesList();
     }
 };
 
 io.on("connection", socket => {
     console.log("Client connected:", socket.id);
 
-    socket.on("joinGame", ({ playerName }) => addPlayer(socket, playerName));
+    // Send available lobbies on connection
+    socket.emit("lobbiesList", getAvailableLobbies());
 
-    socket.on("playerUpdate", data => updatePlayer(socket, data));
+    // Create a new lobby
+    socket.on("createLobby", ({ lobbyName, playerName }, callback) => {
+        const lobbyId = createLobby(socket, lobbyName, playerName);
+        callback && callback({ success: true, lobbyId });
+    });
 
-    socket.on("gameOver", resetGameState);
+    // Join an existing lobby
+    socket.on("joinLobby", ({ lobbyId, playerName }, callback) => {
+        const success = addPlayerToLobby(socket, lobbyId, playerName);
+        callback && callback({ success, lobbyId });
+    });
 
-    socket.on("checkGameState", (data, callback) => callback(gameState.gameStarted));
+    // Leave the current lobby
+    socket.on("leaveLobby", ({ lobbyId }) => {
+        socket.leave(lobbyId);
+        removePlayerFromLobby(socket.id, lobbyId);
+    });
 
-    socket.on("disconnect", () => removePlayer(socket));
+    // Request specific lobby state
+    socket.on("requestLobbyState", ({ lobbyId }) => {
+        const lobby = lobbies[lobbyId];
+        if (lobby) {
+            socket.emit("lobbyState", lobby);
+        }
+    });
 
-    socket.on("startGame", startGame);
+    // Request to start the game in a lobby
+    socket.on("requestGameStart", ({ lobbyId }) => {
+        const lobby = lobbies[lobbyId];
+        if (lobby && lobby.host === socket.id) {
+            startGame(lobbyId);
+        }
+    });
+
+    // Player updates their position/state during gameplay
+    socket.on("playerUpdate", ({ lobbyId, ...playerData }) => {
+        updatePlayerInLobby(socket, lobbyId, playerData);
+    });
+
+    // When a player disconnects
+    socket.on("disconnect", () => {
+        console.log("Client disconnected:", socket.id);
+        removePlayerFromAllLobbies(socket.id);
+    });
 });
 
 const PORT = process.env.PORT || 9000;
