@@ -9,6 +9,7 @@ export class Game extends Scene {
         this.player = null;
         this.otherPlayers = {};
         this.cursors = null;
+        this.wasd = null;
         this.playerName = "Player_" + Math.floor(Math.random() * 1000);
         this.connected = false;
     }
@@ -36,6 +37,12 @@ export class Game extends Scene {
         this.socket.on("playerMoved", playerInfo => {
             this.updateOtherPlayer(playerInfo);
         });
+
+        // Handle lobby full event
+        this.socket.on("lobbyFull", ({ message }) => {
+            alert(message);
+            this.scene.start("MainMenu");
+        });
     }
 
     create() {
@@ -60,6 +67,15 @@ export class Game extends Scene {
 
         // Setup input
         this.cursors = this.input.keyboard.createCursorKeys();
+
+        // Setup WASD keys
+        this.wasd = {
+            W: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+            A: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+            S: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+            D: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+            Space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
+        };
 
         // Setup camera to follow player
         if (this.player && this.player.sprite) {
@@ -107,17 +123,15 @@ export class Game extends Scene {
         this.player.update();
 
         // Apply player movement based on input
-        const moved = this.player.applyMovement(this.cursors);
+        const moved = this.player.applyMovement(this.cursors, this.wasd);
 
-        // Send updates to server if player moved
-        if (moved) {
-            this.socket.emit("playerUpdate", {
-                x: this.player.x,
-                y: this.player.y,
-                animation: this.player.animation,
-                direction: this.player.direction,
-            });
-        }
+        // Always send updates to server, even if player is not moving
+        this.socket.emit("playerUpdate", {
+            x: this.player.x,
+            y: this.player.y,
+            animation: this.player.animation,
+            direction: this.player.direction,
+        });
 
         // Update other players
         Object.values(this.otherPlayers).forEach(player => {

@@ -13,7 +13,7 @@ export class Player {
             scene.physics.add.existing(this.sprite);
 
             // Configure physics properties
-            this.sprite.body.setBounce(0.2); // A little bounce
+            this.sprite.body.setBounce(0); // Disable bounce
             this.sprite.body.setCollideWorldBounds(true); // Don't fall out of the world
             this.sprite.body.setDrag(300, 0); // Horizontal drag for smooth stopping
 
@@ -54,7 +54,7 @@ export class Player {
         this.text.setPosition(this.x, this.y - 30);
     }
 
-    applyMovement(cursors) {
+    applyMovement(cursors, wasd) {
         if (!this.isMainPlayer || !this.sprite.body) return false;
 
         try {
@@ -69,12 +69,12 @@ export class Player {
             this.sprite.body.setVelocityX(0);
 
             // Horizontal movement
-            if (cursors.left.isDown) {
+            if (cursors.left.isDown || wasd.A.isDown) {
                 this.sprite.body.setVelocityX(-speed);
                 this.animation = "run";
                 this.direction = "left";
                 moved = true;
-            } else if (cursors.right.isDown) {
+            } else if (cursors.right.isDown || wasd.D.isDown) {
                 this.sprite.body.setVelocityX(speed);
                 this.animation = "run";
                 this.direction = "right";
@@ -84,7 +84,7 @@ export class Player {
             }
 
             // Jump - Only if touching the ground
-            if (cursors.up.isDown && this.sprite.body.touching.down) {
+            if ((cursors.up.isDown || wasd.W.isDown || wasd.Space.isDown) && this.sprite.body.touching.down) {
                 this.sprite.body.setVelocityY(-jumpStrength);
                 this.animation = "jump";
                 moved = true;

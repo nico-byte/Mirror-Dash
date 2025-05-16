@@ -9,12 +9,19 @@ const io = new Server(httpServer, {
     },
 });
 
+const MAX_LOBBY_SIZE = 2;
+
 let gameState = {
     gameStarted: false,
     players: {},
 };
 
 const addPlayer = (socket, playerName) => {
+    if (Object.keys(gameState.players).length >= MAX_LOBBY_SIZE) {
+        socket.emit("lobbyFull", { message: "Lobby is full. Please try again later." });
+        return;
+    }
+
     const player = {
         id: socket.id,
         name: playerName,
@@ -22,7 +29,6 @@ const addPlayer = (socket, playerName) => {
         y: 250,
         animation: "idle",
         direction: "right",
-        // Store physics properties to handle synchronization better
         velocityX: 0,
         velocityY: 0,
         lastUpdate: Date.now(),
