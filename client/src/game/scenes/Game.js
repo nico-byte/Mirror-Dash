@@ -12,7 +12,7 @@ export class Game extends Scene {
         this.wasd = null;
         this.playerName = "Player_" + Math.floor(Math.random() * 1000);
         this.connected = false;
-        this.scrollSpeed = 1.0;
+        this.scrollSpeed = 0; // 1.0 for scrollling on, 0 for no scrolling
     }
 
     init() {

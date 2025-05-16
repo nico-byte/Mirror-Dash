@@ -59,7 +59,7 @@ export class Player {
 
         try {
             const speed = 300;
-            const jumpStrength = 500;
+            const jumpStrength = 300; // Further reduced jump strength for a lower jump
 
             let moved = false;
             let prevAnimation = this.animation;
