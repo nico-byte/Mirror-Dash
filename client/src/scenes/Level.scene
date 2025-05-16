@@ -1,0 +1,298 @@
+{
+    "id": "b685c081-ee5f-4b67-b583-415922c9e2c4",
+    "sceneType": "SCENE",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadPackFiles": [],
+        "createMethodName": "editorCreate",
+        "sceneKey": "Level",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "TilemapLayer",
+            "id": "d2840ea3-87a9-4740-83f7-93ff3fd7b12c",
+            "label": "ground_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Ground",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "7908fad1-45a0-4d22-a999-4bcc94c84995",
+            "label": "floor_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Floor",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "ee24f6e5-cf5c-4c0d-a19b-e8b11f971996",
+            "label": "walls_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Walls",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "7225de4f-6e51-47dc-8312-2bc5625a9828",
+            "label": "road_DecorationsFloor_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Road/DecorationsFloor",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "08b18978-351e-40ac-b34e-74e2fbda7f58",
+            "label": "road_RoadBottom_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Road/RoadBottom",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "5a688d2f-8d8d-4bed-b990-5397dba607f1",
+            "label": "road_RoadTop_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Road/RoadTop",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "1b49ad77-4379-4f35-91e4-91feb10a8272",
+            "label": "baseDecorations_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "BaseDecorations",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "7fac87b4-178a-4e4c-af4f-e5c0460d308e",
+            "label": "base_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Base",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "6c684010-da61-412c-9a8f-1bf980f2bf81",
+            "label": "grass_Grass_1",
+            "visible": false,
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Grass/Grass",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "a6fc5f94-fad7-4c8a-af7d-a184d9a81185",
+            "label": "grass_Grass",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Grass/Grass2",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "ee61c1d7-f113-47cf-b8a3-5afa04a18953",
+            "label": "grass_Grass_2",
+            "visible": false,
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Grass/Grass3",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "04a0dd12-a6a7-414d-9608-63e3f8220172",
+            "label": "grass_Grass_3",
+            "visible": false,
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Grass/Grass4",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "d173ee9d-6668-4b18-88ee-ab05c3462a2b",
+            "label": "mapDecorations_Decorations_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "MapDecorations/Decorations",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "618a0057-1242-4068-aa68-670417bef93a",
+            "label": "mapDecorations_Decorations",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "MapDecorations/Decorations2",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "1dd2bc90-bd65-4979-b468-c346a74d3e60",
+            "label": "mapDecorations_Decorations_2",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "MapDecorations/Decorations3",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "7b1a339a-e36d-44d8-978b-ec113b747c8b",
+            "label": "objective_Objective_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Objective/Objective",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "b11516b0-ae26-4e1c-99ad-02f4596ec638",
+            "label": "objective_ObjectiveDecorations_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Objective/ObjectiveDecorations",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "c584051d-f9ca-42a9-b801-907d895be333",
+            "label": "objective_ObjectiveDecorations",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "Objective/ObjectiveDecorations2",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        },
+        {
+            "type": "TilemapLayer",
+            "id": "9e2f9974-860e-43ee-9c35-71fe19897cb3",
+            "label": "waterLayer_1",
+            "tilemapId": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "layerName": "WaterLayer",
+            "tilesets": [
+                "Decoration",
+                "Bubbles",
+                "Player",
+                "Environment"
+            ]
+        }
+    ],
+    "plainObjects": [
+        {
+            "id": "d5c69235-372e-443c-8ae1-e230d43fe9fa",
+            "type": "Tilemap",
+            "label": "level1Map",
+            "key": "BubbleNautsMapUpdated",
+            "tilesets": [
+                {
+                    "name": "Decoration",
+                    "imageKey": "decoration"
+                },
+                {
+                    "name": "Bubbles",
+                    "imageKey": "bubbles"
+                },
+                {
+                    "name": "Player",
+                    "imageKey": "player"
+                },
+                {
+                    "name": "Environment",
+                    "imageKey": "environment"
+                }
+            ]
+        }
+    ],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

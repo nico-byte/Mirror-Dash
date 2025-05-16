@@ -1,0 +1,15 @@
+{
+    "watch": [
+        ".",
+        "../client/types/"
+    ],
+    "ext": ".ts,.js,.json",
+    "ignore": [
+        "node_modules",
+        "dist"
+    ],
+    "execMap": {
+        "ts": "node --no-warnings=ExperimentalWarning --loader ts-node/esm"
+    },
+    "delay": "1000"
+}

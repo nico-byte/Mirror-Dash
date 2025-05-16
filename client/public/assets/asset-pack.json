@@ -1,0 +1,383 @@
+{
+    "section1": {
+        "files": [
+            {
+                "url": "assets/animations/bubble.json",
+                "type": "animation",
+                "key": "bubble"
+            },
+            {
+                "url": "assets/Bubble.png",
+                "frameConfig": {
+                    "frameWidth": 40,
+                    "frameHeight": 40,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "Bubble"
+            },
+            {
+                "url": "assets/tilemap/BubbleNautsMap.json",
+                "type": "tilemapTiledJSON",
+                "key": "BubbleNautsMap"
+            },
+            {
+                "url": "assets/tilemap/BubbleNautsMapBig.json",
+                "type": "tilemapTiledJSON",
+                "key": "BubbleNautsMapBig"
+            },
+            {
+                "url": "assets/tilemap/BubbleNautsMapUpdated.json",
+                "type": "tilemapTiledJSON",
+                "key": "BubbleNautsMapUpdated"
+            },
+            {
+                "url": "assets/tileset/bubbles.png",
+                "frameConfig": {
+                    "frameWidth": 32,
+                    "frameHeight": 32,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "bubbles"
+            },
+            {
+                "url": "assets/animations/bubbles.json",
+                "type": "animation",
+                "key": "bubbles_1"
+            },
+            {
+                "url": "assets/tileset/decoration.png",
+                "frameConfig": {
+                    "frameWidth": 32,
+                    "frameHeight": 32,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "decoration"
+            },
+            {
+                "url": "assets/tileset/dreizack.png",
+                "frameConfig": {
+                    "frameWidth": 32,
+                    "frameHeight": 50,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "dreizack"
+            },
+            {
+                "url": "assets/animations/dreizack.json",
+                "type": "animation",
+                "key": "dreizack"
+            },
+            {
+                "url": "assets/enemies/enemy_1.png",
+                "type": "image",
+                "key": "enemy_1"
+            },
+            {
+                "url": "assets/animations/enemy_1.json",
+                "type": "animation",
+                "key": "enemy_1"
+            },
+            {
+                "url": "assets/enemies/enemy_1_attack.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_1_attack"
+            },
+            {
+                "url": "assets/enemies/enemy_1_walk.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_1_walk"
+            },
+            {
+                "url": "assets/animations/enemy_2.json",
+                "type": "animation",
+                "key": "enemy_2"
+            },
+            {
+                "url": "assets/enemies/enemy_2.png",
+                "type": "image",
+                "key": "enemy_2"
+            },
+            {
+                "url": "assets/enemies/enemy_2_attack.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_2_attack"
+            },
+            {
+                "url": "assets/enemies/enemy_2_walk.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_2_walk"
+            },
+            {
+                "url": "assets/animations/enemy_3.json",
+                "type": "animation",
+                "key": "enemy_3"
+            },
+            {
+                "url": "assets/enemies/enemy_3.png",
+                "type": "image",
+                "key": "enemy_3"
+            },
+            {
+                "url": "assets/mine.png",
+                "type": "image",
+                "key": "mine"
+            },
+            {
+                "url": "assets/enemies/enemy_3_attack.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_3_attack"
+            },
+            {
+                "url": "assets/enemies/enemy_3_walk.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_3_walk"
+            },
+            {
+                "url": "assets/animations/enemy_4.json",
+                "type": "animation",
+                "key": "enemy_4"
+            },
+            {
+                "url": "assets/enemies/enemy_4.png",
+                "type": "image",
+                "key": "enemy_4"
+            },
+            {
+                "url": "assets/enemies/enemy_4_attack.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_4_attack"
+            },
+            {
+                "url": "assets/enemies/enemy_4_walk.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_4_walk"
+            },
+            {
+                "url": "assets/animations/enemy_5.json",
+                "type": "animation",
+                "key": "enemy_5"
+            },
+            {
+                "url": "assets/enemies/enemy_5.png",
+                "type": "image",
+                "key": "enemy_5"
+            },
+            {
+                "url": "assets/enemies/enemy_5_attack.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_5_attack"
+            },
+            {
+                "url": "assets/enemies/enemy_5_walk.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_5_walk"
+            },
+            {
+                "url": "assets/animations/enemy_6.json",
+                "type": "animation",
+                "key": "enemy_6"
+            },
+            {
+                "url": "assets/enemies/enemy_6.png",
+                "type": "image",
+                "key": "enemy_6"
+            },
+            {
+                "url": "assets/enemies/enemy_6_attack.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_6_attack"
+            },
+            {
+                "url": "assets/enemies/enemy_6_walk.png",
+                "frameConfig": {
+                    "frameWidth": 48,
+                    "frameHeight": 48,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "enemy_6_walk"
+            },
+            {
+                "url": "assets/tileset/environment.png",
+                "frameConfig": {
+                    "frameWidth": 32,
+                    "frameHeight": 32,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "environment"
+            },
+            {
+                "url": "assets/FufuSuperDino.png",
+                "type": "image",
+                "key": "FufuSuperDino"
+            },
+            {
+                "url": "assets/Harpune.png",
+                "type": "image",
+                "key": "Harpune"
+            },
+            {
+                "url": "assets/interfaceimg.png",
+                "type": "image",
+                "key": "interfaceimg"
+            },
+            {
+                "url": "assets/intro.png",
+                "type": "image",
+                "key": "intro"
+            },
+            {
+                "url": "assets/tileset/player.png",
+                "frameConfig": {
+                    "frameWidth": 52,
+                    "frameHeight": 92,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "player"
+            },
+            {
+                "url": "assets/animations/playerGreenBlueAnimation.json",
+                "type": "animation",
+                "key": "playerGreenBlueAnimation"
+            },
+            {
+                "url": "assets/singleBubble.png",
+                "type": "image",
+                "key": "singleBubble"
+            },
+            {
+                "url": "assets/StartButtonRendered.png",
+                "type": "image",
+                "key": "StartButtonRendered"
+            },
+            {
+                "url": "assets/turret.png",
+                "type": "image",
+                "key": "turret"
+            }
+        ]
+    },
+    "meta": {
+        "app": "Phaser Editor 2D - Asset Pack Editor",
+        "contentType": "phasereditor2d.pack.core.AssetContentType",
+        "url": "https://phasereditor2d.com",
+        "version": 2,
+        "showAllFilesInBlocks": false,
+        "visible": true
+    }
+}
