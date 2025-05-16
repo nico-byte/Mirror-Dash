@@ -163,6 +163,7 @@ export default class Level extends Phaser.Scene {
     private mapData!: ServerMapData
     public gameStarted: boolean = false
     private towerManager: TowerManager
+    private scrollSpeed: number = 1
 
     create() {
         this.socket = this.registry.get('socket')
@@ -186,8 +187,10 @@ export default class Level extends Phaser.Scene {
         this.cameras.main.setBounds(
             0,
             0,
-            this.level1Map.widthInPixels,
-            this.level1Map.heightInPixels
+            // this.level1Map.widthInPixels,
+            // this.level1Map.heightInPixels
+            2000,
+            2000
         )
 
         const colliderBox = this.physics.add.staticGroup()
@@ -214,7 +217,6 @@ export default class Level extends Phaser.Scene {
 
         this.physics.add.collider(this.player, colliderBox)
 
-        this.cameras.main.startFollow(this.player, true, 0.09, 0.09)
         this.cameras.main.setZoom(1.5)
         const interfaceimg = this.add.image(500, 600, 'interfaceimg')
         interfaceimg.setOrigin(0, 1)
@@ -471,7 +473,7 @@ export default class Level extends Phaser.Scene {
                     if (
                         playerInfo.animation &&
                         otherPlayer.anims.currentAnim?.key !==
-                            playerInfo.animation
+                        playerInfo.animation
                     ) {
                         otherPlayer.play(playerInfo.animation)
                     }
@@ -516,6 +518,9 @@ export default class Level extends Phaser.Scene {
     }
 
     update(time: number, delta: number): void {
+        // Camera scroll
+        this.cameras.main.scrollX += this.scrollSpeed
+
         this.player.update(time, delta)
         this.base?.update(time, delta)
         this.enemies.forEach((enemy) => {
