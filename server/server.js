@@ -21,16 +21,43 @@ const addPlayer = (socket, playerName) => {
         x: 230,
         y: 250,
         animation: "idle",
+        direction: "right",
+        // Store physics properties to handle synchronization better
+        velocityX: 0,
+        velocityY: 0,
+        lastUpdate: Date.now(),
     };
     gameState.players[socket.id] = player;
     io.emit("gameState", gameState);
 };
 
-const updatePlayer = (socket, { x, y, direction, animation }) => {
+const updatePlayer = (socket, { x, y, direction, animation, velocityX, velocityY }) => {
     if (gameState.players[socket.id]) {
         const player = gameState.players[socket.id];
-        Object.assign(player, { x, y, direction, animation });
-        socket.broadcast.emit("playerMoved", { id: socket.id, x, y, direction, animation });
+        const timestamp = Date.now();
+
+        // Store the current state
+        Object.assign(player, {
+            x,
+            y,
+            direction,
+            animation,
+            velocityX: velocityX || 0,
+            velocityY: velocityY || 0,
+            lastUpdate: timestamp,
+        });
+
+        // Broadcast update to other players
+        socket.broadcast.emit("playerMoved", {
+            id: socket.id,
+            x,
+            y,
+            direction,
+            animation,
+            velocityX: velocityX || 0,
+            velocityY: velocityY || 0,
+            timestamp,
+        });
     }
 };
 
