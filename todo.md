@@ -9,6 +9,13 @@
 | [x]    | Create basic HTML structure |          |         |
 | [x]    | Add favicon and assets      |          |         |
 | [x]    | Implement main game logic   |          |         |
+| [ ]    | Smooth out physics          |          |         |
+| [ ]    | Implement map               |          |         |
+| [ ]    | Time Limit                  |          |         |
+| [ ]    | Time Penalties              |          |         |
+| [ ]    | Implement Music             |          |         |
+| [ ]    | Implement Start/Finish      |          |         |
+| [ ]    | Implement Score in Stars    |          |         |
 
 ## Server
 
