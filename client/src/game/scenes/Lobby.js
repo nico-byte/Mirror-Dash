@@ -17,8 +17,10 @@ export class Lobby extends Scene {
         if (data && data.socket) {
             this.socket = data.socket;
         } else {
-            // Connect to socket.io server
-            this.socket = io("http://localhost:9000");
+            // Connect to socket.io server using the environment variable or fallback to localhost
+            const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
+            this.socket = io(serverUrl);
+            console.log("Connected to socket server:", serverUrl);
         }
 
         // Player name can be passed from the main menu
@@ -38,7 +40,9 @@ export class Lobby extends Scene {
 
         // Listen for lobby state updates (when in a lobby)
         this.socket.on("lobbyState", lobby => {
-            if (this.inLobby && lobby.id === this.currentLobbyId) {
+            console.log("Received lobby state:", lobby);
+            if (lobby.id === this.currentLobbyId) {
+                this.inLobby = true;
                 this.updateLobbyState(lobby);
             }
         });
@@ -69,7 +73,7 @@ export class Lobby extends Scene {
         this.add.image(512, 384, "background").setAlpha(0.2);
 
         // Title with shadow for better visibility
-        const titleText = this.add
+        this.add
             .text(512, 80, "Game Lobbies", {
                 fontFamily: "Arial Black",
                 fontSize: 42,
@@ -81,7 +85,7 @@ export class Lobby extends Scene {
             .setOrigin(0.5);
 
         // Create a panel for player name
-        const namePanel = this.add.rectangle(512, 170, 400, 100, 0x333333).setAlpha(0.8);
+        this.add.rectangle(512, 170, 400, 100, 0x333333).setAlpha(0.8);
 
         // Player name header
         this.add
@@ -141,7 +145,7 @@ export class Lobby extends Scene {
         this.add.rectangle(512, 300, 800, 2, 0xffffff, 0.5);
 
         // Lobbies list container with better styling
-        const lobbyListBg = this.add.rectangle(512, 450, 800, 300, 0x000000, 0.7);
+        this.add.rectangle(512, 450, 800, 300, 0x000000, 0.7);
 
         // Title for lobbies list with shadow
         this.add
@@ -214,10 +218,11 @@ export class Lobby extends Scene {
 
         // Lobby info background with better styling
         const lobbyInfoBg = this.add.rectangle(0, 0, 700, 320, 0x222266, 0.8);
+        this.lobbyUI.add(lobbyInfoBg);
 
         // Add a border
-        this.add.rectangle(0, 0, 704, 324, 0x6666ff, 0.5).setOrigin(0.5);
-        this.lobbyUI.add(this.add.rectangle(0, 0, 704, 324, 0x6666ff, 0.5));
+        const lobbyBorder = this.add.rectangle(0, 0, 704, 324, 0x6666ff, 0.5);
+        this.lobbyUI.add(lobbyBorder);
 
         // Lobby name with shadow
         this.lobbyNameText = this.add
@@ -230,6 +235,7 @@ export class Lobby extends Scene {
                 align: "center",
             })
             .setOrigin(0.5);
+        this.lobbyUI.add(this.lobbyNameText);
 
         // Players list title with shadow
         const playersTitle = this.add
@@ -242,12 +248,15 @@ export class Lobby extends Scene {
                 align: "center",
             })
             .setOrigin(0.5);
+        this.lobbyUI.add(playersTitle);
 
         // Add a line under the title
         const titleUnderline = this.add.rectangle(0, -60, 200, 2, 0xffffff, 0.7);
+        this.lobbyUI.add(titleUnderline);
 
         // Container for player list
         this.playerListContainer = this.add.container(0, 0);
+        this.lobbyUI.add(this.playerListContainer);
 
         // Start game button with better styling
         this.startGameButton = this.add
@@ -256,11 +265,13 @@ export class Lobby extends Scene {
             .on("pointerdown", () => {
                 this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
             })
-            .on("pointerover", () => (this.startGameButton.fillAlpha = 1))
-            .on("pointerout", () => (this.startGameButton.fillAlpha = 0.9));
+            .on("pointerover", () => this.startGameButton.setFillStyle(0x00cc00))
+            .on("pointerout", () => this.startGameButton.setFillStyle(0x00aa00));
+        this.lobbyUI.add(this.startGameButton);
 
         // Add a border to the button
         const startBtnBorder = this.add.rectangle(0, 100, 244, 64, 0xffffff, 0.5);
+        this.lobbyUI.add(startBtnBorder);
 
         this.startGameText = this.add
             .text(0, 100, "Start Game", {
@@ -270,6 +281,7 @@ export class Lobby extends Scene {
                 align: "center",
             })
             .setOrigin(0.5);
+        this.lobbyUI.add(this.startGameText);
 
         // Leave lobby button with better styling
         const leaveLobbyButton = this.add
@@ -280,9 +292,11 @@ export class Lobby extends Scene {
             })
             .on("pointerover", () => leaveLobbyButton.setFillStyle(0xcc0000))
             .on("pointerout", () => leaveLobbyButton.setFillStyle(0xaa0000));
+        this.lobbyUI.add(leaveLobbyButton);
 
         // Add a border to the button
         const leaveBtnBorder = this.add.rectangle(0, 180, 244, 54, 0xffffff, 0.5);
+        this.lobbyUI.add(leaveBtnBorder);
 
         const leaveText = this.add
             .text(0, 180, "Leave Lobby", {
@@ -292,21 +306,7 @@ export class Lobby extends Scene {
                 align: "center",
             })
             .setOrigin(0.5);
-
-        // Add all elements to the lobby UI container
-        this.lobbyUI.add([
-            lobbyInfoBg,
-            this.lobbyNameText,
-            playersTitle,
-            titleUnderline,
-            this.playerListContainer,
-            this.startGameButton,
-            startBtnBorder,
-            this.startGameText,
-            leaveLobbyButton,
-            leaveBtnBorder,
-            leaveText,
-        ]);
+        this.lobbyUI.add(leaveText);
 
         // Request initial lobby list
         this.socket.emit("getLobbyList");
@@ -510,8 +510,8 @@ export class Lobby extends Scene {
 
             // Add a border for current player
             if (isCurrentPlayer) {
-                this.add.rectangle(0, yPos, 404, 54, 0x55ff55, 0.5);
-                this.playerListContainer.add(this.add.rectangle(0, yPos, 404, 54, 0x55ff55, 0.5));
+                const playerBorder = this.add.rectangle(0, yPos, 404, 54, 0x55ff55, 0.5);
+                this.playerListContainer.add(playerBorder);
             }
 
             const prefix = isPlayerHost ? "👑 " : "";
@@ -530,11 +530,11 @@ export class Lobby extends Scene {
         });
 
         // Update start button state based on player count
-        const canStart = playerIds.length === 2 && isHost;
+        const canStart = playerIds.length >= 2 && isHost;
         this.startGameButton.setFillStyle(canStart ? 0x00aa00 : 0x555555, canStart ? 1 : 0.5);
         this.startGameButton.input.enabled = canStart;
 
-        // Add status message
+        // Add status message if waiting for more players
         if (playerIds.length < 2) {
             const waitingText = this.add
                 .text(0, 30, "Waiting for more players...", {
@@ -549,9 +549,5 @@ export class Lobby extends Scene {
 
             this.playerListContainer.add(waitingText);
         }
-    }
-
-    update() {
-        // Nothing specific needed in update for now
     }
 }

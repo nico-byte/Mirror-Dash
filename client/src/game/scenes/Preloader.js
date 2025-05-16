@@ -30,12 +30,41 @@ export class Preloader extends Scene {
     }
 
     create() {
-        // Check if the environment variable SKIP_MENU is set
-        if (import.meta.env.VITE_START_DIRECTLY === "1") {
-            // Directly start the Game scene
-            this.scene.start("Game");
+        // Get development options from environment variables
+        const startDirectly = import.meta.env.VITE_START_DIRECTLY === "true";
+        const skipMenu = import.meta.env.VITE_SKIP_MENU === "true";
+        const skipLobby = import.meta.env.VITE_SKIP_LOBBY === "true";
+        const directConnect = import.meta.env.VITE_DIRECT_CONNECT;
+        const defaultPlayerName =
+            import.meta.env.VITE_DEFAULT_PLAYER_NAME || "Player_" + Math.floor(Math.random() * 1000);
+
+        console.log("Development options:", {
+            startDirectly,
+            skipMenu,
+            skipLobby,
+            directConnect,
+            defaultPlayerName,
+        });
+
+        // Determine which scene to start based on development options
+        if (startDirectly || skipMenu) {
+            if (skipLobby || directConnect) {
+                // Skip directly to game
+                console.log("Skipping to Game scene");
+                this.scene.start("Game", {
+                    playerName: defaultPlayerName,
+                    lobbyId: directConnect,
+                });
+            } else {
+                // Skip to lobby
+                console.log("Skipping to Lobby scene");
+                this.scene.start("Lobby", {
+                    playerName: defaultPlayerName,
+                });
+            }
         } else {
-            // Move to the MainMenu
+            // Normal flow - go to main menu
+            console.log("Starting normal flow with MainMenu");
             this.scene.start("MainMenu");
         }
     }

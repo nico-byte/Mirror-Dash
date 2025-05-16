@@ -12,18 +12,26 @@ export class Game extends Scene {
         this.wasd = null;
         this.playerName = "Player_" + Math.floor(Math.random() * 1000);
         this.connected = false;
-        this.scrollSpeed = 0; // 1.0 for scrollling on, 0 for no scrolling
+        this.scrollSpeed = 0; // 1.0 for scrolling on, 0 for no scrolling
         this.lobbyId = null;
+        this.debugMode = false; // Set to true to enable coordinate display
     }
 
     init(data) {
+        // Enable debug mode from environment variable
+        this.debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
+
+        // Get server URL from environment variable or use default
+        const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
+
         // Get socket if passed from Lobby scene
         if (data && data.socket) {
             this.socket = data.socket;
             this.connected = true;
         } else {
             // Connect to server if not already connected
-            this.socket = io("http://localhost:9000");
+            this.socket = io(serverUrl);
+            console.log("Connected to game server:", serverUrl);
         }
 
         // Get player name if provided
@@ -35,12 +43,17 @@ export class Game extends Scene {
         if (data && data.lobbyId) {
             this.lobbyId = data.lobbyId;
             this.connected = true;
+        } else if (import.meta.env.VITE_DIRECT_CONNECT) {
+            // If direct connect is enabled, use the lobby ID from environment
+            this.lobbyId = import.meta.env.VITE_DIRECT_CONNECT;
+            this.connected = true;
         }
 
         this.setupSocketListeners();
 
         // Request the current lobby state as soon as we initialize
         if (this.socket && this.lobbyId) {
+            console.log("Requesting lobby state for:", this.lobbyId);
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
         }
     }
@@ -63,6 +76,7 @@ export class Game extends Scene {
                     response => {
                         if (response.success) {
                             this.lobbyId = response.lobbyId;
+                            console.log("Created quick play lobby:", this.lobbyId);
                         } else {
                             alert("Failed to create a quick play session.");
                             this.scene.start("MainMenu");
@@ -74,6 +88,7 @@ export class Game extends Scene {
 
         // Receive lobby state updates (contains player information)
         this.socket.on("lobbyState", lobby => {
+            console.log("Received lobby state in game:", lobby);
             if (lobby.id === this.lobbyId) {
                 this.updateGameState(lobby);
             }
@@ -81,6 +96,7 @@ export class Game extends Scene {
 
         // Other player moved
         this.socket.on("playerMoved", playerInfo => {
+            // console.log("Player moved:", playerInfo);
             this.updateOtherPlayer(playerInfo);
         });
 
@@ -133,7 +149,14 @@ export class Game extends Scene {
                 if (this.lobbyId) {
                     this.socket.emit("leaveLobby", { lobbyId: this.lobbyId });
                 }
-                this.scene.start("Lobby", { socket: this.socket, playerName: this.playerName });
+
+                // Check if we should return to lobby or main menu
+                const skipLobby = import.meta.env.VITE_SKIP_LOBBY === "true";
+                if (skipLobby) {
+                    this.scene.start("MainMenu");
+                } else {
+                    this.scene.start("Lobby", { socket: this.socket, playerName: this.playerName });
+                }
             });
 
         this.add
@@ -143,6 +166,15 @@ export class Game extends Scene {
                 color: "#ffffff",
             })
             .setOrigin(0.5);
+
+        // Add debug text only if debug mode is enabled
+        if (this.debugMode) {
+            this.debugText = this.add.text(10, 10, "Debug Mode: On", {
+                fontSize: "12px",
+                fill: "#ffffff",
+                backgroundColor: "#000000",
+            });
+        }
     }
 
     updateGameState(lobby) {
@@ -185,15 +217,31 @@ export class Game extends Scene {
                 );
             } else {
                 // Update existing player
-                this.updateOtherPlayer(playerInfo);
+                this.updateOtherPlayer({
+                    id: playerId,
+                    ...playerInfo,
+                });
             }
         });
     }
 
     updateOtherPlayer(playerInfo) {
+        // Make sure the player ID is set
+        if (!playerInfo.id) {
+            console.error("Player info missing ID:", playerInfo);
+            return;
+        }
+
         if (this.otherPlayers[playerInfo.id]) {
             const otherPlayer = this.otherPlayers[playerInfo.id];
-            otherPlayer.moveTo(playerInfo.x, playerInfo.y, playerInfo.animation, playerInfo.direction);
+            otherPlayer.moveTo(
+                playerInfo.x,
+                playerInfo.y,
+                playerInfo.animation || "idle",
+                playerInfo.direction || "right"
+            );
+        } else {
+            console.warn("Received update for non-existent player:", playerInfo.id);
         }
     }
 
@@ -221,5 +269,14 @@ export class Game extends Scene {
         Object.values(this.otherPlayers).forEach(player => {
             player.update();
         });
+
+        // Update debug text if enabled
+        if (this.debugMode && this.debugText) {
+            this.debugText.setText(
+                `Player: (${Math.round(this.player.x)}, ${Math.round(this.player.y)})` +
+                    `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
+                    `\nLobby: ${this.lobbyId}`
+            );
+        }
     }
 }
