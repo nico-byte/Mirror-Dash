@@ -43,77 +43,20 @@ export class Game extends Scene {
         this.cameras.main.setBackgroundColor(0x00ff00);
         this.add.image(512, 384, "background").setAlpha(0.5);
 
-        // Check if matter physics is available
-        if (!this.matter || !this.matter.world) {
-            console.error("Matter physics is not available");
-            this.add
-                .text(512, 384, "Physics not available.\nCheck console for details.", {
-                    fontFamily: "Arial",
-                    fontSize: 20,
-                    color: "#ffffff",
-                    stroke: "#ff0000",
-                    strokeThickness: 2,
-                    align: "center",
-                })
-                .setOrigin(0.5);
-            return;
-        }
+        // Create ground
+        this.platforms = this.physics.add.staticGroup();
 
-        console.log("Matter physics initialized");
-
-        // Disable default collision events to prevent the error
-        this.matter.world.on(
-            "beforeupdate",
-            function () {
-                this.matter.world.off("collisionstart");
-                this.matter.world.off("collisionactive");
-                this.matter.world.off("collisionend");
-                this.matter.world.off("beforeupdate");
-            },
-            this
-        );
-
-        // Configure world bounds and gravity
-        this.matter.world.setBounds(0, 0, 1024, 768);
-        this.matter.world.setGravity(0, 1);
-
-        // Create ground with proper collision properties
-        this.ground = this.matter.add.rectangle(512, 730, 1024, 60, {
-            isStatic: true,
-            friction: 0.5,
-            restitution: 0.2,
-            label: "ground",
-        });
+        // Add a ground platform
+        const ground = this.add.rectangle(512, 730, 1024, 60, 0x333333);
+        this.physics.add.existing(ground, true); // true means static
 
         // Create main player
         this.player = new Player(this, 230, 250, this.playerName, true);
 
-        // Set up custom collision detection
-        this.matter.world.on(
-            "collisionstart",
-            function (event) {
-                const pairs = event.pairs;
-
-                for (let i = 0; i < pairs.length; i++) {
-                    const bodyA = pairs[i].bodyA;
-                    const bodyB = pairs[i].bodyB;
-
-                    // Handle collisions manually without trying to emit to gameObjects
-                    if (
-                        (bodyA.label === "player" && bodyB.label === "ground") ||
-                        (bodyA.label === "ground" && bodyB.label === "player")
-                    ) {
-                        // Player is touching the ground, enable jumping
-                        if (bodyA.label === "player" && bodyA.gameObject) {
-                            bodyA.gameObject.canJump = true;
-                        } else if (bodyB.label === "player" && bodyB.gameObject) {
-                            bodyB.gameObject.canJump = true;
-                        }
-                    }
-                }
-            },
-            this
-        );
+        // Add collision between player and ground
+        if (this.player && this.player.sprite) {
+            this.physics.add.collider(this.player.sprite, ground);
+        }
 
         // Setup input
         this.cursors = this.input.keyboard.createCursorKeys();

@@ -17,12 +17,12 @@ const config = {
         mode: Scale.FIT,
         autoCenter: Scale.CENTER_BOTH,
     },
-    // Use Phaser's built-in Matter physics
+    // Use Phaser's built-in Arcade physics
     physics: {
-        default: "matter",
-        matter: {
-            gravity: { y: 1 }, // Set gravity
-            debug: false, // Set to true to see the collision bodies
+        default: "arcade",
+        arcade: {
+            gravity: { y: 800 },
+            debug: false,
         },
     },
     scene: [Boot, Preloader, MainMenu, MainGame, GameOver],
