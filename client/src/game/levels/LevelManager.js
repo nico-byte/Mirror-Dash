@@ -124,7 +124,10 @@ export class LevelManager {
                     platform.texture,
                     platform.scaleX || 1,
                     platform.scaleY || 1,
-                    platform.isStatic !== false // Default to static if not specified
+                    platform.isStatic !== false,
+                    platform.motion || null,
+                    platform.range || 80,
+                    platform.speed || 2000
                 );
             } else {
                 // Queue for later creation
@@ -135,6 +138,9 @@ export class LevelManager {
                     scaleX: platform.scaleX || 1,
                     scaleY: platform.scaleY || 1,
                     isStatic: platform.isStatic !== false,
+                    motion: platform.motion || null,
+                    range: platform.range || 80,
+                    speed: platform.speed || 2000
                 });
                 console.log(`Queued platform at ${platform.x}, ${platform.y} for later creation`);
             }
@@ -193,18 +199,18 @@ export class LevelManager {
     /**
      * Create a platform with its mirrored version
      */
-    createPlatformWithMirror(x, y, texture, scaleX = 1, scaleY = 1, isStatic = true) {
+    createPlatformWithMirror(x, y, texture, scaleX = 1, scaleY = 1, isStatic = true, motion = null, range = 80, speed = 2000) {
         if (!this.isSceneReady()) {
             console.warn("Scene not fully initialized! Queuing platform for later creation.");
-            this.pendingPlatforms.push({ x, y, texture, scaleX, scaleY, isStatic });
+            this.pendingPlatforms.push({ x, y, texture, scaleX, scaleY, isStatic, motion, range, speed });
             return { platform: null, mirrorPlatform: null };
         }
 
         const screenHeight = this.scene.scale.height;
         const midPoint = screenHeight / 2;
 
-        // Create the platform
         let platform;
+        let mirrorPlatform;
 
         try {
             if (isStatic) {
@@ -236,13 +242,32 @@ export class LevelManager {
                     if (platform.body) {
                         platform.body.allowGravity = false;
                         platform.body.immovable = true;
+
+                        if (motion) {
+                            const tweenConfig = {
+                                targets: platform,
+                                duration: speed || 2000,
+                                repeat: -1,
+                                yoyo: true,
+                                ease: "Sine.easeInOut"
+                            };
+
+                            if (motion === "vertical") {
+                                tweenConfig.y = y - (range || 80);
+                            } else if (motion === "horizontal") {
+                                tweenConfig.x = x - (range || 80);
+                            }
+
+                            this.scene.tweens.add(tweenConfig);
+                        }
+
                     } else {
                         console.warn("Non-static platform body is undefined - physics may not work correctly");
                     }
                 }
             }
 
-            let mirrorPlatform = null;
+            // 🔁 Spiegel-Plattform (nur zur Deko)
             if (this.scene.add) {
                 mirrorPlatform = this.scene.add
                     .image(x, screenHeight - y + midPoint, texture)
@@ -250,6 +275,7 @@ export class LevelManager {
                     .setFlipY(true);
             }
 
+            // Kamera ignoriert jeweils das Gegenstück
             if (this.scene.topCamera && mirrorPlatform) this.scene.topCamera.ignore(mirrorPlatform);
             if (this.scene.bottomCamera && platform) this.scene.bottomCamera.ignore(platform);
 
@@ -259,6 +285,7 @@ export class LevelManager {
             return { platform: null, mirrorPlatform: null };
         }
     }
+
 
     /**
      * Create a jump pad with its mirrored version
