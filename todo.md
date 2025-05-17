@@ -21,6 +21,15 @@
 | [ ]    | Implement leaderboard                                     | Nico     |                       |
 | [ ]    | Add environmental hazards (e.g., traps, moving platforms) |          |                       |
 | [ ]    | Fix Lobby UI design                                       |          | Einige buggy elemente |
+| [ ]    | Flying platform collision fix                             |          |                       |
+| [ ]    | Platform collision reduction                              |          |                       |
+| [ ]    | Camera y follow                                           |          |                       |
+| [ ]    | Jump pad sprite                                           | Robin    |                       |
+| [ ]    | Flying power up                                           |          |                       |
+| [ ]    | Platform collision collision reduction                    |          |                       |
+| [ ]    | Connect player with beam                                  |          |                       |
+| [ ]    | Banner creation                                           | Matthias |                       |
+| [ ]    |                                                           |          |                       |
 
 ## Server
 
