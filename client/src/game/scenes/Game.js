@@ -9,6 +9,7 @@ import { GameInput } from "../components/Game/GameInput";
 import { GameCollisions } from "../components/Game/GameCollisions";
 import { GameTimer } from "../components/Game/GameTimer";
 import { PlayerRespawn } from "../entities/PlayerRespawn";
+import { PlayerConnection } from "../entities/PlayerConnection";
 
 export class Game extends Scene {
     constructor() {
@@ -22,6 +23,7 @@ export class Game extends Scene {
         this.lobbyId = null;
         this.debugMode = false;
         this.levelId = "level1"; // Default level
+        this.playerConnection = null;
 
         // Split screen properties
         this.splitLine = null;
@@ -103,6 +105,14 @@ export class Game extends Scene {
     create() {
         console.log("Game scene created. Lobby ID:", this.lobbyId);
 
+        if (!this.textures.exists("particle")) {
+            const graphics = this.add.graphics();
+            graphics.fillStyle(0xffffff);
+            graphics.fillCircle(8, 8, 8);
+            graphics.generateTexture("particle", 16, 16);
+            graphics.destroy();
+        }
+
         // Initialize physics groups immediately
         this.platforms = this.physics.add.staticGroup();
         this.jumpPads = this.physics.add.staticGroup();
@@ -121,6 +131,9 @@ export class Game extends Scene {
 
         // Create main player at level spawn position
         this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
+
+        this.playerConnection = new PlayerConnection(this);
+        this.playerConnection.initialize();
 
         // Setup collisions
         this.collisionManager.setupCollisions(this.player, this.platforms, this.jumpPads, this.finishObject);
@@ -361,6 +374,10 @@ export class Game extends Scene {
             }
         });
 
+        if (this.playerConnection) {
+            this.playerConnection.update();
+        }
+
         // Update debug text if enabled
         if (this.debugMode && this.debugText) {
             const otherPlayerInfo = Object.entries(this.otherPlayers)
@@ -412,5 +429,10 @@ export class Game extends Scene {
             }
         });
         this.otherPlayers = {};
+
+        if (this.playerConnection) {
+            this.playerConnection.shutdown();
+            this.playerConnection = null;
+        }
     }
 }
