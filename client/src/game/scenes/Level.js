@@ -1,4 +1,5 @@
 // You can write more code here
+import FloatingPlatformScript from "./FloatingPlatformScript.js";
 
 /* START OF COMPILED CODE */
 
@@ -139,8 +140,26 @@ class Level extends Phaser.Scene {
 		// FloatingPlatformScript
 		new ScriptNode(platform_upanddown);
 
+		// platform_4x_5
+		const platform_4x_5 = this.physics.add.staticImage(2069, 500, "platform_4x1");
+		platform_4x_5.scaleX = 0.5;
+		platform_4x_5.scaleY = 1.4;
+		platform_4x_5.body.moves = false;
+		platform_4x_5.body.allowGravity = false;
+		platform_4x_5.body.immovable = true;
+		platform_4x_5.body.setSize(128, 64, false);
+
+		// platform_4x_6
+		const platform_4x_6 = this.physics.add.staticImage(2633, 500, "platform_4x1");
+		platform_4x_6.scaleX = 5;
+		platform_4x_6.scaleY = 1.4;
+		platform_4x_6.body.moves = false;
+		platform_4x_6.body.allowGravity = false;
+		platform_4x_6.body.immovable = true;
+		platform_4x_6.body.setSize(1280, 64, false);
+
 		// sprite
-		const sprite = this.physics.add.image(41, 454, "sprite");
+		const sprite = this.physics.add.sprite(36, 457, "sprite");
 		sprite.body.gravity.y = 500;
 		sprite.body.allowRotation = false;
 		sprite.body.collideWorldBounds = true;
