@@ -2,6 +2,7 @@ import { Scene } from "phaser";
 import { io } from "socket.io-client";
 import { Player } from "../entities/Player";
 import { CameraManager } from "../components/CameraManager";
+import { SocketManager } from "../components/SocketManager";
 
 export class Game extends Scene {
     constructor() {
@@ -39,100 +40,16 @@ export class Game extends Scene {
         // Enable debug mode from environment variable
         this.debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
 
-        // Get server URL from environment variable or use default
-        const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
+        this.socketManager = new SocketManager(this);
+        this.socketManager.setupLobby(data);
 
-        // Get socket if passed from Lobby scene
-        if (data && data.socket) {
-            this.socket = data.socket;
-            this.connected = true;
-        } else {
-            // Connect to server if not already connected
-            this.socket = io(serverUrl);
-            console.log("Connected to game server:", serverUrl);
-        }
-
-        // Get player name if provided
-        if (data && data.playerName) {
-            this.playerName = data.playerName;
-        }
-
-        // Get lobby ID if provided
-        if (data && data.lobbyId) {
-            this.lobbyId = data.lobbyId;
-            this.connected = true;
-        } else if (import.meta.env.VITE_DIRECT_CONNECT) {
-            // If direct connect is enabled, use the lobby ID from environment
-            this.lobbyId = import.meta.env.VITE_DIRECT_CONNECT;
-            this.connected = true;
-        }
-
-        this.setupSocketListeners();
+        this.socketManager.setupSocketListeners();
 
         // Request the current lobby state as soon as we initialize
         if (this.socket && this.lobbyId) {
             console.log("Requesting lobby state for:", this.lobbyId);
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
         }
-    }
-
-    setupSocketListeners() {
-        // Socket connection event
-        this.socket.on("connect", () => {
-            console.log("Connected to server with ID:", this.socket.id);
-            this.connected = true;
-
-            // If we don't have a lobby ID and we're coming from the old quick play,
-            // we need to create a lobby on the fly
-            if (!this.lobbyId) {
-                // Create a quick play lobby
-                this.socket.emit(
-                    "createLobby",
-                    {
-                        lobbyName: "Quick Play",
-                        playerName: this.playerName,
-                    },
-                    response => {
-                        if (response.success) {
-                            this.lobbyId = response.lobbyId;
-                            console.log("Created quick play lobby:", this.lobbyId);
-                            // Important: Request the lobby state again after creating it
-                            this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
-                        } else {
-                            alert("Failed to create a quick play session.");
-                            this.scene.start("MainMenu");
-                        }
-                    }
-                );
-            } else {
-                // If we already have a lobby ID, request its state
-                this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
-            }
-        });
-
-        // Receive lobby state updates (contains player information)
-        this.socket.on("lobbyState", lobby => {
-            console.log("Received lobby state in game:", lobby);
-            if (lobby && lobby.id === this.lobbyId) {
-                this.updateGameState(lobby);
-            }
-        });
-
-        // Other player moved
-        this.socket.on("playerMoved", playerInfo => {
-            if (playerInfo && playerInfo.id) {
-                // Skip our own player updates
-                if (playerInfo.id !== this.socket.id) {
-                    this.updateOtherPlayer(playerInfo);
-                }
-            }
-        });
-
-        // Handle lobby error event
-        this.socket.on("lobbyError", ({ message }) => {
-            alert(message);
-            this.scene.start("MainMenu");
-        });
     }
 
     create() {
@@ -427,119 +344,6 @@ export class Game extends Scene {
             yoyo: true,
             ease: "Power1",
         });
-    }
-
-    updateGameState(lobby) {
-        if (!lobby || !lobby.players) {
-            console.error("Invalid lobby state:", lobby);
-            return;
-        }
-
-        console.log("Updating game state with lobby:", lobby);
-        console.log("Current player ID:", this.socket.id);
-        console.log("Players in lobby:", Object.keys(lobby.players));
-
-        // Remove players no longer in game
-        Object.keys(this.otherPlayers).forEach(id => {
-            if (!lobby.players[id] || id === this.socket.id) {
-                if (this.otherPlayers[id]) {
-                    console.log("Removing player", id);
-                    this.otherPlayers[id].destroy();
-                    delete this.otherPlayers[id];
-                }
-            }
-        });
-
-        // Add new players and update existing ones
-        Object.keys(lobby.players).forEach(playerId => {
-            // Skip our own player
-            if (playerId === this.socket.id) {
-                return;
-            }
-
-            const playerInfo = lobby.players[playerId];
-            console.log("Processing player:", playerId, playerInfo);
-
-            if (!this.otherPlayers[playerId]) {
-                // New player joined
-                console.log("Creating new player:", playerInfo.name);
-                this.otherPlayers[playerId] = new Player(
-                    this,
-                    playerInfo.x || 230,
-                    playerInfo.y || 550,
-                    playerInfo.name || `Player_${playerId.substring(0, 4)}`,
-                    false // Not the main player
-                );
-
-                // Add collision between other player and platforms
-                if (this.otherPlayers[playerId].sprite) {
-                    this.physics.add.collider(this.otherPlayers[playerId].sprite, this.platforms);
-                    this.physics.add.overlap(
-                        this.otherPlayers[playerId].sprite,
-                        this.jumpPads,
-                        this.handleJumpPad,
-                        null,
-                        this
-                    );
-                }
-            } else {
-                // Update existing player
-                console.log("Updating existing player:", playerId);
-                this.updateOtherPlayer({
-                    id: playerId,
-                    ...playerInfo,
-                });
-            }
-        });
-    }
-
-    updateOtherPlayer(playerInfo) {
-        if (!playerInfo || !playerInfo.id) {
-            console.error("Invalid player info:", playerInfo);
-            return;
-        }
-
-        if (playerInfo.id === this.socket.id) {
-            // Don't update ourselves
-            return;
-        }
-
-        // If we have this player in our list
-        if (this.otherPlayers[playerInfo.id]) {
-            const otherPlayer = this.otherPlayers[playerInfo.id];
-            otherPlayer.moveTo(
-                playerInfo.x,
-                playerInfo.y,
-                playerInfo.animation || "idle",
-                playerInfo.direction || "right"
-            );
-        } else if (playerInfo.x && playerInfo.y) {
-            // We don't have this player yet but we have position data, so create them
-            console.log("Creating missing player from update:", playerInfo.id);
-            this.otherPlayers[playerInfo.id] = new Player(
-                this,
-                playerInfo.x,
-                playerInfo.y,
-                playerInfo.name || `Player_${playerInfo.id.substring(0, 4)}`,
-                false
-            );
-
-            // Add collision between the new player and platforms
-            if (this.otherPlayers[playerInfo.id].sprite) {
-                this.physics.add.collider(this.otherPlayers[playerInfo.id].sprite, this.platforms);
-                this.physics.add.overlap(
-                    this.otherPlayers[playerInfo.id].sprite,
-                    this.jumpPads,
-                    this.handleJumpPad,
-                    null,
-                    this
-                );
-            }
-        } else {
-            console.warn("Cannot update non-existent player:", playerInfo.id);
-            // Request lobby state to try to get complete player info
-            this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
-        }
     }
 
     checkPlayerRespawn() {
