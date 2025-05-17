@@ -5,9 +5,10 @@
 
 import { LevelManager } from "./LevelManager.js";
 import { Level1 } from "./Level1.js";
+import { Level2 } from "./Level2.js";
 
 // Export individual levels
-export { Level1 };
+export { Level1, Level2 };
 
 // Export the LevelManager class
 export { LevelManager };
@@ -15,6 +16,7 @@ export { LevelManager };
 // A collection of all available levels
 export const Levels = {
     Level1,
+    Level2,
 };
 
 /**
@@ -27,6 +29,7 @@ export function createLevelManager(scene) {
 
     // Register all available levels
     levelManager.registerLevel("level1", Level1);
+    levelManager.registerLevel("level2", Level2);
 
     return levelManager;
 }

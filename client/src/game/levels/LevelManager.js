@@ -235,4 +235,30 @@ export class LevelManager {
         const levelData = this.levels[this.currentLevel];
         return levelData.spawnPoint || { x: 230, y: 500 };
     }
+
+    /**
+     * Get the name of the current level
+     * @returns {string} The name of the current level
+     */
+    getCurrentLevelName() {
+        if (!this.currentLevel || !this.levels[this.currentLevel]) {
+            return "Unknown Level";
+        }
+
+        const levelData = this.levels[this.currentLevel];
+        return levelData.name || this.currentLevel;
+    }
+
+    /**
+     * Get the ID of the current level
+     * @returns {string} The ID of the current level
+     */
+    getMovingPlatforms() {
+        if (!this.currentLevel || !this.levels[this.currentLevel]) {
+            return [];
+        }
+
+        const levelData = this.levels[this.currentLevel];
+        return levelData.movingPlatforms || [];
+    }
 }

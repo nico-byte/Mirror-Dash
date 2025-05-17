@@ -3,6 +3,7 @@ import { Player } from "../entities/Player";
 import { CameraManager } from "../components/CameraManager";
 import { SocketManager } from "../components/SocketManager";
 import { createLevelManager } from "../levels";
+import { ProgressManager } from "../components/ProgressManager";
 
 export class Game extends Scene {
     constructor() {
@@ -16,6 +17,7 @@ export class Game extends Scene {
         this.connected = false;
         this.lobbyId = null;
         this.debugMode = false;
+        this.levelId = "level1"; // Default level
 
         // Split screen properties
         this.splitLine = null;
@@ -34,11 +36,27 @@ export class Game extends Scene {
         this.timerText = null;
         this.timeLeft = 180; // in seconds
         this.timerEvent = null;
+
+        // Progress tracking
+        this.progressManager = new ProgressManager();
     }
 
     init(data) {
         // Enable debug mode from environment variable
         this.debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
+
+        // Set the level ID if provided
+        if (data && data.levelId) {
+            this.levelId = data.levelId;
+        }
+
+        // Set player name if provided
+        if (data && data.playerName) {
+            this.playerName = data.playerName;
+        }
+
+        // Initialize progress manager
+        this.progressManager.loadProgress(this.playerName);
 
         this.socketManager = new SocketManager(this);
         this.socketManager.setupLobby(data);
@@ -67,8 +85,8 @@ export class Game extends Scene {
 
         this.levelManager = createLevelManager(this);
 
-        // Load the first level and get the spawn position
-        const levelInfo = this.levelManager.loadLevel("level1");
+        // Load the specified level and get the spawn position
+        const levelInfo = this.levelManager.loadLevel(this.levelId);
 
         // Create main player at level spawn position
         this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
@@ -91,7 +109,7 @@ export class Game extends Scene {
             Space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
         };
 
-        // Add back button to return to lobby - only in top section
+        // Add back button to return to level selector - only in top section
         const backButton = this.add
             .rectangle(100, 50, 150, 40, 0x222222, 0.7)
             .setInteractive()
@@ -101,17 +119,15 @@ export class Game extends Scene {
                     this.socket.emit("leaveLobby", { lobbyId: this.lobbyId });
                 }
 
-                // Check if we should return to lobby or main menu
-                const skipLobby = import.meta.env.VITE_SKIP_LOBBY === "true";
-                if (skipLobby) {
-                    this.scene.start("MainMenu");
-                } else {
-                    this.scene.start("Lobby", { socket: this.socket, playerName: this.playerName });
-                }
+                // Go to level selector
+                this.scene.start("LevelSelector", {
+                    socket: this.socket,
+                    playerName: this.playerName,
+                });
             });
 
         const backText = this.add
-            .text(100, 50, "Back to Lobby", {
+            .text(100, 50, "Back to Levels", {
                 fontFamily: "Arial",
                 fontSize: 14,
                 color: "#ffffff",
@@ -119,9 +135,25 @@ export class Game extends Scene {
             .setOrigin(0.5)
             .setScrollFactor(0); // Fixed to camera
 
+        // Add level name display
+        let levelName = "Unknown Level";
+        if (this.levelId === "level1") levelName = "Level 1";
+        else if (this.levelId === "level2") levelName = "Level 2";
+        else levelName = this.levelId;
+
+        const levelNameText = this.add
+            .text(this.scale.width / 2, 50, levelName, {
+                fontFamily: "Arial Black",
+                fontSize: 18,
+                color: "#ffffff",
+                shadow: { offsetX: 2, offsetY: 2, color: "#000000", blur: 2, stroke: true, fill: true },
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0);
+
         // Make back button only visible in top camera
         if (this.bottomCamera) {
-            this.bottomCamera.ignore([backButton, backText]);
+            this.bottomCamera.ignore([backButton, backText, levelNameText]);
         }
 
         // Add debug text only if debug mode is enabled
@@ -160,57 +192,53 @@ export class Game extends Scene {
             loop: true,
         });
 
-        // Create finish object (red rectangle)
-        this.finishObject = this.physics.add.staticGroup();
-        this.finishObjectRect = this.finishObject
-            .create(900, 500, null)
-            .setSize(100, 100)
-            .setDisplaySize(100, 100)
-            .setOrigin(0.5)
-            .refreshBody();
-        this.finishObjectRect.fillColor = 0xff0000;
-
-        // Just visual fill (draw rectangle)
-        this.finishVisual = this.add.rectangle(900, 500, 100, 100, 0xff0000);
-        this.finishVisual.setDepth(-1);
-
+        // Set up physics overlap with finish line
         this.physics.add.overlap(this.player.sprite, this.finishObject, this.handleFinish, null, this);
 
-        const floatingPlatform = this.platforms.getChildren().find(p => p.x === 1921 && p.y === 345);
-        if (floatingPlatform) {
-            // Find its corresponding mirror
-            const mirrorPlatforms = this.children.list.filter(
-                c => c.type === "Image" && c.x === 1921 && c.texture.key === "platform_3x1"
-            );
-            const mirrorPlatform = mirrorPlatforms.find(p => p.y > this.scale.height / 2);
-
-            // Add animation to floating platform
-            this.tweens.add({
-                targets: floatingPlatform,
-                y: floatingPlatform.y - 80,
-                duration: 2000,
-                yoyo: true,
-                repeat: -1,
-                ease: "Sine.easeInOut",
-            });
-
-            // Add same animation to mirrored platform (in reverse for the mirror effect)
-            if (mirrorPlatform) {
-                this.tweens.add({
-                    targets: mirrorPlatform,
-                    y: mirrorPlatform.y + 80,
-                    duration: 2000,
-                    yoyo: true,
-                    repeat: -1,
-                    ease: "Sine.easeInOut",
-                });
-            }
-        }
+        // Set up moving platforms if any
+        this.setupMovingPlatforms();
 
         // Make sure we're receiving lobby updates
         if (this.socket && this.lobbyId) {
             console.log("Requesting lobby state in create method");
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
+        }
+    }
+
+    setupMovingPlatforms() {
+        // Find platforms that need animations
+        const platforms = this.platforms ? this.platforms.getChildren() : [];
+        const movingPlatforms = this.levelManager.getMovingPlatforms();
+
+        // Apply animations to moving platforms
+        if (movingPlatforms && movingPlatforms.length > 0) {
+            movingPlatforms.forEach(config => {
+                const { platform, mirrorPlatform, movement } = config;
+
+                if (platform && movement) {
+                    // Add animation to platform
+                    this.tweens.add({
+                        targets: platform,
+                        y: platform.y - movement.y, // Move up by specified amount
+                        duration: movement.duration || 2000,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: "Sine.easeInOut",
+                    });
+
+                    // Add inverse animation to mirror platform
+                    if (mirrorPlatform) {
+                        this.tweens.add({
+                            targets: mirrorPlatform,
+                            y: mirrorPlatform.y + movement.y, // Move down for mirror effect
+                            duration: movement.duration || 2000,
+                            yoyo: true,
+                            repeat: -1,
+                            ease: "Sine.easeInOut",
+                        });
+                    }
+                }
+            });
         }
     }
 
@@ -222,93 +250,28 @@ export class Game extends Scene {
             this.timerEvent.remove(false);
         }
 
+        // Record level completion in progress manager
+        const result = this.progressManager.completeLevel(this.levelId, this.timeLeft);
+
+        // Sync progress with server if connected
+        if (this.socket && this.socket.connected) {
+            this.socket.emit("levelCompleted", {
+                playerName: this.playerName,
+                levelId: this.levelId,
+                timeLeft: this.timeLeft,
+                stars: result.stars,
+            });
+        }
+
         // Switch to FinishLevel scene
         this.scene.start("FinishLevel", {
             timeLeft: this.timeLeft,
+            stars: result.stars,
+            levelId: this.levelId,
+            playerName: this.playerName,
+            socket: this.socket,
+            nextLevelId: result.nextLevelId,
         });
-    }
-
-    // Helper method to create a platform with its mirrored version
-    createPlatformWithMirror(x, y, texture, scaleX = 1, scaleY = 1, isStatic = true) {
-        const screenHeight = this.scale.height;
-        const midPoint = screenHeight / 2;
-
-        // Create the platform
-        let platform;
-
-        if (isStatic) {
-            platform = this.platforms.create(x, y, texture);
-            platform.setScale(scaleX, scaleY);
-            platform.body.moves = false;
-            platform.body.allowGravity = false;
-            platform.body.immovable = true;
-            platform.refreshBody();
-        } else {
-            platform = this.physics.add.image(x, y, texture);
-            platform.setScale(scaleX, scaleY);
-            platform.body.allowGravity = false;
-            platform.body.immovable = true;
-        }
-
-        // Create mirrored platform (visual only)
-        const mirrorPlatform = this.add
-            .image(x, screenHeight - y + midPoint, texture)
-            .setScale(scaleX, scaleY)
-            .setFlipY(true);
-
-        // Set camera visibility
-        if (this.topCamera) this.topCamera.ignore(mirrorPlatform);
-        if (this.bottomCamera) this.bottomCamera.ignore(platform);
-
-        return { platform, mirrorPlatform };
-    }
-
-    // Helper method to create a jump pad with its mirrored version
-    createJumpPadWithMirror(x, y, color) {
-        const screenHeight = this.scale.height;
-        const midPoint = screenHeight / 2;
-
-        // Create jump pad
-        const jumpPad = this.jumpPads.create(x, y, null);
-        jumpPad.setScale(2, 0.5).setSize(30, 15).setDisplaySize(60, 15).setTint(color).refreshBody();
-
-        // Add an indicator arrow
-        const arrow = this.add.triangle(x, y - 20, 0, 15, 15, -15, 30, 15, 0xffffff);
-        arrow.setDepth(1);
-
-        // Create mirrored jump pad (visual only)
-        const mirrorJumpPad = this.add.rectangle(x, screenHeight - y + midPoint, 60, 15, color);
-
-        // Create mirrored arrow (manually flip points vertically)
-        const mirrorArrow = this.add.triangle(
-            x,
-            screenHeight - (y - 20) + midPoint,
-            0,
-            -15, // Flip Y
-            15,
-            15, // Flip Y
-            30,
-            -15, // Flip Y
-            0xffffff
-        );
-        mirrorArrow.setDepth(1);
-
-        // Set camera visibility
-        if (this.topCamera) this.topCamera.ignore([mirrorJumpPad, mirrorArrow]);
-        if (this.bottomCamera) this.bottomCamera.ignore([jumpPad, arrow]);
-
-        return jumpPad;
-    }
-
-    createJumpPad(x, y, color) {
-        const jumpPad = this.jumpPads.create(x, y, null);
-        jumpPad.setScale(2, 0.5).setSize(30, 15).setDisplaySize(60, 15).setTint(color).refreshBody();
-
-        // Add an indicator arrow
-        const arrow = this.add.triangle(x, y - 20, 0, 15, 15, -15, 30, 15, 0xffffff);
-        arrow.setDepth(1);
-
-        return jumpPad;
     }
 
     handleJumpPad(playerSprite, jumpPad) {
@@ -400,7 +363,11 @@ export class Game extends Scene {
     onTimerEnd() {
         console.log("Timer finished!");
 
-        this.scene.start("GameOver");
+        this.scene.start("GameOver", {
+            levelId: this.levelId,
+            playerName: this.playerName,
+            socket: this.socket,
+        });
     }
 
     update() {
@@ -418,13 +385,16 @@ export class Game extends Scene {
         this.cameraManager.updateCameras();
 
         // Send updates to server regardless of movement
-        this.socket.emit("playerUpdate", {
-            lobbyId: this.lobbyId,
-            x: this.player.x,
-            y: this.player.y,
-            animation: this.player.animation,
-            direction: this.player.direction,
-        });
+        if (this.socket && this.socket.connected) {
+            this.socket.emit("playerUpdate", {
+                lobbyId: this.lobbyId,
+                x: this.player.x,
+                y: this.player.y,
+                animation: this.player.animation,
+                direction: this.player.direction,
+                levelId: this.levelId,
+            });
+        }
 
         // Update other players
         Object.entries(this.otherPlayers).forEach(([id, player]) => {
@@ -447,7 +417,8 @@ export class Game extends Scene {
                     `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
                     `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
                     (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
-                    `\nLobby: ${this.lobbyId}`
+                    `\nLobby: ${this.lobbyId}` +
+                    `\nLevel: ${this.levelId}`
             );
         }
     }
