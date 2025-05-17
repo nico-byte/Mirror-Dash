@@ -128,7 +128,7 @@ export const Level1 = {
         { x: 1764, y: 379, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
 
         // Floating platform (vertical motion)
-        { x: 1921, y: 345, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'vertical', range: 80, speed: 2000 },
+        { x: 1921, y: 345, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'vertical', range: -100, speed: 2000 },
 
         { x: 2069 , y: 500, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
         { x: 2433, y: 500, texture: "platform_4x1", scaleX: 3, scaleY: 1.4 },
@@ -140,11 +140,11 @@ export const Level1 = {
         { x: 3450, y: 330, texture: "platform_3x1", scaleY: 1.4 },
 
         // Sideways platform (horizontal motion)
-        { x: 3600, y: 300, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'horizontal', range: 120, speed: 1600 },
+        { x: 3750, y: 300, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'horizontal', range: 100 , speed: 1600 },
 
-        { x: 3850, y: 500, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4150, y: 480, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4450, y: 460, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 3900, y: 460, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 4250, y: 500, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 4550, y: 520, texture: "platform_3x1", scaleY: 1.4 },
     ],
 
     // Jump pad configurations

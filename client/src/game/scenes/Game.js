@@ -398,6 +398,10 @@ export class Game extends Scene {
 
             this.gameUI.updateDebugText(debugInfo);
         }
+
+        if (this.levelManager?.updateMovingPlatforms) {
+            this.levelManager.updateMovingPlatforms(time);
+        }
     }
 
     shutdown() {

@@ -45,7 +45,10 @@ export class LevelManager {
                 this.scene.jumpPads = this.scene.physics.add.staticGroup();
             }
 
-            // Process any pending platforms and jump pads
+            if (!this.scene.movingPlatforms) {
+                this.scene.movingPlatforms = this.scene.physics.add.group();
+            }
+             // Process any pending platforms and jump pads
             this.processPendingObjects();
 
             console.log("LevelManager initialized successfully");
@@ -73,7 +76,10 @@ export class LevelManager {
                     platform.texture,
                     platform.scaleX,
                     platform.scaleY,
-                    platform.isStatic
+                    platform.isStatic,
+                    platform.motion,
+                    platform.range,
+                    platform.speed
                 );
             });
             this.pendingPlatforms = [];
@@ -223,51 +229,34 @@ export class LevelManager {
 
                 if (platform) {
                     platform.setScale(scaleX, scaleY);
-
-                    if (platform.body) {
-                        platform.body.moves = false;
-                        platform.body.allowGravity = false;
-                        platform.body.immovable = true;
-                        platform.refreshBody();
-                    } else {
-                        console.warn("Platform body is undefined - physics may not work correctly");
-                    }
+                    platform.body.moves = false;
+                    platform.body.allowGravity = false;
+                    platform.body.immovable = true;
+                    platform.refreshBody();
                 }
             } else {
                 platform = this.scene.physics.add.image(x, y, texture);
+                platform.setScale(scaleX, scaleY);
+                platform.body.allowGravity = false;
+                platform.body.immovable = true;
+                platform.body.moves = true;
 
-                if (platform) {
-                    platform.setScale(scaleX, scaleY);
+                platform.platformData = { motion, range, speed, originX: x, originY: y };
+                this.scene.movingPlatforms.add(platform);
 
-                    if (platform.body) {
-                        platform.body.allowGravity = false;
-                        platform.body.immovable = true;
+                if (!this.movingPlatforms) this.movingPlatforms = [];
 
-                        if (motion) {
-                            const tweenConfig = {
-                                targets: platform,
-                                duration: speed || 2000,
-                                repeat: -1,
-                                yoyo: true,
-                                ease: "Sine.easeInOut"
-                            };
-
-                            if (motion === "vertical") {
-                                tweenConfig.y = y - (range || 80);
-                            } else if (motion === "horizontal") {
-                                tweenConfig.x = x - (range || 80);
-                            }
-
-                            this.scene.tweens.add(tweenConfig);
-                        }
-
-                    } else {
-                        console.warn("Non-static platform body is undefined - physics may not work correctly");
-                    }
-                }
+                this.movingPlatforms.push({
+                    platform,
+                    motion,
+                    range,
+                    speed,
+                    baseX: x,
+                    baseY: y
+                });
+                
             }
 
-            // 🔁 Spiegel-Plattform (nur zur Deko)
             if (this.scene.add) {
                 mirrorPlatform = this.scene.add
                     .image(x, screenHeight - y + midPoint, texture)
@@ -275,7 +264,6 @@ export class LevelManager {
                     .setFlipY(true);
             }
 
-            // Kamera ignoriert jeweils das Gegenstück
             if (this.scene.topCamera && mirrorPlatform) this.scene.topCamera.ignore(mirrorPlatform);
             if (this.scene.bottomCamera && platform) this.scene.bottomCamera.ignore(platform);
 
@@ -285,6 +273,22 @@ export class LevelManager {
             return { platform: null, mirrorPlatform: null };
         }
     }
+
+    updateMovingPlatforms(time) {
+    if (!this.movingPlatforms) return;
+
+    this.movingPlatforms.forEach(({ platform, motion, range, speed, baseX, baseY }) => {
+        const offset = Math.sin(time / (speed || 2000)) * (range || 80);
+
+        if (motion === "vertical") {
+            platform.y = baseY + offset;
+        } else if (motion === "horizontal") {
+            platform.x = baseX + offset;
+        }
+
+        platform.body.updateFromGameObject(); // ❗ Wichtig für Kollisionsverhalten
+    });
+}
 
 
     /**
@@ -434,3 +438,5 @@ export class LevelManager {
         return levelData.movingPlatforms || [];
     }
 }
+
+
