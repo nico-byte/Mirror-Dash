@@ -16,6 +16,7 @@ export class Game extends Scene {
         this.socket = null;
         this.player = null;
         this.otherPlayers = {};
+        this.playersFinished = {};
         this.playerName = "Player_" + Math.floor(Math.random() * 1000);
         this.connected = false;
         this.lobbyId = null;
@@ -243,33 +244,87 @@ export class Game extends Scene {
     handleFinish(playerSprite, finishObject) {
         console.log("Player reached finish!");
 
-        // Stop timer
-        if (this.timerEvent) {
-            this.timerEvent.remove(false);
+        // Mark this player as finished
+        this.playersFinished[this.socket.id] = true;
+
+        // Emit to server that this player has finished
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            this.socket.emit("playerFinished", {
+                lobbyId: this.lobbyId,
+                playerId: this.socket.id,
+            });
+
+            // Display "Waiting for other player" message
+            this.displayWaitingMessage();
         }
 
-        // Record level completion in progress manager
-        const result = this.progressManager.completeLevel(this.levelId, this.gameTimer.getTimeLeft());
+        // Check if all players have finished
+        this.checkAllPlayersFinished();
+    }
 
-        // Sync progress with server if connected
-        if (this.socket && this.socket.connected) {
-            this.socket.emit("levelCompleted", {
-                playerName: this.playerName,
-                levelId: this.levelId,
+    displayWaitingMessage() {
+        // Remove any existing waiting message
+        if (this.waitingText) {
+            this.waitingText.destroy();
+        }
+
+        // Create waiting message
+        this.waitingText = this.add
+            .text(this.scale.width / 2, 100, "You reached the finish line!\nWaiting for other player...", {
+                fontFamily: "Arial Black",
+                fontSize: "24px",
+                color: "#ffffff",
+                stroke: "#000000",
+                strokeThickness: 4,
+                align: "center",
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        // Make it visible only in top camera
+        if (this.bottomCamera) {
+            this.bottomCamera.ignore(this.waitingText);
+        }
+    }
+
+    checkAllPlayersFinished() {
+        const totalPlayers = Object.keys(this.otherPlayers).length + 1; // +1 for the main player
+        const finishedPlayers = Object.keys(this.playersFinished).length;
+
+        console.log(`Players finished: ${finishedPlayers}/${totalPlayers}`);
+
+        // Only complete the level if all players have finished
+        if (finishedPlayers >= totalPlayers) {
+            // Stop timer
+            if (this.timerEvent) {
+                this.timerEvent.remove(false);
+            }
+
+            // Record level completion in progress manager
+            const result = this.progressManager.completeLevel(this.levelId, this.gameTimer.getTimeLeft());
+
+            // Sync progress with server if connected
+            if (this.socket && this.socket.connected) {
+                this.socket.emit("levelCompleted", {
+                    playerName: this.playerName,
+                    levelId: this.levelId,
+                    timeLeft: this.gameTimer.getTimeLeft(),
+                    stars: result.stars,
+                });
+            }
+
+            // Switch to FinishLevel scene
+            this.scene.start("FinishLevel", {
                 timeLeft: this.gameTimer.getTimeLeft(),
                 stars: result.stars,
+                levelId: this.levelId,
+                playerName: this.playerName,
+                socket: this.socket,
+                lobbyId: this.lobbyId,
+                nextLevelId: result.nextLevelId,
             });
         }
-
-        // Switch to FinishLevel scene
-        this.scene.start("FinishLevel", {
-            timeLeft: this.gameTimer.getTimeLeft(),
-            stars: result.stars,
-            levelId: this.levelId,
-            playerName: this.playerName,
-            socket: this.socket,
-            nextLevelId: result.nextLevelId,
-        });
     }
 
     update(time, delta) {

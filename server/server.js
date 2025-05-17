@@ -35,6 +35,7 @@ const createLobby = (socket, lobbyName, playerName) => {
         gameStarted: false,
         players: {},
         createdAt: Date.now(),
+        currentLevel: "level1", // Default starting level
     };
 
     // Add the creating player to the lobby
@@ -237,7 +238,12 @@ io.on("connection", socket => {
 
             const success = addPlayerToLobby(socket, lobbyId, playerName || "Player");
             if (callback && typeof callback === "function") {
-                callback({ success, lobbyId });
+                const lobby = lobbies[lobbyId];
+                callback({
+                    success,
+                    lobbyId,
+                    currentLevel: lobby ? lobby.currentLevel : null,
+                });
             }
         } catch (error) {
             console.error("Error joining lobby:", error);
@@ -284,6 +290,38 @@ io.on("connection", socket => {
         } else {
             console.error(`Non-host player ${socket.id} tried to start game in lobby: ${lobbyId}`);
             socket.emit("lobbyError", { message: "Only the host can start the game." });
+        }
+    });
+
+    socket.on("playerFinished", ({ lobbyId, playerId }) => {
+        if (lobbyId) {
+            console.log(`Player ${playerId} finished in lobby ${lobbyId}`);
+            // Broadcast to all other players in the lobby
+            socket.to(lobbyId).emit("playerFinished", {
+                playerId: socket.id,
+                lobbyId,
+            });
+        }
+    });
+
+    socket.on("changeLevel", ({ lobbyId, levelId }) => {
+        if (lobbyId && levelId) {
+            console.log(`Player ${socket.id} changed level to ${levelId} in lobby ${lobbyId}`);
+
+            // Save the current level to the lobby data
+            const lobby = lobbies[lobbyId];
+            if (lobby) {
+                lobby.currentLevel = levelId;
+
+                // Broadcast level change to all other players in the lobby
+                socket.to(lobbyId).emit("levelChanged", {
+                    playerId: socket.id,
+                    levelId,
+                    lobbyId,
+                });
+            } else {
+                console.error(`Cannot change level - lobby ${lobbyId} not found`);
+            }
         }
     });
 

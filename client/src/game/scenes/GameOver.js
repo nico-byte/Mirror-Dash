@@ -94,10 +94,19 @@ export class GameOver extends Scene {
     }
 
     retryLevel() {
+        // Notify the server that we're retrying the level
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            this.socket.emit("changeLevel", {
+                lobbyId: this.lobbyId,
+                levelId: this.levelId,
+            });
+        }
+
         this.scene.start("Game", {
             socket: this.socket,
             playerName: this.playerName,
             levelId: this.levelId,
+            lobbyId: this.lobbyId,
         });
     }
 
