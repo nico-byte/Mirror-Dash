@@ -7,12 +7,12 @@ export const Level1 = {
     description: "The first level with platforms and jump pads",
 
     // Player spawn position
-    spawnPoint: { x: 230, y: 500 },
+    spawnPoint: { x: 90, y: 500 },
 
     // World boundaries
     worldBounds: {
-        width: 5000,
-        height: 800,
+        width: 5040,
+        height: 720,
     },
 
     // Background creation function
@@ -22,12 +22,12 @@ export const Level1 = {
 
         // Add parallax background layers
         const bg4 = scene.add.image(0, 0, "bg4").setOrigin(0, 0);
-        const bg2 = scene.add.image(720, -1, "bg2").setOrigin(0, 0);
-        const bg3 = scene.add.image(1440, 0, "bg3").setOrigin(0, 0).setFlipX(true);
-        const bg5 = scene.add.image(2160, 0, "bg5").setOrigin(0, 0);
-        const bg1 = scene.add.image(2880, 0, "bg1").setOrigin(0, 0);
-        const bgExtra = scene.add.image(3600, 0, "bg2").setOrigin(0, 0);
-        const bgExtra2 = scene.add.image(4320, 0, "bg3").setOrigin(0, 0).setFlipX(true);
+        const bg2 = scene.add.image(720, 0, "bg4").setOrigin(0, 0).setFlipX(true);  
+        const bg3 = scene.add.image(1440, 0, "bg4").setOrigin(0, 0);
+        const bg5 = scene.add.image(2160, 0, "bg4").setOrigin(0, 0).setFlipX(true);
+        const bg1 = scene.add.image(2880, 0, "bg4").setOrigin(0, 0);
+        const bgExtra = scene.add.image(3600, 0, "bg4").setOrigin(0, 0).setFlipX(true);
+        const bgExtra2 = scene.add.image(4320, 0, "bg4").setOrigin(0, 0);
 
         scene.backgroundContainer.add([bg4, bg2, bg3, bg5, bg1, bgExtra, bgExtra2]);
 
@@ -69,10 +69,25 @@ export const Level1 = {
         { x: 1434, y: 436, texture: "platform_4x1", scaleY: 1.4 },
         { x: 1610, y: 416, texture: "platform_3x1", scaleY: 1.4 },
         { x: 1764, y: 379, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
-        // Floating platform (animated in Game.js)
-        { x: 1921, y: 345, texture: "platform_3x1", scaleY: 1.4, isStatic: false },
-        { x: 2069, y: 500, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
-        { x: 2633, y: 500, texture: "platform_4x1", scaleX: 5, scaleY: 1.4 },
+
+        // Floating platform (vertical motion)
+        { x: 1921, y: 345, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'vertical', range: 80, speed: 2000 },
+
+        { x: 2069 , y: 500, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
+        { x: 2433, y: 500, texture: "platform_4x1", scaleX: 3, scaleY: 1.4 },
+
+        // New section
+        { x: 2900, y: 470, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 3100, y: 420, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 3280, y: 370, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 3450, y: 330, texture: "platform_3x1", scaleY: 1.4 },
+
+        // Sideways platform (horizontal motion)
+        { x: 3600, y: 300, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'horizontal', range: 120, speed: 1600 },
+
+        { x: 3850, y: 500, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 4150, y: 480, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 4450, y: 460, texture: "platform_3x1", scaleY: 1.4 },
     ],
 
     // Jump pad configurations
@@ -80,12 +95,14 @@ export const Level1 = {
         { x: 320, y: 570, color: 0xffff00 },
         { x: 700, y: 580, color: 0xffff00 },
         { x: 1100, y: 520, color: 0xffff00 },
+        { x: 3050, y: 430, color: 0xff00ff },
+        { x: 4100, y: 470, color: 0x00ffff },
     ],
 
     // Finish line configuration
     finish: {
-        x: 2900,
-        y: 450,
+        x: 4700,
+        y: 440,
         width: 100,
         height: 100,
     },
