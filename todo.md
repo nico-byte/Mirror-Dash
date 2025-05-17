@@ -9,8 +9,8 @@
 | [x]    | Create basic HTML structure                               |          |                       |
 | [x]    | Add favicon and assets                                    |          |                       |
 | [x]    | Implement main game logic                                 |          |                       |
-| [ ]    | Smooth out physics                                        | Robin    |                       |
-| [ ]    | Implement map                                             |          |                       |
+| [x]    | Smooth out physics                                        | Robin    | a little bit          |
+| [x]    | Implement map                                             | Milka    |                       |
 | [x]    | Time Limit                                                | Robin    |                       |
 | [x]    | Time Penalties                                            | Robin    |                       |
 | [ ]    | Implement Music                                           |          |                       |
@@ -18,7 +18,7 @@
 | [x]    | Implement Score in Stars                                  | Robin    |                       |
 | [x]    | When player falls from platform, respawn from top         | Milka    |                       |
 | [ ]    | Add character customization options                       |          |                       |
-| [ ]    | Implement leaderboard                                     |          |                       |
+| [ ]    | Implement leaderboard                                     | Nico     |                       |
 | [ ]    | Add environmental hazards (e.g., traps, moving platforms) |          |                       |
 | [ ]    | Fix Lobby UI design                                       |          | Einige buggy elemente |
 
