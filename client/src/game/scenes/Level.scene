@@ -163,6 +163,130 @@
             "immovable": true,
             "body.width": 128,
             "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "f37ca1cd-f23c-4eb2-ac15-b8e425ab4b00",
+            "label": "platform_3x",
+            "texture": {
+                "key": "platform_3x1"
+            },
+            "x": 996,
+            "y": 524,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 192,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "75e939bf-5d47-4c20-9388-88679df0c98a",
+            "label": "platform_4x_2",
+            "texture": {
+                "key": "platform_4x1"
+            },
+            "x": 1211,
+            "y": 493,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 256,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "904ca6d9-84b2-4b58-b650-589390230949",
+            "label": "platform_4x_3",
+            "texture": {
+                "key": "platform_4x1"
+            },
+            "x": 1434,
+            "y": 436,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 256,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "71f33c49-c79e-4d73-91be-ffee0cf3cf8d",
+            "label": "platform_3x_1",
+            "texture": {
+                "key": "platform_3x1"
+            },
+            "x": 1610,
+            "y": 416,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 192,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "7f624455-981b-4fc5-89c5-48b13fc7e791",
+            "label": "platform_4x_4",
+            "texture": {
+                "key": "platform_4x1"
+            },
+            "x": 1764,
+            "y": 379,
+            "scaleX": 0.5,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 128,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "a44f51be-efaa-4ab0-ac78-164add351fef",
+            "label": "platform_upanddown",
+            "texture": {
+                "key": "platform_3x1"
+            },
+            "x": 1921,
+            "y": 345,
+            "scaleY": 1.4,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 192,
+            "body.height": 64,
+            "list": [
+                {
+                    "type": "ScriptNode",
+                    "id": "bc5354ea-e547-4e08-ad1e-4e1320813bc4",
+                    "label": "FloatingPlatformScript",
+                    "scope": "CLASS"
+                }
+            ]
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "bba15c4d-b851-4ec2-affa-64be300a7f4a",
+            "label": "sprite",
+            "texture": {
+                "key": "sprite"
+            },
+            "x": 41,
+            "y": 454,
+            "body.gravity.y": 500,
+            "collideWorldBounds": true,
+            "allowRotation": false,
+            "body.width": 64,
+            "body.height": 64
         }
     ],
     "plainObjects": [],
@@ -178,7 +302,15 @@
             "label": "platforms",
             "objectIds": [
                 "dcf5f50c-9737-459f-8e3b-fa4f6994e837",
-                "5844d328-1bca-41b7-836c-62f67ae3eba4"
+                "5844d328-1bca-41b7-836c-62f67ae3eba4",
+                "0fa578a5-d671-4667-bd80-a6066173c404",
+                "7c6f1da0-0006-4bcb-90a2-8ca1ae8ff70f",
+                "f37ca1cd-f23c-4eb2-ac15-b8e425ab4b00",
+                "75e939bf-5d47-4c20-9388-88679df0c98a",
+                "904ca6d9-84b2-4b58-b650-589390230949",
+                "71f33c49-c79e-4d73-91be-ffee0cf3cf8d",
+                "7f624455-981b-4fc5-89c5-48b13fc7e791",
+                "a44f51be-efaa-4ab0-ac78-164add351fef"
             ]
         }
     ]

@@ -35,6 +35,11 @@
                 "url": "client/public/assets/Player_Platforms/platform_4x1.png",
                 "type": "image",
                 "key": "platform_4x1"
+            },
+            {
+                "url": "client/public/assets/Player_Platforms/sprite.png",
+                "type": "image",
+                "key": "sprite"
             }
         ]
     },
