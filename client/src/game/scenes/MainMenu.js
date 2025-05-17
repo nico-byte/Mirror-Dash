@@ -118,7 +118,7 @@ export class MainMenu extends Scene {
         // Make text interactive too
         quickPlayText.setInteractive({ useHandCursor: true });
         quickPlayText.on("pointerdown", () => {
-            this.scene.start("Game", { playerName: this.playerName });
+            this.scene.start("Level", { playerName: this.playerName });
         });
 
         // Add debug info to check if clicks are being registered
