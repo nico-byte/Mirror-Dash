@@ -20,6 +20,10 @@ export class Game extends Scene {
         this.topCamera = null;
         this.bottomCamera = null;
 
+        // Camera scrolling properties
+        this.autoScrollCamera = false;
+        this.scrollSpeed = 50;
+
         // Level properties
         this.platforms = null;
         this.jumpPads = null;
@@ -28,6 +32,10 @@ export class Game extends Scene {
     init(data) {
         // Enable debug mode from environment variable
         this.debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
+
+        // Get camera settings from environment variables
+        this.autoScrollCamera = import.meta.env.VITE_AUTO_SCROLL_CAMERA === "true";
+        this.scrollSpeed = parseFloat(import.meta.env.VITE_CAMERA_SCROLL_SPEED || "50");
 
         // Get server URL from environment variable or use default
         const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
@@ -153,7 +161,7 @@ export class Game extends Scene {
             Space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
         };
 
-        // Add back button to return to lobby
+        // Add back button to return to lobby - only in top section
         const backButton = this.add
             .rectangle(100, 50, 150, 40, 0x222222, 0.7)
             .setInteractive()
@@ -172,7 +180,7 @@ export class Game extends Scene {
                 }
             });
 
-        this.add
+        const backText = this.add
             .text(100, 50, "Back to Lobby", {
                 fontFamily: "Arial",
                 fontSize: 14,
@@ -180,6 +188,11 @@ export class Game extends Scene {
             })
             .setOrigin(0.5)
             .setScrollFactor(0); // Fixed to camera
+
+        // Make back button only visible in top camera
+        if (this.bottomCamera) {
+            this.bottomCamera.ignore([backButton, backText]);
+        }
 
         // Add debug text only if debug mode is enabled
         if (this.debugMode) {
@@ -205,8 +218,8 @@ export class Game extends Scene {
         this.cameras.main.setViewport(0, 0, this.scale.width, this.scale.height / 2);
         this.cameras.main.setBackgroundColor(0x87ceeb); // Light blue sky
         this.cameras.main.setName("topCamera");
-        this.cameras.main.setBounds(0, 0, 2000, 1000);
-        this.topCamera = this.cameras.main; // Store a reference to main camera as topCamera
+        this.cameras.main.setBounds(0, 0, 3000, 1000); // Extended bounds for scrolling
+        this.topCamera = this.cameras.main;
 
         // Calculate the midpoint of the screen height
         const screenHeight = this.scale.height;
@@ -216,10 +229,7 @@ export class Game extends Scene {
         this.bottomCamera = this.cameras.add(0, midPoint, this.scale.width, midPoint);
         this.bottomCamera.setBackgroundColor(0x87ceeb); // Light blue sky
         this.bottomCamera.setName("bottomCamera");
-        this.bottomCamera.setBounds(0, 0, 2000, 1000);
-
-        // Since setFlipY isn't available, we'll handle the mirroring through graphics transformations
-        // We'll use a render texture for the bottom half of the screen (implemented in createLevel)
+        this.bottomCamera.setBounds(0, 0, 3000, 1000);
 
         // Add a line to separate the screens
         this.splitLine = this.add.rectangle(this.scale.width / 2, midPoint, this.scale.width, 4, 0x000000);
@@ -417,7 +427,7 @@ export class Game extends Scene {
                     playerInfo.x || 230,
                     playerInfo.y || 550,
                     playerInfo.name || `Player_${playerId.substring(0, 4)}`,
-                    false
+                    false // Not the main player
                 );
 
                 // Add collision between other player and platforms
@@ -491,6 +501,31 @@ export class Game extends Scene {
         }
     }
 
+    checkPlayerRespawn() {
+        // Define the world bounds
+        const worldBottom = 900; // Adjust based on your level height
+
+        // Check if the main player has fallen out of bounds
+        if (this.player && this.player.sprite && this.player.sprite.body) {
+            if (this.player.y > worldBottom) {
+                // Respawn from the top
+                this.player.sprite.setPosition(this.player.x, 0);
+                this.player.sprite.body.setVelocity(0, 0);
+
+                // Send update to other players
+                if (this.socket && this.lobbyId) {
+                    this.socket.emit("playerUpdate", {
+                        lobbyId: this.lobbyId,
+                        x: this.player.x,
+                        y: 0,
+                        animation: "idle",
+                        direction: this.player.direction,
+                    });
+                }
+            }
+        }
+    }
+
     update() {
         if (!this.player || !this.connected || !this.lobbyId) return;
 
@@ -500,28 +535,51 @@ export class Game extends Scene {
         // Apply player movement based on input
         const moved = this.player.applyMovement(this.cursors, this.wasd);
 
-        // Update the top camera to follow the main player
+        // Check if player needs to respawn
+        this.checkPlayerRespawn();
+
+        // Update the top camera to follow the main player (Y-axis only)
         if (this.topCamera && this.player.sprite) {
             if (!this.topCamera._follow) {
-                this.topCamera.startFollow(this.player.sprite, true, 0.1, 0.1);
+                this.topCamera.startFollow(this.player.sprite, false, 0, 1); // Only follow Y (0 for X, 1 for Y)
+            }
+
+            // If auto-scrolling is enabled, move camera horizontally
+            if (this.autoScrollCamera) {
+                this.topCamera.scrollX += this.scrollSpeed * (this.game.loop.delta / 1000);
+
+                // Keep player visible by adjusting their position if needed
+                const screenWidth = this.scale.width;
+                const buffer = screenWidth * 0.3; // Buffer space
+
+                if (this.player.x < this.topCamera.scrollX + buffer && this.player.sprite.body) {
+                    this.player.sprite.body.setVelocityX(
+                        Math.max(this.player.sprite.body.velocity.x, this.scrollSpeed * 1.2)
+                    );
+                }
             }
         }
 
-        // Update the bottom camera to follow appropriate sprite
+        // Update the bottom camera to follow the other player's mirrored sprite (Y-axis only)
         if (this.bottomCamera) {
             const otherPlayerIds = Object.keys(this.otherPlayers);
             if (otherPlayerIds.length > 0 && this.otherPlayers[otherPlayerIds[0]].mirrorSprite) {
-                // Follow other player's mirrored sprite in bottom camera
+                // Follow the other player's mirrored sprite in bottom camera
                 if (
                     !this.bottomCamera._follow ||
                     this.bottomCamera._follow !== this.otherPlayers[otherPlayerIds[0]].mirrorSprite
                 ) {
-                    this.bottomCamera.startFollow(this.otherPlayers[otherPlayerIds[0]].mirrorSprite, true, 0.1, 0.1);
+                    this.bottomCamera.startFollow(this.otherPlayers[otherPlayerIds[0]].mirrorSprite, false, 0, 1); // Y-axis only
                 }
-            } else if (this.player.mirrorSprite) {
-                // If no other player, follow the main player's mirrored sprite
-                if (!this.bottomCamera._follow || this.bottomCamera._follow !== this.player.mirrorSprite) {
-                    this.bottomCamera.startFollow(this.player.mirrorSprite, true, 0.1, 0.1);
+
+                // Match X scrolling with top camera if auto-scrolling
+                if (this.autoScrollCamera && this.topCamera) {
+                    this.bottomCamera.scrollX = this.topCamera.scrollX;
+                }
+            } else {
+                // If no other player, match top camera scroll position
+                if (this.topCamera) {
+                    this.bottomCamera.scrollX = this.topCamera.scrollX;
                 }
             }
         }
@@ -552,6 +610,8 @@ export class Game extends Scene {
                 `Player: ${this.socket.id.substring(0, 6)} (${Math.round(this.player.x)}, ${Math.round(
                     this.player.y
                 )})` +
+                    `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
+                    `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
                     `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
                     (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
                     `\nLobby: ${this.lobbyId}`
