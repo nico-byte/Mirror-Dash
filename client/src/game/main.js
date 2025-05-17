@@ -26,7 +26,7 @@ const config = {
         default: "arcade",
         arcade: {
             gravity: { y: 800 },
-            debug: false,
+            debug: true,
         },
     },
     scene: [Boot, Preloader, MainMenu, Lobby, LevelSelector, MainGame, GameOver, FinishLevel],

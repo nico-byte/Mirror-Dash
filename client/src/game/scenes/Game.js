@@ -139,6 +139,7 @@ export class Game extends Scene {
 
         // Create main player at level spawn position
         this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
+        this.levelManager.setupJumpPadCollisions(this.player);
 
         this.playerConnection = new PlayerConnection(this);
         this.playerConnection.initialize();

@@ -19,11 +19,11 @@ export const Level1 = {
     platforms: [
         { x: 85, y: 500, texture: "platform_4x1", scaleY: 1.4 },
         { x: 336, y: 570, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 606, y: 593, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 606, y: 393, texture: "platform_4x1", scaleY: 1.4 },
         { x: 814, y: 565, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
         { x: 996, y: 524, texture: "platform_3x1", scaleY: 1.4 },
         { x: 1211, y: 493, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 1434, y: 436, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 1434, y: 236, texture: "platform_4x1", scaleY: 1.4 },
         { x: 1610, y: 416, texture: "platform_3x1", scaleY: 1.4 },
         { x: 1764, y: 379, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
 
@@ -34,7 +34,7 @@ export const Level1 = {
         { x: 2433, y: 500, texture: "platform_4x1", scaleX: 3, scaleY: 1.4 },
 
         // New section
-        { x: 2900, y: 470, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 2900, y: 270, texture: "platform_4x1", scaleY: 1.4 },
         { x: 3100, y: 420, texture: "platform_3x1", scaleY: 1.4 },
         { x: 3280, y: 370, texture: "platform_4x1", scaleY: 1.4 },
         { x: 3450, y: 330, texture: "platform_3x1", scaleY: 1.4 },
@@ -43,17 +43,15 @@ export const Level1 = {
         { x: 3750, y: 300, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'horizontal', range: 100 , speed: 1600 },
 
         { x: 3900, y: 460, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4250, y: 500, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 4250, y: 530, texture: "platform_4x1", scaleY: 1.4 },
         { x: 4550, y: 520, texture: "platform_3x1", scaleY: 1.4 },
     ],
 
     // Jump pad configurations
     jumpPads: [
-        { x: 320, y: 570, color: 0xffff00 },
-        { x: 700, y: 580, color: 0xffff00 },
-        { x: 1100, y: 520, color: 0xffff00 },
-        { x: 3050, y: 430, color: 0xff00ff },
-        { x: 4100, y: 470, color: 0x00ffff },
+        { x: 380, y: 555, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
+        { x: 1250, y: 480,  texture: "jumpPad" , scaleX: 0.5, scaleY: 0.5 },
+        { x: 2650, y: 485, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
     ],
 
     // Finish line configuration

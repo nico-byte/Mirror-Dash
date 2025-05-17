@@ -89,7 +89,7 @@ export class LevelManager {
         if (this.pendingJumpPads.length > 0) {
             console.log(`Processing ${this.pendingJumpPads.length} pending jump pads`);
             this.pendingJumpPads.forEach(jumpPad => {
-                this.createJumpPadWithMirror(jumpPad.x, jumpPad.y, jumpPad.color);
+                this.createJumpPadWithMirror(jumpPad.x, jumpPad.y, jumpPad.texture);
             });
             this.pendingJumpPads = [];
         }
@@ -156,8 +156,15 @@ export class LevelManager {
         if (levelData.jumpPads) {
             levelData.jumpPads.forEach(jumpPad => {
                 if (this.isSceneReady()) {
-                    this.createJumpPadWithMirror(jumpPad.x, jumpPad.y, jumpPad.color || 0xffff00);
-                } else {
+                    this.createJumpPadWithMirror(
+                        jumpPad.x,
+                        jumpPad.y,
+                        jumpPad.texture || "jumppad",
+                        jumpPad.scaleX || 1,
+                        jumpPad.scaleY || 1
+                    );
+
+                } /*else {
                     // Queue for later creation
                     this.pendingJumpPads.push({
                         x: jumpPad.x,
@@ -165,7 +172,7 @@ export class LevelManager {
                         color: jumpPad.color || 0xffff00,
                     });
                     console.log(`Queued jump pad at ${jumpPad.x}, ${jumpPad.y} for later creation`);
-                }
+                }*/
             });
         }
 
@@ -324,10 +331,10 @@ export class LevelManager {
     /**
      * Create a jump pad with its mirrored version
      */
-    createJumpPadWithMirror(x, y, color) {
+    createJumpPadWithMirror(x, y, texture = "jumppad", scaleX = 1, scaleY = 1) {
         if (!this.isSceneReady()) {
             console.warn("Scene not fully initialized! Queuing jump pad for later creation.");
-            this.pendingJumpPads.push({ x, y, color });
+            this.pendingJumpPads.push({ x, y, texture, scaleX, scaleY });
             return null;
         }
 
@@ -340,29 +347,14 @@ export class LevelManager {
                 this.scene.jumpPads = this.scene.physics.add.staticGroup();
             }
 
-            const jumpPad = this.scene.jumpPads.create(x, y, null);
-            jumpPad.setScale(2, 0.5).setSize(30, 15).setDisplaySize(60, 15).setTint(color).refreshBody();
+            const jumpPad = this.scene.jumpPads.create(x, y, texture);
+            jumpPad.setScale(scaleX, scaleY);
+            jumpPad.refreshBody();
 
-            const arrow = this.scene.add.triangle(x, y - 20, 0, 15, 15, -15, 30, 15, 0xffffff);
-            arrow.setDepth(1);
-
-            const mirrorJumpPad = this.scene.add.rectangle(x, screenHeight - y + midPoint, 60, 15, color);
-
-            const mirrorArrow = this.scene.add.triangle(
-                x,
-                screenHeight - (y - 20) + midPoint,
-                0,
-                -15,
-                15,
-                15,
-                30,
-                -15,
-                0xffffff
-            );
-            mirrorArrow.setDepth(1);
-
-            if (this.scene.topCamera) this.scene.topCamera.ignore([mirrorJumpPad, mirrorArrow]);
-            if (this.scene.bottomCamera) this.scene.bottomCamera.ignore([jumpPad, arrow]);
+            // Optional: gespiegelt anzeigen
+            const mirrorJumpPad = this.scene.add.image(x, screenHeight - y + midPoint, texture)
+                .setScale(scaleX, scaleY)
+                .setFlipY(true);
 
             return jumpPad;
         } catch (error) {
@@ -370,6 +362,53 @@ export class LevelManager {
             return null;
         }
     }
+
+    /**
+     * Setup collisions between player and jumpPads
+     */
+    setupJumpPadCollisions(player) {
+        if (!this.scene || !this.scene.physics || !this.scene.jumpPads) {
+            console.warn("JumpPad collision setup skipped: scene not ready or jumpPads missing.");
+            return;
+        }
+
+        this.scene.physics.add.overlap(player, this.scene.jumpPads, (player, pad) => {
+            try {
+                const playerBottom = player.y + player.body.height / 2;
+                const padTop = pad.y - pad.body.height / 2;
+                const isAbove = playerBottom <= padTop + 10;
+                const isFalling = player.body.velocity.y > 0;
+
+                console.log("JumpPad collision detected", { playerBottom, padTop, isAbove, isFalling });
+
+                if (isAbove && isFalling) {
+                    if (!pad.cooldown) {
+                        player.body.setVelocityY(-5000); // Apply jump force
+
+                        this.scene.tweens.add({
+                            targets: pad,
+                            scaleY: 0.8,
+                            duration: 100,
+                            yoyo: true,
+                            ease: "Power1",
+                        });
+
+                        pad.cooldown = true;
+                        this.scene.time.delayedCall(500, () => {
+                            pad.cooldown = false;
+                        });
+                    } else {
+                        console.warn("JumpPad is on cooldown", { pad });
+                    }
+                } else {
+                    console.warn("JumpPad conditions not met", { playerBottom, padTop, isAbove, isFalling });
+                }
+            } catch (error) {
+                console.error("Error during JumpPad collision handling", error);
+            }
+        });
+    }
+
 
     /**
      * Create a finish line with its mirrored version

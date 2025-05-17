@@ -59,17 +59,43 @@ export class GameCollisions {
     }
 
     handleJumpPad(playerSprite, jumpPad) {
-        // Apply strong upward velocity when player touches a jump pad
-        playerSprite.body.setVelocityY(-600);
+        try {
+            // Überprüfen, ob der Spieler von oben auf das Jump Pad trifft
+            const playerBottom = playerSprite.y + playerSprite.body.height / 2;
+            const padTop = jumpPad.y - jumpPad.body.height / 2;
+            const isAbove = playerBottom <= padTop + 10;
+            const isFalling = playerSprite.body.velocity.y > 0;
 
-        // Visual feedback
-        this.scene.tweens.add({
-            targets: jumpPad,
-            scaleY: 0.3,
-            duration: 100,
-            yoyo: true,
-            ease: "Power1",
-        });
+            console.log("Handling JumpPad collision", { playerBottom, padTop, isAbove, isFalling });
+
+            if (isAbove && isFalling) {
+                // Setze eine Abklingzeit, um mehrfaches Auslösen zu verhindern
+                if (!jumpPad.cooldown) {
+                    playerSprite.body.setVelocityY(-5300); // Stärkerer Sprung
+
+                    // Visuelles Feedback für das Jump Pad
+                    this.scene.tweens.add({
+                        targets: jumpPad,
+                        scaleY: 0.8,
+                        duration: 100,
+                        yoyo: true,
+                        ease: "Power1",
+                    });
+
+                    // Abklingzeit setzen
+                    jumpPad.cooldown = true;
+                    this.scene.time.delayedCall(500, () => {
+                        jumpPad.cooldown = false;
+                    });
+                } else {
+                    console.warn("JumpPad is on cooldown", { jumpPad });
+                }
+            } else {
+                console.warn("JumpPad conditions not met", { playerBottom, padTop, isAbove, isFalling });
+            }
+        } catch (error) {
+            console.error("Error in handleJumpPad", error);
+        }
     }
 
     handleMovingPlatformCollision(playerSprite, platform) {
