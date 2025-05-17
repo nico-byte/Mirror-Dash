@@ -1,0 +1,9 @@
+.button-hover {
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.button-hover:hover {
+    background-color: #ffffff22;
+    transform: scale(1.05);
+    cursor: pointer;
+}
