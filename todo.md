@@ -11,18 +11,18 @@
 | [x]    | Implement main game logic                         |          |         |
 | [ ]    | Smooth out physics                                |          |         |
 | [ ]    | Implement map                                     |          |         |
-| [ ]    | Time Limit                                        |          |         |
-| [ ]    | Time Penalties                                    |          |         |
+| [x]    | Time Limit                                        | Robin    |         |
+| [ ]    | Time Penalties                                    | Robin    |         |
 | [ ]    | Implement Music                                   |          |         |
 | [ ]    | Implement Start/Finish                            |          |         |
 | [ ]    | Implement Score in Stars                          |          |         |
-| [x]    | When player falls from platform, respawn from top |          |         |
+| [x]    | When player falls from platform, respawn from top | Milka    |         |
 
 ## Server
 
 | Status | Task                                                | Assignee | Comment |
 | ------ | --------------------------------------------------- | -------- | ------- |
-| [x]    | Mirrored player should be other player not yourself |          |         |
+| [x]    | Mirrored player should be other player not yourself | Milka    |         |
 
 ## General
 
