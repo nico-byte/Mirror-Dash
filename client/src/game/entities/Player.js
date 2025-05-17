@@ -66,14 +66,21 @@ export class Player {
 
         // Apply physics to the main player's sprite
         if (isMainPlayer && scene.physics) {
-            // Enable arcade physics on the sprite
             scene.physics.add.existing(this.sprite);
+            // this.sprite.body.setCircle(null); // Ensure it's not circular
+            this.sprite.body.setCircle(20); // Slightly smaller than full sprite
+            this.sprite.body.setOffset(0, 0);
 
             // Configure physics properties
-            this.sprite.body.setBounce(0.1);
+            this.sprite.body.setBounce(0);
             this.sprite.body.setCollideWorldBounds(true);
-            this.sprite.body.setDrag(300, 0);
+            this.sprite.body.setDrag(500, 0);
+            this.sprite.body.setFriction(1, 0);
+            this.sprite.body.setMaxVelocity(600, 1000);
+            this.sprite.body.setGravityY(1000);
         }
+
+        this.sprite.body.setSize(32, 32).setOffset(-12, -12); // Adjust for circle hitbox
 
         // Additional properties
         this.x = x;
@@ -115,9 +122,11 @@ export class Player {
         if (!this.isMainPlayer || !this.sprite.body) return false;
 
         try {
-            const speed = 300;
-            const jumpStrength = 400; // Increased for better jump experience
+            const speed = 500;
+            const jumpStrength = 800; // Increased for better jump experience
 
+            this.sprite.body.setAccelerationX(0); // Reset acceleration
+            this.sprite.body.setVelocityX(0);     // Reset horizontal speed
             let moved = false;
             let prevAnimation = this.animation;
             let prevDirection = this.direction;

@@ -660,11 +660,11 @@ export class Game extends Scene {
                 `Player: ${this.socket.id.substring(0, 6)} (${Math.round(this.player.x)}, ${Math.round(
                     this.player.y
                 )})` +
-                    `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
-                    `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
-                    `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
-                    (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
-                    `\nLobby: ${this.lobbyId}`
+                `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
+                `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
+                `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
+                (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
+                `\nLobby: ${this.lobbyId}`
             );
         }
     }
