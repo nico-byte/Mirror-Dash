@@ -16,6 +16,7 @@ const config = {
     height: 768,
     parent: "game-container",
     backgroundColor: "#028af8",
+    fontFamily: "Orbitron, Arial",
     scale: {
         mode: Scale.FIT,
         autoCenter: Scale.CENTER_BOTH,

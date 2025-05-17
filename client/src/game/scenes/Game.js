@@ -9,6 +9,7 @@ import { GameInput } from "../components/Game/GameInput";
 import { GameCollisions } from "../components/Game/GameCollisions";
 import { GameTimer } from "../components/Game/GameTimer";
 import { PlayerRespawn } from "../entities/PlayerRespawn";
+import { PlayerConnection } from "../entities/PlayerConnection";
 
 export class Game extends Scene {
     constructor() {
@@ -16,11 +17,13 @@ export class Game extends Scene {
         this.socket = null;
         this.player = null;
         this.otherPlayers = {};
+        this.playersFinished = {};
         this.playerName = "Player_" + Math.floor(Math.random() * 1000);
         this.connected = false;
         this.lobbyId = null;
         this.debugMode = false;
         this.levelId = "level1"; // Default level
+        this.playerConnection = null;
 
         // Split screen properties
         this.splitLine = null;
@@ -102,6 +105,14 @@ export class Game extends Scene {
     create() {
         console.log("Game scene created. Lobby ID:", this.lobbyId);
 
+        if (!this.textures.exists("particle")) {
+            const graphics = this.add.graphics();
+            graphics.fillStyle(0xffffff);
+            graphics.fillCircle(8, 8, 8);
+            graphics.generateTexture("particle", 16, 16);
+            graphics.destroy();
+        }
+
         // Initialize physics groups immediately
         this.platforms = this.physics.add.staticGroup();
         this.jumpPads = this.physics.add.staticGroup();
@@ -120,6 +131,9 @@ export class Game extends Scene {
 
         // Create main player at level spawn position
         this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
+
+        this.playerConnection = new PlayerConnection(this);
+        this.playerConnection.initialize();
 
         // Setup collisions
         this.collisionManager.setupCollisions(this.player, this.platforms, this.jumpPads, this.finishObject);
@@ -243,33 +257,87 @@ export class Game extends Scene {
     handleFinish(playerSprite, finishObject) {
         console.log("Player reached finish!");
 
-        // Stop timer
-        if (this.timerEvent) {
-            this.timerEvent.remove(false);
+        // Mark this player as finished
+        this.playersFinished[this.socket.id] = true;
+
+        // Emit to server that this player has finished
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            this.socket.emit("playerFinished", {
+                lobbyId: this.lobbyId,
+                playerId: this.socket.id,
+            });
+
+            // Display "Waiting for other player" message
+            this.displayWaitingMessage();
         }
 
-        // Record level completion in progress manager
-        const result = this.progressManager.completeLevel(this.levelId, this.gameTimer.getTimeLeft());
+        // Check if all players have finished
+        this.checkAllPlayersFinished();
+    }
 
-        // Sync progress with server if connected
-        if (this.socket && this.socket.connected) {
-            this.socket.emit("levelCompleted", {
-                playerName: this.playerName,
-                levelId: this.levelId,
+    displayWaitingMessage() {
+        // Remove any existing waiting message
+        if (this.waitingText) {
+            this.waitingText.destroy();
+        }
+
+        // Create waiting message
+        this.waitingText = this.add
+            .text(this.scale.width / 2, 100, "You reached the finish line!\nWaiting for other player...", {
+                fontFamily: "Arial Black",
+                fontSize: "24px",
+                color: "#ffffff",
+                stroke: "#000000",
+                strokeThickness: 4,
+                align: "center",
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        // Make it visible only in top camera
+        if (this.bottomCamera) {
+            this.bottomCamera.ignore(this.waitingText);
+        }
+    }
+
+    checkAllPlayersFinished() {
+        const totalPlayers = Object.keys(this.otherPlayers).length + 1; // +1 for the main player
+        const finishedPlayers = Object.keys(this.playersFinished).length;
+
+        console.log(`Players finished: ${finishedPlayers}/${totalPlayers}`);
+
+        // Only complete the level if all players have finished
+        if (finishedPlayers >= totalPlayers) {
+            // Stop timer
+            if (this.timerEvent) {
+                this.timerEvent.remove(false);
+            }
+
+            // Record level completion in progress manager
+            const result = this.progressManager.completeLevel(this.levelId, this.gameTimer.getTimeLeft());
+
+            // Sync progress with server if connected
+            if (this.socket && this.socket.connected) {
+                this.socket.emit("levelCompleted", {
+                    playerName: this.playerName,
+                    levelId: this.levelId,
+                    timeLeft: this.gameTimer.getTimeLeft(),
+                    stars: result.stars,
+                });
+            }
+
+            // Switch to FinishLevel scene
+            this.scene.start("FinishLevel", {
                 timeLeft: this.gameTimer.getTimeLeft(),
                 stars: result.stars,
+                levelId: this.levelId,
+                playerName: this.playerName,
+                socket: this.socket,
+                lobbyId: this.lobbyId,
+                nextLevelId: result.nextLevelId,
             });
         }
-
-        // Switch to FinishLevel scene
-        this.scene.start("FinishLevel", {
-            timeLeft: this.gameTimer.getTimeLeft(),
-            stars: result.stars,
-            levelId: this.levelId,
-            playerName: this.playerName,
-            socket: this.socket,
-            nextLevelId: result.nextLevelId,
-        });
     }
 
     update(time, delta) {
@@ -305,6 +373,10 @@ export class Game extends Scene {
                 player.update();
             }
         });
+
+        if (this.playerConnection) {
+            this.playerConnection.update();
+        }
 
         // Update debug text if enabled
         if (this.debugMode && this.debugText) {
@@ -357,5 +429,10 @@ export class Game extends Scene {
             }
         });
         this.otherPlayers = {};
+
+        if (this.playerConnection) {
+            this.playerConnection.shutdown();
+            this.playerConnection = null;
+        }
     }
 }

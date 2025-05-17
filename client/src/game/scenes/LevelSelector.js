@@ -277,11 +277,20 @@ export class LevelSelector extends Scene {
     startLevel(levelId) {
         console.log(`Starting level: ${levelId}`);
 
+        // Notify the server that we're changing levels
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            this.socket.emit("changeLevel", {
+                lobbyId: this.lobbyId,
+                levelId: levelId,
+            });
+        }
+
         // Pass data including socket, player name, and level ID
         this.scene.start("Game", {
             socket: this.socket,
             playerName: this.playerName,
             levelId: levelId,
+            lobbyId: this.lobbyId,
         });
     }
 

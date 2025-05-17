@@ -7,118 +7,73 @@ export class MainMenu extends Scene {
     }
 
     create() {
-        // Background
         this.add.image(512, 384, "background");
 
-        // Logo
-        this.add.image(512, 230, "logo");
+        this.add.image(512, 160, "logo");
 
-        // Main menu title
-        this.add
-            .text(512, 370, "Main Menu", {
-                fontFamily: "Arial Black",
-                fontSize: 38,
+        this.add.text(512, 260, "Main Menu", {
+            fontFamily: "Orbitron, Arial",
+            fontSize: "48px",
+            color: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 8,
+        }).setOrigin(0.5);
+
+        this.add.text(512, 330, "Your Name:", {
+            fontFamily: "Orbitron, Arial",
+            fontSize: "20px",
+            color: "#ffffff",
+        }).setOrigin(0.5);
+
+        const nameBox = this.add.rectangle(512, 370, 320, 45, 0xffffff, 0.1)
+            .setStrokeStyle(2, 0xffffff)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
+        nameBox.on("pointerdown", () => this.promptName());
+
+        const playerNameText = this.add.text(512, 370, this.playerName, {
+            fontFamily: "Orbitron, Arial",
+            fontSize: "20px",
+            color: "#ffffff",
+        }).setOrigin(0.5)
+          .setInteractive({ useHandCursor: true });
+        playerNameText.on("pointerdown", () => this.promptName());
+
+        // Shared button creator
+        const makeButton = (y, label, baseColor, hoverColor, onClick) => {
+            const rect = this.add.rectangle(512, y, 320, 60, baseColor)
+                .setOrigin(0.5)
+                .setStrokeStyle(2, 0xffffff)
+                .setInteractive({ useHandCursor: true });
+
+            const text = this.add.text(512, y, label, {
+                fontFamily: "Orbitron, Arial",
+                fontSize: "24px",
                 color: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 8,
-                align: "center",
-            })
-            .setOrigin(0.5);
+            }).setOrigin(0.5)
+              .setInteractive({ useHandCursor: true });
 
-        // Player name section
-        this.add
-            .text(512, 430, "Your Name:", {
-                fontFamily: "Arial",
-                fontSize: 18,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
+            // Hover Effects
+            rect.on("pointerover", () => rect.setFillStyle(hoverColor));
+            rect.on("pointerout", () => rect.setFillStyle(baseColor));
+            rect.on("pointerdown", onClick);
+            text.on("pointerdown", onClick);
+        };
 
-        // Simple rectangular area for player name with proper interactivity
-        const nameBox = this.add.rectangle(512, 460, 300, 40, 0x000000, 0.5);
-        nameBox.setInteractive({ useHandCursor: true });
-        nameBox.on("pointerdown", () => {
-            const newName = prompt("Enter your name:", this.playerName);
-            if (newName && newName.trim() !== "") {
-                this.playerName = newName.trim();
-                playerNameText.setText(this.playerName);
-            }
-        });
-
-        const playerNameText = this.add
-            .text(512, 460, this.playerName, {
-                fontFamily: "Arial",
-                fontSize: 20,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
-
-        // Make the text interactive too to increase clickable area
-        playerNameText.setInteractive({ useHandCursor: true });
-        playerNameText.on("pointerdown", () => {
-            const newName = prompt("Enter your name:", this.playerName);
-            if (newName && newName.trim() !== "") {
-                this.playerName = newName.trim();
-                playerNameText.setText(this.playerName);
-            }
-        });
-
-        // Multiplayer button to go to lobby with proper interactivity
-        const multiplayerButton = this.add.rectangle(512, 540, 300, 60, 0x0044aa);
-        multiplayerButton.setInteractive({ useHandCursor: true });
-        multiplayerButton.on("pointerdown", () => {
-            this.scene.start("Lobby", { playerName: this.playerName });
-        });
-        multiplayerButton.on("pointerover", () => {
-            multiplayerButton.setFillStyle(0x0066cc);
-        });
-        multiplayerButton.on("pointerout", () => {
-            multiplayerButton.setFillStyle(0x0044aa);
-        });
-
-        const multiplayerText = this.add
-            .text(512, 540, "Multiplayer Lobbies", {
-                fontFamily: "Arial Black",
-                fontSize: 24,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
-
-        // Make text interactive too
-        multiplayerText.setInteractive({ useHandCursor: true });
-        multiplayerText.on("pointerdown", () => {
+        makeButton(460, "Multiplayer Lobbies", 0x3366cc, 0x5588ee, () => {
             this.scene.start("Lobby", { playerName: this.playerName });
         });
 
-        // Quick Play button - repositioned to be more prominent (where level selector was)
-        const quickPlayButton = this.add.rectangle(512, 620, 300, 60, 0x885500);
-        quickPlayButton.setInteractive({ useHandCursor: true });
-        quickPlayButton.on("pointerdown", () => {
+        makeButton(540, "Quick Play", 0xcc9933, 0xffbb55, () => {
             this.scene.start("Game", { playerName: this.playerName });
         });
-        quickPlayButton.on("pointerover", () => {
-            quickPlayButton.setFillStyle(0xaa6600);
-        });
-        quickPlayButton.on("pointerout", () => {
-            quickPlayButton.setFillStyle(0x885500);
-        });
+    }
 
-        const quickPlayText = this.add
-            .text(512, 620, "Quick Play", {
-                fontFamily: "Arial Black",
-                fontSize: 24, // Increased font size to match other buttons
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
-
-        // Make text interactive too
-        quickPlayText.setInteractive({ useHandCursor: true });
-        quickPlayText.on("pointerdown", () => {
-            this.scene.start("Game", { playerName: this.playerName });
-        });
+    promptName() {
+        const newName = prompt("Enter your name:", this.playerName);
+        if (newName && newName.trim() !== "") {
+            this.playerName = newName.trim();
+            this.scene.restart(); // Refresh with new name
+        }
     }
 }

@@ -82,6 +82,30 @@ export class SocketManager {
             }
         });
 
+        this.scene.socket.on("levelChanged", data => {
+            if (data && data.levelId && data.playerId !== this.scene.socket.id) {
+                console.log(`Level changed by other player to: ${data.levelId}`);
+
+                // Only change level if we're not already in the Game scene with this level
+                if (this.scene.scene.key !== "Game" || this.scene.levelId !== data.levelId) {
+                    console.log(`Changing to level: ${data.levelId}`);
+
+                    // If we're in game now, make sure to clean up
+                    if (this.scene.scene.key === "Game") {
+                        this.scene.shutdown();
+                    }
+
+                    // Start the new level
+                    this.scene.scene.start("Game", {
+                        socket: this.scene.socket,
+                        playerName: this.scene.playerName,
+                        levelId: data.levelId,
+                        lobbyId: this.scene.lobbyId,
+                    });
+                }
+            }
+        });
+
         // Receive lobby state updates (contains player information)
         this.scene.socket.on("lobbyState", lobby => {
             if (lobby && lobby.id) {
@@ -111,6 +135,16 @@ export class SocketManager {
                     // Update the player immediately
                     this.updateOtherPlayer(playerInfo);
                 }
+            }
+        });
+
+        this.scene.socket.on("playerFinished", data => {
+            if (data && data.playerId && data.playerId !== this.scene.socket.id) {
+                console.log(`Other player ${data.playerId} has finished the level`);
+                this.scene.playersFinished[data.playerId] = true;
+
+                // Check if all players have now finished
+                this.scene.checkAllPlayersFinished();
             }
         });
 

@@ -41,6 +41,8 @@ export class Preloader extends Scene {
 
         // Load logo for main menu
         this.load.image("logo", "/assets/logo.png");
+
+        this.load.image("particle", "/assets/particle.png");
     }
 
     create() {

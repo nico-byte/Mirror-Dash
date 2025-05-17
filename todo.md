@@ -24,7 +24,8 @@
 | [ ]    | Flying platform collision fix                             |          |                       |
 | [ ]    | Platform collision reduction                              |          |                       |
 | [ ]    | Camera y follow                                           | Nico     |                       |
-| [ ]    | Jump pad sprite                                           | Robin    |                       |
+| [x]    | Jump pad sprite                                           | Robin    |                       |
+| [ ]    | Add Jump pad sprite into game                             |          |                       |
 | [ ]    | Flying power up                                           |          |                       |
 | [ ]    | Platform collision collision reduction                    |          |                       |
 | [ ]    | Connect player with beam                                  |          |                       |

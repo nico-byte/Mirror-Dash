@@ -163,19 +163,37 @@ export class FinishLevel extends Scene {
 
     startNextLevel() {
         if (this.nextLevelId) {
+            // Notify the server that we're changing levels
+            if (this.socket && this.socket.connected && this.lobbyId) {
+                this.socket.emit("changeLevel", {
+                    lobbyId: this.lobbyId,
+                    levelId: this.nextLevelId,
+                });
+            }
+
             this.scene.start("Game", {
                 socket: this.socket,
                 playerName: this.playerName,
                 levelId: this.nextLevelId,
+                lobbyId: this.lobbyId,
             });
         }
     }
 
     replayLevel() {
+        // Notify the server that we're replaying the current level
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            this.socket.emit("changeLevel", {
+                lobbyId: this.lobbyId,
+                levelId: this.levelId,
+            });
+        }
+
         this.scene.start("Game", {
             socket: this.socket,
             playerName: this.playerName,
             levelId: this.levelId,
+            lobbyId: this.lobbyId,
         });
     }
 
