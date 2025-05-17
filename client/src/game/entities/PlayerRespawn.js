@@ -14,6 +14,9 @@ export class PlayerRespawn {
 
         // Check if the main player has fallen out of bounds or is caught by the camera
         if (player && player.sprite && player.sprite.body) {
+            // Only check for camera catching player if auto-scroll is enabled
+            // This should still work even with the new dynamic camera behavior
+            // since we'll always penalize players who fall behind the left edge
             const caughtByCamera = autoScrollCamera && topCamera && player.x < topCamera.scrollX + 10; // Player is behind camera's left edge
             const fallenOffMap = player.y > worldBottom;
 

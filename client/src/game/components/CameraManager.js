@@ -4,6 +4,10 @@ export class CameraManager {
         // Camera scrolling properties
         this.autoScrollCamera = autoScrollCamera;
         this.scrollSpeed = scrollSpeed;
+        // New property to track if player is controlling camera
+        this.playerControllingCamera = false;
+        // Keep track of the last auto-scroll position
+        this.lastAutoScrollX = 0;
     }
 
     setupCameras() {
@@ -33,38 +37,77 @@ export class CameraManager {
         this.scene.splitLine = add.rectangle(scale.width / 2, midPoint, scale.width, 4, 0x000000);
         this.scene.splitLine.setDepth(100);
         this.scene.splitLine.setScrollFactor(0);
+
+        // Initialize the last auto-scroll position
+        this.lastAutoScrollX = 0;
     }
 
     updateCameras() {
-        // Update the top camera to follow the main player (Y-axis only)
-        if (this.scene.topCamera && this.scene.player.sprite) {
-            if (!this.scene.topCamera._follow) {
-                this.scene.topCamera.startFollow(this.scene.player.sprite, false, 0, 1); // Only follow Y (0 for X, 1 for Y)
+        // Update the top camera based on player position and auto-scroll settings
+        if (this.scene.topCamera && this.scene.player && this.scene.player.sprite) {
+            const camera = this.scene.topCamera;
+            const player = this.scene.player;
+
+            // Ensure camera follows player on Y-axis
+            if (!camera._follow) {
+                camera.startFollow(player.sprite, false, 0, 1); // Only follow Y (0 for X, 1 for Y)
             }
 
-            // If auto-scrolling is enabled, move camera horizontally (not the player)
             if (this.scene.autoScrollCamera) {
-                this.scene.topCamera.scrollX += this.scene.scrollSpeed * (this.scene.game.loop.delta / 1000);
+                // Calculate what the auto-scroll position would be
+                this.lastAutoScrollX += this.scene.scrollSpeed * (this.scene.game.loop.delta / 1000);
 
-                // Camera scrolls independently, player can move at their own pace
-                // No automatic player movement - let player control their character
+                // Get player's position and velocity
+                const playerX = player.sprite.x;
+                const playerVelocityX = player.sprite.body ? player.sprite.body.velocity.x : 0;
+
+                // Check if player is ahead of auto-scroll and moving faster (only when going right)
+                if (playerX > this.lastAutoScrollX + camera.width * 0.3 && playerVelocityX > 0) {
+                    // Player is controlling the camera - follow their X position
+                    this.playerControllingCamera = true;
+                    // Make the camera follow the player directly based on their position
+                    camera.scrollX = playerX - camera.width * 0.3; // Keep player 30% from left edge
+                }
+                // If player was controlling but now slowed down, let auto-scroll catch up
+                else if (
+                    this.playerControllingCamera &&
+                    (playerX <= this.lastAutoScrollX + camera.width * 0.3 || playerVelocityX <= 0)
+                ) {
+                    // Transition back to auto-scroll
+                    this.playerControllingCamera = false;
+                }
+
+                // If not player-controlled, continue auto-scrolling
+                if (!this.playerControllingCamera) {
+                    camera.scrollX = this.lastAutoScrollX;
+                }
+
+                // Update auto-scroll position if player is controlling camera
+                if (this.playerControllingCamera) {
+                    this.lastAutoScrollX = camera.scrollX;
+                }
             }
         }
 
         // Update the bottom camera to follow the other player's mirrored sprite (Y-axis only)
         if (this.scene.bottomCamera) {
-            const otherPlayerIds = Object.keys(this.scene.otherPlayers);
+            const otherPlayerIds = Object.keys(this.scene.otherPlayers || {});
             if (otherPlayerIds.length > 0 && this.scene.otherPlayers[otherPlayerIds[0]].mirrorSprite) {
                 // Follow the other player's mirrored sprite in bottom camera
                 if (
                     !this.scene.bottomCamera._follow ||
                     this.scene.bottomCamera._follow !== this.scene.otherPlayers[otherPlayerIds[0]].mirrorSprite
                 ) {
-                    this.scene.bottomCamera.startFollow(this.scene.otherPlayers[otherPlayerIds[0]].mirrorSprite, false, 0, 1); // Y-axis only
+                    this.scene.bottomCamera.startFollow(
+                        this.scene.otherPlayers[otherPlayerIds[0]].mirrorSprite,
+                        false,
+                        0,
+                        1
+                    ); // Y-axis only
                 }
 
-                // Match X scrolling with top camera if auto-scrolling
-                if (this.scene.autoScrollCamera && this.scene.topCamera) {
+                // Match X scrolling with top camera
+                if (this.scene.topCamera) {
                     this.scene.bottomCamera.scrollX = this.scene.topCamera.scrollX;
                 }
             } else if (this.scene.topCamera) {
