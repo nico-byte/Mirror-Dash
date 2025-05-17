@@ -4,30 +4,29 @@
 
 | Status | Task                                                      | Assignee | Comment               |
 | ------ | --------------------------------------------------------- | -------- | --------------------- |
-| [ ]    | Improve UI/UX design                                      |          |                       |
+| [x]    | Improve UI/UX design                                      | Nico     |                       |
 | [ ]    | Add power-ups use powerups.md                             |          |                       |
-| [x]    | Create basic HTML structure                               |          |                       |
-| [x]    | Add favicon and assets                                    |          |                       |
-| [x]    | Implement main game logic                                 |          |                       |
+| [x]    | Create basic HTML structure                               | Milka    |                       |
+| [x]    | Add favicon and assets                                    | Milka    |                       |
+| [x]    | Implement main game logic                                 | Milka    |                       |
 | [x]    | Smooth out physics                                        | Robin    | a little bit          |
 | [x]    | Implement map                                             | Milka    |                       |
 | [x]    | Time Limit                                                | Robin    |                       |
 | [x]    | Time Penalties                                            | Robin    |                       |
-| [ ]    | Implement Music                                           |          |                       |
+| [x]    | Implement Music                                           | Nico     |                       |
 | [x]    | Implement Start/Finish                                    | Robin    |                       |
 | [x]    | Implement Score in Stars                                  | Robin    |                       |
 | [x]    | When player falls from platform, respawn from top         | Milka    |                       |
 | [ ]    | Add character customization options                       |          |                       |
 | [ ]    | Implement leaderboard                                     | Nico     |                       |
 | [ ]    | Add environmental hazards (e.g., traps, moving platforms) |          |                       |
-| [ ]    | Fix Lobby UI design                                       |          | Einige buggy elemente |
+| [x]    | Fix Lobby UI design                                       | Nico     | Einige buggy elemente |
 | [ ]    | Flying platform collision fix                             |          |                       |
-| [ ]    | Platform collision reduction                              |          |                       |
-| [ ]    | Camera y follow                                           | Nico     |                       |
+| [x]    | Platform collision reduction                              | Nico     |                       |
+| [ ]    | Camera y follow                                           | Milka    |                       |
 | [x]    | Jump pad sprite                                           | Robin    |                       |
 | [ ]    | Add Jump pad sprite into game                             |          |                       |
 | [ ]    | Flying power up                                           |          |                       |
-| [ ]    | Platform collision collision reduction                    |          |                       |
 | [ ]    | Connect player with beam                                  |          |                       |
 | [ ]    | Banner creation                                           | Matthias |                       |
 | [ ]    |                                                           |          |                       |
