@@ -9,7 +9,7 @@
 | [x]    | Create basic HTML structure                               |          |                       |
 | [x]    | Add favicon and assets                                    |          |                       |
 | [x]    | Implement main game logic                                 |          |                       |
-| [ ]    | Smooth out physics                                        |          |                       |
+| [ ]    | Smooth out physics                                        | Robin    |                       |
 | [ ]    | Implement map                                             |          |                       |
 | [x]    | Time Limit                                                | Robin    |                       |
 | [x]    | Time Penalties                                            | Robin    |                       |
