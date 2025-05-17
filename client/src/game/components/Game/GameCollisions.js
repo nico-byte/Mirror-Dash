@@ -24,7 +24,7 @@ export class GameCollisions {
         // Add collision with moving platforms
         if (player && player.sprite && movingPlatforms) {
             const movingPlatformCollision = this.scene.physics.add.collider(
-                player.sprite, 
+                player.sprite,
                 movingPlatforms,
                 this.handleMovingPlatformCollision,
                 null,
@@ -32,7 +32,6 @@ export class GameCollisions {
             );
         }
         this.movingPlatforms = movingPlatforms;
-
     }
 
     setupOtherPlayerCollisions(otherPlayer, platforms, jumpPads, movingPlatforms) {
