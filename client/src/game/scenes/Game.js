@@ -1,7 +1,9 @@
 import { Scene } from "phaser";
-import { io } from "socket.io-client";
 import { Player } from "../entities/Player";
 import { CameraManager } from "../components/CameraManager";
+import { SocketManager } from "../components/SocketManager";
+import { createLevelManager } from "../levels";
+import { ProgressManager } from "../components/ProgressManager";
 
 export class Game extends Scene {
     constructor() {
@@ -15,6 +17,7 @@ export class Game extends Scene {
         this.connected = false;
         this.lobbyId = null;
         this.debugMode = false;
+        this.levelId = "level1"; // Default level
 
         // Split screen properties
         this.splitLine = null;
@@ -33,106 +36,38 @@ export class Game extends Scene {
         this.timerText = null;
         this.timeLeft = 180; // in seconds
         this.timerEvent = null;
+
+        // Progress tracking
+        this.progressManager = new ProgressManager();
     }
 
     init(data) {
         // Enable debug mode from environment variable
         this.debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
 
-        // Get server URL from environment variable or use default
-        const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
-
-        // Get socket if passed from Lobby scene
-        if (data && data.socket) {
-            this.socket = data.socket;
-            this.connected = true;
-        } else {
-            // Connect to server if not already connected
-            this.socket = io(serverUrl);
-            console.log("Connected to game server:", serverUrl);
+        // Set the level ID if provided
+        if (data && data.levelId) {
+            this.levelId = data.levelId;
         }
 
-        // Get player name if provided
+        // Set player name if provided
         if (data && data.playerName) {
             this.playerName = data.playerName;
         }
 
-        // Get lobby ID if provided
-        if (data && data.lobbyId) {
-            this.lobbyId = data.lobbyId;
-            this.connected = true;
-        } else if (import.meta.env.VITE_DIRECT_CONNECT) {
-            // If direct connect is enabled, use the lobby ID from environment
-            this.lobbyId = import.meta.env.VITE_DIRECT_CONNECT;
-            this.connected = true;
-        }
+        // Initialize progress manager
+        this.progressManager.loadProgress(this.playerName);
 
-        this.setupSocketListeners();
+        this.socketManager = new SocketManager(this);
+        this.socketManager.setupLobby(data);
+
+        this.socketManager.setupSocketListeners();
 
         // Request the current lobby state as soon as we initialize
         if (this.socket && this.lobbyId) {
             console.log("Requesting lobby state for:", this.lobbyId);
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
         }
-    }
-
-    setupSocketListeners() {
-        // Socket connection event
-        this.socket.on("connect", () => {
-            console.log("Connected to server with ID:", this.socket.id);
-            this.connected = true;
-
-            // If we don't have a lobby ID and we're coming from the old quick play,
-            // we need to create a lobby on the fly
-            if (!this.lobbyId) {
-                // Create a quick play lobby
-                this.socket.emit(
-                    "createLobby",
-                    {
-                        lobbyName: "Quick Play",
-                        playerName: this.playerName,
-                    },
-                    response => {
-                        if (response.success) {
-                            this.lobbyId = response.lobbyId;
-                            console.log("Created quick play lobby:", this.lobbyId);
-                            // Important: Request the lobby state again after creating it
-                            this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
-                        } else {
-                            alert("Failed to create a quick play session.");
-                            this.scene.start("MainMenu");
-                        }
-                    }
-                );
-            } else {
-                // If we already have a lobby ID, request its state
-                this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
-            }
-        });
-
-        // Receive lobby state updates (contains player information)
-        this.socket.on("lobbyState", lobby => {
-            console.log("Received lobby state in game:", lobby);
-            if (lobby && lobby.id === this.lobbyId) {
-                this.updateGameState(lobby);
-            }
-        });
-
-        // Other player moved
-        this.socket.on("playerMoved", playerInfo => {
-            if (playerInfo && playerInfo.id) {
-                // Skip our own player updates
-                if (playerInfo.id !== this.socket.id) {
-                    this.updateOtherPlayer(playerInfo);
-                }
-            }
-        });
-
-        // Handle lobby error event
-        this.socket.on("lobbyError", ({ message }) => {
-            alert(message);
-            this.scene.start("MainMenu");
-        });
     }
 
     create() {
@@ -148,11 +83,13 @@ export class Game extends Scene {
         this.cameraManager = new CameraManager(this, this.autoScrollCamera, this.scrollSpeed);
         this.cameraManager.setupCameras();
 
-        // Create level
-        this.createLevel();
+        this.levelManager = createLevelManager(this);
 
-        // Create main player at platform position
-        this.player = new Player(this, 230, 500, this.playerName, true);
+        // Load the specified level and get the spawn position
+        const levelInfo = this.levelManager.loadLevel(this.levelId);
+
+        // Create main player at level spawn position
+        this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
 
         // Add collision between player and platforms
         this.physics.add.collider(this.player.sprite, this.platforms);
@@ -172,7 +109,7 @@ export class Game extends Scene {
             Space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
         };
 
-        // Add back button to return to lobby - only in top section
+        // Add back button to return to level selector - only in top section
         const backButton = this.add
             .rectangle(100, 50, 150, 40, 0x222222, 0.7)
             .setInteractive()
@@ -182,17 +119,15 @@ export class Game extends Scene {
                     this.socket.emit("leaveLobby", { lobbyId: this.lobbyId });
                 }
 
-                // Check if we should return to lobby or main menu
-                const skipLobby = import.meta.env.VITE_SKIP_LOBBY === "true";
-                if (skipLobby) {
-                    this.scene.start("MainMenu");
-                } else {
-                    this.scene.start("Lobby", { socket: this.socket, playerName: this.playerName });
-                }
+                // Go to level selector
+                this.scene.start("LevelSelector", {
+                    socket: this.socket,
+                    playerName: this.playerName,
+                });
             });
 
         const backText = this.add
-            .text(100, 50, "Back to Lobby", {
+            .text(100, 50, "Back to Levels", {
                 fontFamily: "Arial",
                 fontSize: 14,
                 color: "#ffffff",
@@ -200,9 +135,25 @@ export class Game extends Scene {
             .setOrigin(0.5)
             .setScrollFactor(0); // Fixed to camera
 
+        // Add level name display
+        let levelName = "Unknown Level";
+        if (this.levelId === "level1") levelName = "Level 1";
+        else if (this.levelId === "level2") levelName = "Level 2";
+        else levelName = this.levelId;
+
+        const levelNameText = this.add
+            .text(this.scale.width / 2, 50, levelName, {
+                fontFamily: "Arial Black",
+                fontSize: 18,
+                color: "#ffffff",
+                shadow: { offsetX: 2, offsetY: 2, color: "#000000", blur: 2, stroke: true, fill: true },
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0);
+
         // Make back button only visible in top camera
         if (this.bottomCamera) {
-            this.bottomCamera.ignore([backButton, backText]);
+            this.bottomCamera.ignore([backButton, backText, levelNameText]);
         }
 
         // Add debug text only if debug mode is enabled
@@ -241,26 +192,53 @@ export class Game extends Scene {
             loop: true,
         });
 
-        // Create finish object (red rectangle)
-        this.finishObject = this.physics.add.staticGroup();
-        this.finishObjectRect = this.finishObject
-            .create(900, 500, null)
-            .setSize(100, 100)
-            .setDisplaySize(100, 100)
-            .setOrigin(0.5)
-            .refreshBody();
-        this.finishObjectRect.fillColor = 0xff0000;
-
-        // Just visual fill (draw rectangle)
-        this.finishVisual = this.add.rectangle(900, 500, 100, 100, 0xff0000);
-        this.finishVisual.setDepth(-1);
-
+        // Set up physics overlap with finish line
         this.physics.add.overlap(this.player.sprite, this.finishObject, this.handleFinish, null, this);
+
+        // Set up moving platforms if any
+        this.setupMovingPlatforms();
 
         // Make sure we're receiving lobby updates
         if (this.socket && this.lobbyId) {
             console.log("Requesting lobby state in create method");
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
+        }
+    }
+
+    setupMovingPlatforms() {
+        // Find platforms that need animations
+        const platforms = this.platforms ? this.platforms.getChildren() : [];
+        const movingPlatforms = this.levelManager.getMovingPlatforms();
+
+        // Apply animations to moving platforms
+        if (movingPlatforms && movingPlatforms.length > 0) {
+            movingPlatforms.forEach(config => {
+                const { platform, mirrorPlatform, movement } = config;
+
+                if (platform && movement) {
+                    // Add animation to platform
+                    this.tweens.add({
+                        targets: platform,
+                        y: platform.y - movement.y, // Move up by specified amount
+                        duration: movement.duration || 2000,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: "Sine.easeInOut",
+                    });
+
+                    // Add inverse animation to mirror platform
+                    if (mirrorPlatform) {
+                        this.tweens.add({
+                            targets: mirrorPlatform,
+                            y: mirrorPlatform.y + movement.y, // Move down for mirror effect
+                            duration: movement.duration || 2000,
+                            yoyo: true,
+                            repeat: -1,
+                            ease: "Sine.easeInOut",
+                        });
+                    }
+                }
+            });
         }
     }
 
@@ -272,147 +250,28 @@ export class Game extends Scene {
             this.timerEvent.remove(false);
         }
 
+        // Record level completion in progress manager
+        const result = this.progressManager.completeLevel(this.levelId, this.timeLeft);
+
+        // Sync progress with server if connected
+        if (this.socket && this.socket.connected) {
+            this.socket.emit("levelCompleted", {
+                playerName: this.playerName,
+                levelId: this.levelId,
+                timeLeft: this.timeLeft,
+                stars: result.stars,
+            });
+        }
+
         // Switch to FinishLevel scene
         this.scene.start("FinishLevel", {
             timeLeft: this.timeLeft,
+            stars: result.stars,
+            levelId: this.levelId,
+            playerName: this.playerName,
+            socket: this.socket,
+            nextLevelId: result.nextLevelId,
         });
-    }
-
-    createLevel() {
-        // Get screen dimensions for mirroring
-        const screenHeight = this.scale.height;
-        const midPoint = screenHeight / 2;
-
-        // Create physics groups
-        this.platforms = this.physics.add.staticGroup();
-        this.jumpPads = this.physics.add.staticGroup();
-
-        // Regular platforms (top view)
-
-        // Main ground platform
-        const ground = this.platforms
-            .create(512, 700, null)
-            .setScale(30, 1)
-            .setSize(30, 30)
-            .setDisplaySize(30 * 30, 30)
-            .setTint(0x009900)
-            .refreshBody();
-
-        // Platform 1 - Starting platform
-        const plat1 = this.platforms
-            .create(230, 550, null)
-            .setScale(5, 1)
-            .setSize(30, 30)
-            .setDisplaySize(5 * 30, 30)
-            .setTint(0x888888)
-            .refreshBody();
-
-        // Platform 2 - Middle jump
-        const plat2 = this.platforms
-            .create(400, 450, null)
-            .setScale(4, 1)
-            .setSize(30, 30)
-            .setDisplaySize(4 * 30, 30)
-            .setTint(0x888888)
-            .refreshBody();
-
-        // Platform 3 - High jump
-        const plat3 = this.platforms
-            .create(600, 350, null)
-            .setScale(3, 1)
-            .setSize(30, 30)
-            .setDisplaySize(3 * 30, 30)
-            .setTint(0x888888)
-            .refreshBody();
-
-        // Platform 4 - Final platform
-        const plat4 = this.platforms
-            .create(800, 500, null)
-            .setScale(6, 1)
-            .setSize(30, 30)
-            .setDisplaySize(6 * 30, 30)
-            .setTint(0x888888)
-            .refreshBody();
-
-        // Add jump pads
-        const jumpPad1 = this.createJumpPad(320, 670, 0xffff00);
-        const jumpPad2 = this.createJumpPad(500, 430, 0xffff00);
-        const jumpPad3 = this.createJumpPad(700, 330, 0xffff00);
-
-        // Create mirrored versions of all platforms for the bottom view
-        // These are just visual, without physics
-
-        // Create mirrored ground
-        const mirrorGround = this.add
-            .rectangle(
-                ground.x,
-                screenHeight - ground.y + midPoint,
-                ground.displayWidth,
-                ground.displayHeight,
-                0x009900
-            )
-            .setDepth(-1);
-
-        // Create mirrored platforms
-        const mirrorPlat1 = this.add
-            .rectangle(plat1.x, screenHeight - plat1.y + midPoint, plat1.displayWidth, plat1.displayHeight, 0x888888)
-            .setDepth(-1);
-
-        const mirrorPlat2 = this.add
-            .rectangle(plat2.x, screenHeight - plat2.y + midPoint, plat2.displayWidth, plat2.displayHeight, 0x888888)
-            .setDepth(-1);
-
-        const mirrorPlat3 = this.add
-            .rectangle(plat3.x, screenHeight - plat3.y + midPoint, plat3.displayWidth, plat3.displayHeight, 0x888888)
-            .setDepth(-1);
-
-        const mirrorPlat4 = this.add
-            .rectangle(plat4.x, screenHeight - plat4.y + midPoint, plat4.displayWidth, plat4.displayHeight, 0x888888)
-            .setDepth(-1);
-
-        // Create mirrored jump pads
-        this.jumpPads.getChildren().forEach(jumpPad => {
-            const mirrorJumpPad = this.add
-                .rectangle(
-                    jumpPad.x,
-                    screenHeight - jumpPad.y + midPoint,
-                    jumpPad.displayWidth,
-                    jumpPad.displayHeight,
-                    jumpPad.fillColor || 0xffff00
-                )
-                .setDepth(-1);
-
-            // Create mirrored arrow indicators
-            const mirrorArrow = this.add
-                .triangle(jumpPad.x, screenHeight - (jumpPad.y - 20) + midPoint, 0, -15, 15, 15, 30, -15, 0xffffff)
-                .setDepth(-1);
-        });
-
-        // Set visibility for cameras
-        [mirrorGround, mirrorPlat1, mirrorPlat2, mirrorPlat3, mirrorPlat4].forEach(obj => {
-            if (this.topCamera) this.topCamera.ignore(obj);
-        });
-
-        // Make regular platforms invisible in bottom camera
-        this.platforms.getChildren().forEach(obj => {
-            if (this.bottomCamera) this.bottomCamera.ignore(obj);
-        });
-
-        // Make jump pads invisible in bottom camera
-        this.jumpPads.getChildren().forEach(obj => {
-            if (this.bottomCamera) this.bottomCamera.ignore(obj);
-        });
-    }
-
-    createJumpPad(x, y, color) {
-        const jumpPad = this.jumpPads.create(x, y, null);
-        jumpPad.setScale(2, 0.5).setSize(30, 15).setDisplaySize(60, 15).setTint(color).refreshBody();
-
-        // Add an indicator arrow
-        const arrow = this.add.triangle(x, y - 20, 0, 15, 15, -15, 30, 15, 0xffffff);
-        arrow.setDepth(1);
-
-        return jumpPad;
     }
 
     handleJumpPad(playerSprite, jumpPad) {
@@ -427,119 +286,6 @@ export class Game extends Scene {
             yoyo: true,
             ease: "Power1",
         });
-    }
-
-    updateGameState(lobby) {
-        if (!lobby || !lobby.players) {
-            console.error("Invalid lobby state:", lobby);
-            return;
-        }
-
-        console.log("Updating game state with lobby:", lobby);
-        console.log("Current player ID:", this.socket.id);
-        console.log("Players in lobby:", Object.keys(lobby.players));
-
-        // Remove players no longer in game
-        Object.keys(this.otherPlayers).forEach(id => {
-            if (!lobby.players[id] || id === this.socket.id) {
-                if (this.otherPlayers[id]) {
-                    console.log("Removing player", id);
-                    this.otherPlayers[id].destroy();
-                    delete this.otherPlayers[id];
-                }
-            }
-        });
-
-        // Add new players and update existing ones
-        Object.keys(lobby.players).forEach(playerId => {
-            // Skip our own player
-            if (playerId === this.socket.id) {
-                return;
-            }
-
-            const playerInfo = lobby.players[playerId];
-            console.log("Processing player:", playerId, playerInfo);
-
-            if (!this.otherPlayers[playerId]) {
-                // New player joined
-                console.log("Creating new player:", playerInfo.name);
-                this.otherPlayers[playerId] = new Player(
-                    this,
-                    playerInfo.x || 230,
-                    playerInfo.y || 550,
-                    playerInfo.name || `Player_${playerId.substring(0, 4)}`,
-                    false // Not the main player
-                );
-
-                // Add collision between other player and platforms
-                if (this.otherPlayers[playerId].sprite) {
-                    this.physics.add.collider(this.otherPlayers[playerId].sprite, this.platforms);
-                    this.physics.add.overlap(
-                        this.otherPlayers[playerId].sprite,
-                        this.jumpPads,
-                        this.handleJumpPad,
-                        null,
-                        this
-                    );
-                }
-            } else {
-                // Update existing player
-                console.log("Updating existing player:", playerId);
-                this.updateOtherPlayer({
-                    id: playerId,
-                    ...playerInfo,
-                });
-            }
-        });
-    }
-
-    updateOtherPlayer(playerInfo) {
-        if (!playerInfo || !playerInfo.id) {
-            console.error("Invalid player info:", playerInfo);
-            return;
-        }
-
-        if (playerInfo.id === this.socket.id) {
-            // Don't update ourselves
-            return;
-        }
-
-        // If we have this player in our list
-        if (this.otherPlayers[playerInfo.id]) {
-            const otherPlayer = this.otherPlayers[playerInfo.id];
-            otherPlayer.moveTo(
-                playerInfo.x,
-                playerInfo.y,
-                playerInfo.animation || "idle",
-                playerInfo.direction || "right"
-            );
-        } else if (playerInfo.x && playerInfo.y) {
-            // We don't have this player yet but we have position data, so create them
-            console.log("Creating missing player from update:", playerInfo.id);
-            this.otherPlayers[playerInfo.id] = new Player(
-                this,
-                playerInfo.x,
-                playerInfo.y,
-                playerInfo.name || `Player_${playerInfo.id.substring(0, 4)}`,
-                false
-            );
-
-            // Add collision between the new player and platforms
-            if (this.otherPlayers[playerInfo.id].sprite) {
-                this.physics.add.collider(this.otherPlayers[playerInfo.id].sprite, this.platforms);
-                this.physics.add.overlap(
-                    this.otherPlayers[playerInfo.id].sprite,
-                    this.jumpPads,
-                    this.handleJumpPad,
-                    null,
-                    this
-                );
-            }
-        } else {
-            console.warn("Cannot update non-existent player:", playerInfo.id);
-            // Request lobby state to try to get complete player info
-            this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
-        }
     }
 
     checkPlayerRespawn() {
@@ -617,7 +363,11 @@ export class Game extends Scene {
     onTimerEnd() {
         console.log("Timer finished!");
 
-        this.scene.start("GameOver");
+        this.scene.start("GameOver", {
+            levelId: this.levelId,
+            playerName: this.playerName,
+            socket: this.socket,
+        });
     }
 
     update() {
@@ -635,13 +385,16 @@ export class Game extends Scene {
         this.cameraManager.updateCameras();
 
         // Send updates to server regardless of movement
-        this.socket.emit("playerUpdate", {
-            lobbyId: this.lobbyId,
-            x: this.player.x,
-            y: this.player.y,
-            animation: this.player.animation,
-            direction: this.player.direction,
-        });
+        if (this.socket && this.socket.connected) {
+            this.socket.emit("playerUpdate", {
+                lobbyId: this.lobbyId,
+                x: this.player.x,
+                y: this.player.y,
+                animation: this.player.animation,
+                direction: this.player.direction,
+                levelId: this.levelId,
+            });
+        }
 
         // Update other players
         Object.entries(this.otherPlayers).forEach(([id, player]) => {
@@ -660,11 +413,12 @@ export class Game extends Scene {
                 `Player: ${this.socket.id.substring(0, 6)} (${Math.round(this.player.x)}, ${Math.round(
                     this.player.y
                 )})` +
-                `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
-                `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
-                `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
-                (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
-                `\nLobby: ${this.lobbyId}`
+                    `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
+                    `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
+                    `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
+                    (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
+                    `\nLobby: ${this.lobbyId}` +
+                    `\nLevel: ${this.levelId}`
             );
         }
     }

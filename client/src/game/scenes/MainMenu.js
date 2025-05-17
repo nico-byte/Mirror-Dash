@@ -93,21 +93,49 @@ export class MainMenu extends Scene {
             this.scene.start("Lobby", { playerName: this.playerName });
         });
 
+        // Level selector button with proper styling
+        const levelSelectorButton = this.add.rectangle(512, 620, 300, 60, 0x008800);
+        levelSelectorButton.setInteractive({ useHandCursor: true });
+        levelSelectorButton.on("pointerdown", () => {
+            this.scene.start("LevelSelector", { playerName: this.playerName });
+        });
+        levelSelectorButton.on("pointerover", () => {
+            levelSelectorButton.setFillStyle(0x00aa00);
+        });
+        levelSelectorButton.on("pointerout", () => {
+            levelSelectorButton.setFillStyle(0x008800);
+        });
+
+        const levelSelectorText = this.add
+            .text(512, 620, "Level Selector", {
+                fontFamily: "Arial Black",
+                fontSize: 24,
+                color: "#ffffff",
+                align: "center",
+            })
+            .setOrigin(0.5);
+
+        // Make text interactive too
+        levelSelectorText.setInteractive({ useHandCursor: true });
+        levelSelectorText.on("pointerdown", () => {
+            this.scene.start("LevelSelector", { playerName: this.playerName });
+        });
+
         // Quick Play button with proper interactivity
-        const quickPlayButton = this.add.rectangle(512, 620, 200, 50, 0x008800);
+        const quickPlayButton = this.add.rectangle(512, 700, 200, 50, 0x885500);
         quickPlayButton.setInteractive({ useHandCursor: true });
         quickPlayButton.on("pointerdown", () => {
             this.scene.start("Game", { playerName: this.playerName });
         });
         quickPlayButton.on("pointerover", () => {
-            quickPlayButton.setFillStyle(0x00aa00);
+            quickPlayButton.setFillStyle(0xaa6600);
         });
         quickPlayButton.on("pointerout", () => {
-            quickPlayButton.setFillStyle(0x008800);
+            quickPlayButton.setFillStyle(0x885500);
         });
 
         const quickPlayText = this.add
-            .text(512, 620, "Quick Play", {
+            .text(512, 700, "Quick Play", {
                 fontFamily: "Arial",
                 fontSize: 18,
                 color: "#ffffff",
@@ -118,7 +146,7 @@ export class MainMenu extends Scene {
         // Make text interactive too
         quickPlayText.setInteractive({ useHandCursor: true });
         quickPlayText.on("pointerdown", () => {
-            this.scene.start("Level", { playerName: this.playerName });
+            this.scene.start("Game", { playerName: this.playerName });
         });
 
         // Add debug info to check if clicks are being registered
