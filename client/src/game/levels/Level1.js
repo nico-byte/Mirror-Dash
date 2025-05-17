@@ -36,12 +36,12 @@ export const Level1 = {
 
         // Create mirrored background images (flipped vertically)
         const mirrorBg4 = scene.add.image(0, 0, "bg4").setOrigin(0, 0).setFlipY(true);
-        const mirrorBg2 = scene.add.image(720, -1, "bg2").setOrigin(0, 0).setFlipY(true);
-        const mirrorBg3 = scene.add.image(1440, 0, "bg3").setOrigin(0, 0).setFlipX(true).setFlipY(true);
-        const mirrorBg5 = scene.add.image(2160, 0, "bg5").setOrigin(0, 0).setFlipY(true);
-        const mirrorBg1 = scene.add.image(2880, 0, "bg1").setOrigin(0, 0).setFlipY(true);
-        const mirrorBgExtra = scene.add.image(3600, 0, "bg2").setOrigin(0, 0).setFlipY(true);
-        const mirrorBgExtra2 = scene.add.image(4320, 0, "bg3").setOrigin(0, 0).setFlipX(true).setFlipY(true);
+        const mirrorBg2 = scene.add.image(720, 0, "bg4").setOrigin(0, 0).setFlipX(true).setFlipY(true);
+        const mirrorBg3 = scene.add.image(1440, 0, "bg4").setOrigin(0, 0).setFlipY(true);
+        const mirrorBg5 = scene.add.image(2160, 0, "bg4").setOrigin(0, 0).setFlipX(true).setFlipY(true);
+        const mirrorBg1 = scene.add.image(2880, 0, "bg4").setOrigin(0, 0).setFlipY(true);
+        const mirrorBgExtra = scene.add.image(3600, 0, "bg4").setOrigin(0, 0).setFlipX(true).setFlipY(true);
+        const mirrorBgExtra2 = scene.add.image(4320, 0, "bg4").setOrigin(0, 0).setFlipY(true);
 
         scene.mirrorBackgroundContainer.add([
             mirrorBg4,
@@ -56,6 +56,63 @@ export const Level1 = {
         // Set camera visibility for backgrounds
         if (scene.bottomCamera) scene.bottomCamera.ignore(scene.backgroundContainer);
         if (scene.topCamera) scene.topCamera.ignore(scene.mirrorBackgroundContainer);
+    },
+
+    createPlatforms: (scene) => {
+        scene.platformGroup = scene.add.group();
+
+        for (const cfg of Level1.platforms) {
+            const platform = cfg.isStatic !== false
+                ? scene.physics.add.staticImage(cfg.x, cfg.y, cfg.texture)
+                : scene.physics.add.image(cfg.x, cfg.y, cfg.texture);
+
+            platform.setScale(cfg.scaleX || 1, cfg.scaleY || 1.4);
+            platform.body.setAllowGravity(false);
+            platform.body.immovable = true;
+            if (platform.refreshBody) platform.refreshBody();
+
+            scene.platformGroup.add(platform);
+
+            if (!cfg.isStatic && cfg.motion) {
+                const tweenConfig = {
+                    targets: platform,
+                    duration: cfg.speed || 2000,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "Sine.easeInOut"
+                };
+
+                if (cfg.motion === "vertical") {
+                    tweenConfig.y = cfg.y - (cfg.range || 80);
+                } else if (cfg.motion === "horizontal") {
+                    tweenConfig.x = cfg.x - (cfg.range || 80);
+                }
+
+                scene.tweens.add(tweenConfig);
+            }
+        }
+    },
+
+    setupMovingPlatforms: (scene) => {
+        for (const platform of scene.platformGroup.getChildren()) {
+            if (platform.body?.immovable === false) {
+                const data = Level1.platforms.find(p => p.x === platform.x && p.y === platform.y);
+                if (!data || !data.motion) continue;
+
+                const tween = {
+                    targets: platform,
+                    duration: data.speed || 2000,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "Sine.easeInOut"
+                };
+
+                if (data.motion === "vertical") tween.y = platform.y - (data.range || 80);
+                else if (data.motion === "horizontal") tween.x = platform.x - (data.range || 80);
+
+                scene.tweens.add(tween);
+            }
+        }
     },
 
     // Platform configurations
