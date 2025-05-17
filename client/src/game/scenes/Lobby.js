@@ -108,303 +108,150 @@ export class Lobby extends Scene {
     }
 
     create() {
-        // Check for connection error first
         if (this.connectionError) {
             alert("Failed to connect to game server. Please try again later.");
             this.scene.start("MainMenu");
             return;
         }
 
-        // Set a darker background for better visibility
-        this.add.rectangle(512, 384, 1024, 768, 0x222222).setAlpha(0.5);
+        this.lobbyListContainer = this.add.container(512, 520).setDepth(1000);
 
-        // Background image with lower opacity
+        // Set a darker background for better visibility
+        this.lobbyListBackground = this.add.rectangle(512, 384, 512*1.9, 384*1.9, 0x222222).setAlpha(0.5);
+
         this.add.image(512, 384, "background").setAlpha(0.2);
 
-        // Title with shadow for better visibility
-        this.add
-            .text(512, 80, "Game Lobbies", {
-                fontFamily: "Arial Black",
-                fontSize: 42,
+        this.lobbyListGameLobbyText = this.add.text(512, 80, "Game Lobbies", {
+            fontFamily: "Orbitron, Arial",
+            fontSize: "48px",
+            color: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 8,
+        }).setOrigin(0.5);
+
+        this.lobbyListNameLabel = this.add.text(512, 140, "Your Name:", {
+            fontFamily: "Orbitron, Arial",
+            fontSize: "20px",
+            color: "#ffffff",
+        }).setOrigin(0.5);
+
+        this.lobbyListNameBox = this.add.rectangle(512, 180, 320, 45, 0xffffff, 0.1)
+            .setStrokeStyle(2, 0xffffff)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
+        this.lobbyListNameBox.on("pointerdown", () => this.promptName());
+
+        this.lobbyListPlayerNameText = this.add.text(512, 180, this.playerName, {
+            fontFamily: "Orbitron, Arial",
+            fontSize: "20px",
+            color: "#ffffff",
+        }).setOrigin(0.5)
+          .setInteractive({ useHandCursor: true });
+        this.lobbyListPlayerNameText.on("pointerdown", () => this.promptName());
+
+        const makeButton = (y, label, baseColor, hoverColor, onClick) => {
+            const rect = this.add.rectangle(0, 0, 320, 60, baseColor)
+                .setOrigin(0.5)
+                .setStrokeStyle(2, 0xffffff)
+                .setInteractive({ useHandCursor: true });
+
+            const text = this.add.text(0, 0, label, {
+                fontFamily: "Orbitron, Arial",
+                fontSize: "24px",
                 color: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 8,
-                align: "center",
-            })
-            .setOrigin(0.5);
+            }).setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
 
-        // Create a panel for player name
-        this.add.rectangle(512, 170, 400, 100, 0x333333).setAlpha(0.8);
+            // Combine into a container so it moves as one unit
+            const button = this.add.container(512, y, [rect, text]);
 
-        // Player name header
-        this.add
-            .text(512, 140, "Your Name:", {
-                fontFamily: "Arial Black",
-                fontSize: 22,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
+            // Set interactivity for the button (delegate events)
+            rect.on("pointerover", () => rect.setFillStyle(hoverColor));
+            rect.on("pointerout", () => rect.setFillStyle(baseColor));
+            rect.on("pointerdown", onClick);
+            text.on("pointerdown", onClick);
 
-        // Player name input box with better styling
-        const nameBox = this.add
-            .rectangle(512, 170, 300, 40, 0x555555, 1)
-            .setInteractive()
-            .on("pointerdown", () => {
-                const newName = prompt("Enter your name:", this.playerName);
-                if (newName && newName.trim() !== "") {
-                    this.playerName = newName.trim();
-                    playerNameText.setText(this.playerName);
-                }
-            });
+            return button;
+        };
 
-        // Add a border to the name box
-        this.add.rectangle(512, 170, 304, 44, 0xffffff, 0.5).setOrigin(0.5);
+        this.lobbyListCreateLobbyButton = makeButton(260, "Create Lobby", 0x00aa00, 0x00cc00, () => this.createNewLobby());
 
-        const playerNameText = this.add
-            .text(512, 170, this.playerName, {
-                fontFamily: "Arial",
-                fontSize: 22,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
+        this.lobbyListAvailableLobbiesText = this.add.text(512, 330, "Available Lobbies", {
+            fontFamily: "Orbitron, Arial",
+            fontSize: "28px",
+            color: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 4,
+        }).setOrigin(0.5);
 
-        // Create Lobby button with better styling
-        const createButton = this.add
-            .rectangle(512, 240, 240, 60, 0x00aa00, 1)
-            .setInteractive()
-            .on("pointerdown", () => this.createNewLobby())
-            .on("pointerover", () => createButton.setFillStyle(0x00cc00))
-            .on("pointerout", () => createButton.setFillStyle(0x00aa00));
-
-        // Add a border to the button
-        this.add.rectangle(512, 240, 244, 64, 0xffffff, 0.5).setOrigin(0.5);
-
-        this.add
-            .text(512, 240, "Create Lobby", {
-                fontFamily: "Arial Black",
-                fontSize: 22,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
-
-        // Divider
-        this.add.rectangle(512, 300, 800, 2, 0xffffff, 0.5);
-
-        // Lobbies list container with better styling
-        this.add.rectangle(512, 450, 800, 300, 0x000000, 0.7);
-
-        // Title for lobbies list with shadow
-        this.add
-            .text(512, 330, "Available Lobbies", {
-                fontFamily: "Arial Black",
-                fontSize: 28,
-                color: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 4,
-                align: "center",
-            })
-            .setOrigin(0.5);
-
-        // Container for lobby list items
-        this.lobbyListContainer = this.add.container(512, 450);
-
-        // Bottom panel for buttons
-        this.add.rectangle(512, 680, 1024, 100, 0x222222, 0.8);
-
-        // Create back button to main menu with better styling
-        const backButton = this.add
-            .rectangle(200, 680, 200, 50, 0x444444, 1)
-            .setInteractive()
-            .on("pointerdown", () => {
-                if (this.inLobby) {
-                    this.socket.emit("leaveLobby", { lobbyId: this.currentLobbyId });
-                }
-                this.scene.start("MainMenu");
-            })
-            .on("pointerover", () => backButton.setFillStyle(0x666666))
-            .on("pointerout", () => backButton.setFillStyle(0x444444));
-
-        // Add a border to the button
-        this.add.rectangle(200, 680, 204, 54, 0xffffff, 0.5).setOrigin(0.5);
-
-        this.add
-            .text(200, 680, "Back to Menu", {
-                fontFamily: "Arial Black",
-                fontSize: 18,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
-
-        // Create refresh button for lobby list with better styling
-        const refreshButton = this.add
-            .rectangle(512, 680, 200, 50, 0x0066cc, 1)
-            .setInteractive()
-            .on("pointerdown", () => {
-                if (this.socket && this.socket.connected) {
+        this.lobbyListRefreshButton = makeButton(640, "Refresh Lobbies", 0x00aa00, 0x00cc00, () => { if (this.socket && this.socket.connected) {
                     console.log("Requesting lobby list");
                     this.socket.emit("getLobbyList");
                 } else {
                     console.error("Socket not connected, cannot request lobby list");
                     alert("Not connected to server. Please try again.");
                 }
-            })
-            .on("pointerover", () => refreshButton.setFillStyle(0x0088ee))
-            .on("pointerout", () => refreshButton.setFillStyle(0x0066cc));
+            });
+        this.lobbyListbackButton = makeButton(710, "Back to Main Menu", 0xaa0000, 0xcc0000, () => this.scene.start("MainMenu"));
 
-        // Add a border to the button
-        this.add.rectangle(512, 680, 204, 54, 0xffffff, 0.5).setOrigin(0.5);
+        this.lobbyBackground = this.add.rectangle(512, 384, 700, 480, 0x222266, 0.8)
+            .setStrokeStyle(2, 0x6666ff)
+            .setVisible(false);
 
-        this.add
-            .text(512, 680, "Refresh Lobbies", {
-                fontFamily: "Arial Black",
-                fontSize: 18,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
+        this.lobbyNameText = this.add.text(512, 200, "Lobby: ", {
+            fontFamily: "Orbitron, Arial",
+            fontSize: 28,
+            color: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 4,
+        }).setOrigin(0.5)
+        .setVisible(false);
 
-        // Creating UI elements for when in a lobby
-        this.lobbyUI = this.add.container(512, 450);
-        this.lobbyUI.setVisible(false);
+        this.lobbyIdText = this.add.text(512, 240, "ID: ", {
+            fontFamily: "Orbitron, Arial",
+            fontSize: 16,
+            color: "#aaaaff",
+        }).setOrigin(0.5)
+        .setVisible(false);
 
-        // Create separate background and foreground elements for proper layering
-        // This prevents text from appearing behind other UI elements
+        this.lobbyPlayerListContainer = this.add.container(512, 300).setVisible(false);
 
-        // Main lobby panel
-        const lobbyInfoBg = this.add.rectangle(0, 0, 700, 320, 0x222266, 0.8);
-        this.lobbyUI.add(lobbyInfoBg);
-
-        // Add a border
-        const lobbyBorder = this.add.rectangle(0, 0, 704, 324, 0x6666ff, 0.5);
-        this.lobbyUI.add(lobbyBorder);
-
-        // Lobby name with shadow
-        this.lobbyNameText = this.add
-            .text(0, -130, "Lobby: ", {
-                fontFamily: "Arial Black",
-                fontSize: 28,
-                color: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 4,
-                align: "center",
-            })
-            .setOrigin(0.5);
-        this.lobbyUI.add(this.lobbyNameText);
-
-        // Add lobby ID display to help with debugging
-        this.lobbyIdText = this.add
-            .text(0, -100, "ID: ", {
-                fontFamily: "Arial",
-                fontSize: 16,
-                color: "#aaaaff",
-                align: "center",
-            })
-            .setOrigin(0.5);
-        this.lobbyUI.add(this.lobbyIdText);
-
-        // Players list title with shadow
-        const playersTitle = this.add
-            .text(0, -60, "Players", {
-                fontFamily: "Arial Black",
-                fontSize: 24,
-                color: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 4,
-                align: "center",
-            })
-            .setOrigin(0.5);
-        this.lobbyUI.add(playersTitle);
-
-        // Add a line under the title
-        const titleUnderline = this.add.rectangle(0, -40, 200, 2, 0xffffff, 0.7);
-        this.lobbyUI.add(titleUnderline);
+        this.lobbyPlayerText = this.add.text(512, 280, "Players", {
+            fontFamily: "Orbitron, Arial",
+            fontSize: 24,
+            color: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 4,
+        }).setOrigin(0.5)
+        .setVisible(false);
 
         // Container for player list - this will be populated dynamically
-        this.playerListContainer = this.add.container(0, 0);
-        this.lobbyUI.add(this.playerListContainer);
+        this.lobbyUI = this.add.container(512,350);
+        this.lobbyPlayerListContainer = this.add.container(0, 0);
+        this.lobbyUI.add(this.lobbyPlayerListContainer);
 
-        // Start game button with better styling
-        this.startGameButton = this.add
-            .rectangle(0, 100, 240, 60, 0x00aa00, 1)
-            .setInteractive()
-            .on("pointerdown", () => {
-                if (this.socket && this.socket.connected && this.currentLobbyId) {
-                    console.log("Requesting game start for lobby:", this.currentLobbyId);
+        this.lobbyStartGameButton = makeButton(460, "Start Game", 0x00aa00, 0x00cc00, () => {
+            if (this.socket?.connected && this.currentLobbyId) {
                     this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
-                } else {
-                    console.error("Cannot start game - socket or lobby ID is missing");
-                }
-            })
-            .on("pointerover", () => this.startGameButton.setFillStyle(0x00cc00))
-            .on("pointerout", () => this.startGameButton.setFillStyle(0x00aa00));
-        this.lobbyUI.add(this.startGameButton);
+                }})
+            .setVisible(false);
 
-        // Add a border to the button
-        const startBtnBorder = this.add.rectangle(0, 100, 244, 64, 0xffffff, 0.5);
-        this.lobbyUI.add(startBtnBorder);
+        this.lobbyLeaveLobbyButton = makeButton(530, "Leave Lobby", 0xaa0000, 0xcc0000, () => this.leaveLobby())
+        .setVisible(false);
 
-        this.startGameText = this.add
-            .text(0, 100, "Start Game", {
-                fontFamily: "Arial Black",
-                fontSize: 22,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
-        this.lobbyUI.add(this.startGameText);
+        this.connectionStatusText = this.add.text(512, 600, "Connecting to server...", {
+            fontFamily: "Orbitron, Arial",
+            fontSize: 14,
+            color: "#ffff00",
+        }).setOrigin(0.5);
 
-        // Leave lobby button with better styling
-        const leaveLobbyButton = this.add
-            .rectangle(0, 180, 240, 50, 0xaa0000, 1)
-            .setInteractive()
-            .on("pointerdown", () => {
-                this.leaveLobby();
-            })
-            .on("pointerover", () => leaveLobbyButton.setFillStyle(0xcc0000))
-            .on("pointerout", () => leaveLobbyButton.setFillStyle(0xaa0000));
-        this.lobbyUI.add(leaveLobbyButton);
-
-        // Add a border to the button
-        const leaveBtnBorder = this.add.rectangle(0, 180, 244, 54, 0xffffff, 0.5);
-        this.lobbyUI.add(leaveBtnBorder);
-
-        const leaveText = this.add
-            .text(0, 180, "Leave Lobby", {
-                fontFamily: "Arial Black",
-                fontSize: 18,
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
-        this.lobbyUI.add(leaveText);
-
-        // Socket connection status text
-        this.connectionStatusText = this.add
-            .text(512, 770, "Connecting to server...", {
-                fontFamily: "Arial",
-                fontSize: 14,
-                color: "#ffff00",
-                align: "center",
-            })
-            .setOrigin(0.5);
-
-        // Request initial lobby list
-        if (this.socket && this.socket.connected) {
-            console.log("Socket already connected, requesting lobby list");
+        if (this.socket?.connected) {
             this.socket.emit("getLobbyList");
             this.connectionStatusText.setText("Connected to server").setColor("#00ff00");
-        } else if (this.socket) {
-            console.log("Waiting for socket connection...");
         } else {
-            console.error("Socket is null, cannot request lobby list");
             this.connectionStatusText.setText("Failed to connect to server").setColor("#ff0000");
         }
 
-        // Debug setting - only show if debug mode is enabled
         const debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
         if (debugMode) {
             this.debugText = this.add.text(10, 10, "Debug: Lobby Scene", {
@@ -507,15 +354,51 @@ export class Lobby extends Scene {
         if (this.lobbyListContainer) {
             this.lobbyListContainer.setVisible(false);
         }
+        
+        this.lobbyListBackground.setVisible(false);
+        this.lobbyListGameLobbyText.setVisible(false);
+        this.lobbyListNameLabel.setVisible(false);
+        this.lobbyListNameBox.setVisible(false);
+        this.lobbyListPlayerNameText.setVisible(false);
+        this.lobbyListCreateLobbyButton.setVisible(false);
+        this.lobbyListAvailableLobbiesText.setVisible(false);
+        this.lobbyListRefreshButton.setVisible(false);
+        this.lobbyListbackButton.setVisible(false);
+
         if (this.lobbyUI) {
             this.lobbyUI.setVisible(true);
         }
+
+        this.lobbyBackground.setVisible(true);
+        this.lobbyNameText.setVisible(true);
+        this.lobbyIdText.setVisible(true);
+        this.lobbyPlayerText.setVisible(true);
+        this.lobbyStartGameButton.setVisible(true);
+        this.lobbyLeaveLobbyButton.setVisible(true);
     }
 
     hideLobbyUI() {
+        this.lobbyBackground.setVisible(false);
+        this.lobbyNameText.setVisible(false);
+        this.lobbyIdText.setVisible(false);
+        this.lobbyPlayerText.setVisible(false);
+        this.lobbyStartGameButton.setVisible(false);
+        this.lobbyLeaveLobbyButton.setVisible(false);
+
         if (this.lobbyUI) {
             this.lobbyUI.setVisible(false);
         }
+        
+        this.lobbyListBackground.setVisible(true);
+        this.lobbyListGameLobbyText.setVisible(true);
+        this.lobbyListNameLabel.setVisible(true);
+        this.lobbyListNameBox.setVisible(true);
+        this.lobbyListPlayerNameText.setVisible(true);
+        this.lobbyListCreateLobbyButton.setVisible(true);
+        this.lobbyListAvailableLobbiesText.setVisible(true);
+        this.lobbyListRefreshButton.setVisible(true);
+        this.lobbyListbackButton.setVisible(true);
+
         if (this.lobbyListContainer) {
             this.lobbyListContainer.setVisible(true);
         }
@@ -529,7 +412,7 @@ export class Lobby extends Scene {
         }
 
         this.lobbyListContainer.removeAll();
-
+        
         // If in a lobby, don't show the list
         if (this.inLobby) return;
 
@@ -539,7 +422,7 @@ export class Lobby extends Scene {
         if (lobbyIds.length === 0) {
             // No lobbies available - show a nicer message
             const noLobbiesText = this.add
-                .text(0, 0, "No lobbies available.\nCreate a new one to get started!", {
+                .text(0, -70, "No lobbies available.\nCreate a new one to get started!", {
                     fontFamily: "Arial",
                     fontSize: 22,
                     color: "#ffffff",
@@ -551,11 +434,11 @@ export class Lobby extends Scene {
 
             // Add a hint icon
             const hintIcon = this.add
-                .text(0, 70, "👆", {
+                .text(0, 0, "👆", {
                     fontSize: 40,
                 })
                 .setOrigin(0.5);
-
+            
             this.lobbyListContainer.add([noLobbiesText, hintIcon]);
             return;
         }
@@ -567,9 +450,9 @@ export class Lobby extends Scene {
             if (!lobby) return;
 
             // Background for this lobby entry with border
-            const bgBorder = this.add.rectangle(0, yPos, 600, 56, 0xffffff, 0.3);
+            const bgBorder = this.add.rectangle(10, yPos, 600, 56, 0xffffff, 0.3);
             const bg = this.add
-                .rectangle(0, yPos, 596, 52, 0x444444, 0.8)
+                .rectangle(10, yPos, 596, 52, 0x444444, 0.8)
                 .setInteractive()
                 .on("pointerover", () => bg.setFillStyle(0x666666, 0.8))
                 .on("pointerout", () => bg.setFillStyle(0x444444, 0.8))
@@ -661,8 +544,8 @@ export class Lobby extends Scene {
         }
 
         // Clear player list
-        if (this.playerListContainer) {
-            this.playerListContainer.removeAll();
+        if (this.lobbyPlayerListContainer) {
+            this.lobbyPlayerListContainer.removeAll();
         } else {
             console.error("Player list container is undefined");
             return;
@@ -700,7 +583,7 @@ export class Lobby extends Scene {
             // Add a border for current player
             if (isCurrentPlayer) {
                 const playerBorder = this.add.rectangle(0, yPos, 404, 54, 0x55ff55, 0.5);
-                this.playerListContainer.add(playerBorder);
+                this.lobbyPlayerListContainer.add(playerBorder);
             }
 
             const prefix = isPlayerHost ? "👑 " : "";
@@ -716,7 +599,7 @@ export class Lobby extends Scene {
                 })
                 .setOrigin(0.5);
 
-            this.playerListContainer.add([playerBg, text]);
+            this.lobbyPlayerListContainer.add([playerBg, text]);
             yPos += 60; // More spacing between players
         });
 
@@ -724,18 +607,10 @@ export class Lobby extends Scene {
         const canStart = playerIds.length >= 2 && isHost;
 
         // Completely recreate the start button to avoid issues with interactivity
-        if (this.startGameButton) {
-            // Remove old button
-            this.startGameButton.destroy();
-
-            // Create new button with proper interactivity
-            this.startGameButton = this.add
-                .rectangle(0, 100, 240, 60, canStart ? 0x00aa00 : 0x555555, canStart ? 1 : 0.5)
-                .setVisible(isHost);
-
+        if (this.lobbyStartGameButton) {
             // Only make it interactive if canStart is true
             if (canStart) {
-                this.startGameButton
+                this.lobbyStartGameButton
                     .setInteractive()
                     .on("pointerdown", () => {
                         if (this.socket && this.socket.connected && this.currentLobbyId) {
@@ -743,29 +618,9 @@ export class Lobby extends Scene {
                             this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
                         }
                     })
-                    .on("pointerover", () => this.startGameButton.setFillStyle(0x00cc00))
-                    .on("pointerout", () => this.startGameButton.setFillStyle(0x00aa00));
+                    .on("pointerover", () => this.lobbyStartGameButton.setFillStyle(0x00cc00))
+                    .on("pointerout", () => this.lobbyStartGameButton.setFillStyle(0x00aa00));
             }
-
-            // Add the button to the container
-            this.lobbyUI.add(this.startGameButton);
-
-            // Update the text
-            if (this.startGameText) {
-                this.startGameText.destroy();
-            }
-
-            this.startGameText = this.add
-                .text(0, 100, "Start Game", {
-                    fontFamily: "Arial Black",
-                    fontSize: 22,
-                    color: "#ffffff",
-                    align: "center",
-                })
-                .setOrigin(0.5)
-                .setVisible(isHost);
-
-            this.lobbyUI.add(this.startGameText);
         }
 
         // Add status message if waiting for more players
@@ -781,7 +636,7 @@ export class Lobby extends Scene {
                 })
                 .setOrigin(0.5);
 
-            this.playerListContainer.add(waitingText);
+            this.lobbyPlayerListContainer.add(waitingText);
         }
     }
 
