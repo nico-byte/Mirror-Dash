@@ -212,25 +212,53 @@ io.on("connection", socket => {
 
     // Create a new lobby
     socket.on("createLobby", ({ lobbyName, playerName }, callback) => {
-        const lobbyId = createLobby(socket, lobbyName, playerName);
-        callback && callback({ success: true, lobbyId });
+        try {
+            const lobbyId = createLobby(socket, lobbyName || "Game Lobby", playerName || "Player");
+            if (callback && typeof callback === "function") {
+                callback({ success: true, lobbyId });
+            }
+        } catch (error) {
+            console.error("Error creating lobby:", error);
+            if (callback && typeof callback === "function") {
+                callback({ success: false, error: "Failed to create lobby" });
+            }
+        }
     });
 
     // Join an existing lobby
     socket.on("joinLobby", ({ lobbyId, playerName }, callback) => {
-        const success = addPlayerToLobby(socket, lobbyId, playerName);
-        callback && callback({ success, lobbyId });
+        try {
+            if (!lobbyId) {
+                if (callback && typeof callback === "function") {
+                    callback({ success: false, error: "No lobby ID provided" });
+                }
+                return;
+            }
+
+            const success = addPlayerToLobby(socket, lobbyId, playerName || "Player");
+            if (callback && typeof callback === "function") {
+                callback({ success, lobbyId });
+            }
+        } catch (error) {
+            console.error("Error joining lobby:", error);
+            if (callback && typeof callback === "function") {
+                callback({ success: false, error: "Failed to join lobby" });
+            }
+        }
     });
 
     // Leave the current lobby
     socket.on("leaveLobby", ({ lobbyId }) => {
-        socket.leave(lobbyId);
-        removePlayerFromLobby(socket.id, lobbyId);
+        if (lobbyId) {
+            socket.leave(lobbyId);
+            removePlayerFromLobby(socket.id, lobbyId);
+        }
     });
 
     // Request current lobbies list
     socket.on("getLobbyList", () => {
-        socket.emit("lobbiesList", getAvailableLobbies());
+        const availableLobbies = getAvailableLobbies();
+        socket.emit("lobbiesList", availableLobbies);
     });
 
     // Request specific lobby state
@@ -252,14 +280,18 @@ io.on("connection", socket => {
             startGame(lobbyId);
         } else if (!lobby) {
             console.error(`Game start requested for non-existent lobby: ${lobbyId}`);
+            socket.emit("lobbyError", { message: "Lobby not found." });
         } else {
             console.error(`Non-host player ${socket.id} tried to start game in lobby: ${lobbyId}`);
+            socket.emit("lobbyError", { message: "Only the host can start the game." });
         }
     });
 
     // Player updates their position/state during gameplay
     socket.on("playerUpdate", ({ lobbyId, ...playerData }) => {
-        updatePlayerInLobby(socket, lobbyId, playerData);
+        if (lobbyId) {
+            updatePlayerInLobby(socket, lobbyId, playerData);
+        }
     });
 
     // When a player disconnects

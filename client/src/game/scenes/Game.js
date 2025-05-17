@@ -39,38 +39,56 @@ export class Game extends Scene {
 
         // Progress tracking
         this.progressManager = new ProgressManager();
+
+        // For synchronization
+        this.lastUpdateTime = 0;
+        this.updateInterval = 50; // Send position updates every 50ms
+        this.syncAttempts = 0;
     }
 
     init(data) {
+        console.log("Game Scene initialized with data:", data);
+
         // Enable debug mode from environment variable
         this.debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
 
         // Set the level ID if provided
         if (data && data.levelId) {
             this.levelId = data.levelId;
+            console.log("Loading level:", this.levelId);
         }
 
         // Set player name if provided
         if (data && data.playerName) {
             this.playerName = data.playerName;
+            console.log("Player name:", this.playerName);
         }
 
         // Initialize progress manager
         this.progressManager.loadProgress(this.playerName);
 
+        // Initialize socket manager
         this.socketManager = new SocketManager(this);
         this.socketManager.setupLobby(data);
 
-        this.socketManager.setupSocketListeners();
+        // Clear other players to start fresh
+        this.otherPlayers = {};
 
-        // Request the current lobby state as soon as we initialize
-        if (this.socket && this.lobbyId) {
-            console.log("Requesting lobby state for:", this.lobbyId);
-            this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
-        }
+        // Set up socket listeners after a slight delay to ensure proper initialization
+        setTimeout(() => {
+            this.socketManager.setupSocketListeners();
+
+            // Request the current lobby state to initialize player data
+            if (this.socket && this.socket.connected && this.lobbyId) {
+                console.log("Requesting initial lobby state for:", this.lobbyId);
+                this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
+            }
+        }, 500);
     }
 
     create() {
+        console.log("Game scene created. Lobby ID:", this.lobbyId);
+
         // Reset timer to full duration
         this.timeLeft = 180;
 
@@ -80,67 +98,35 @@ export class Game extends Scene {
             this.timerEvent = null;
         }
 
+        // Initialize physics groups immediately
+        this.platforms = this.physics.add.staticGroup();
+        this.jumpPads = this.physics.add.staticGroup();
+
+        // Set up camera manager
         this.cameraManager = new CameraManager(this, this.autoScrollCamera, this.scrollSpeed);
         this.cameraManager.setupCameras();
 
+        // Set up level manager
         this.levelManager = createLevelManager(this);
-
-        this.physics.world.on("worldstep", () => {
-            // This ensures the physics system is fully ready
-            if (this.levelManager && !this.levelManager.initialized) {
-                console.log("Initializing LevelManager after physics world is ready");
-                this.levelManager.initialize();
-
-                // If the level hasn't been loaded yet, load it now
-                if (!this.levelLoaded) {
-                    console.log(`Loading level: ${this.levelId}`);
-                    const levelInfo = this.levelManager.loadLevel(this.levelId);
-                    this.levelLoaded = true;
-
-                    // If player hasn't been created yet, create it now
-                    if (!this.player) {
-                        this.player = new Player(
-                            this,
-                            levelInfo.spawnPoint.x,
-                            levelInfo.spawnPoint.y,
-                            this.playerName,
-                            true
-                        );
-
-                        // Add collision between player and platforms
-                        this.physics.add.collider(this.player.sprite, this.platforms);
-
-                        // Add collision with jump pads and special effect
-                        this.physics.add.overlap(this.player.sprite, this.jumpPads, this.handleJumpPad, null, this);
-
-                        // Set up physics overlap with finish line if it exists
-                        if (this.finishObject) {
-                            this.physics.add.overlap(
-                                this.player.sprite,
-                                this.finishObject,
-                                this.handleFinish,
-                                null,
-                                this
-                            );
-                        }
-                    }
-                }
-            }
-        });
+        this.levelManager.initialize();
 
         // Load the specified level and get the spawn position
-        // const levelInfo = this.levelManager.loadLevel(this.levelId);
+        const levelInfo = this.levelManager.loadLevel(this.levelId);
+        this.levelLoaded = true;
 
-        // // Create main player at level spawn position
-        // this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
+        // Create main player at level spawn position
+        this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
 
-        // // Add collision between player and platforms
-        // this.physics.add.collider(this.player.sprite, this.platforms);
+        // Add collision between player and platforms
+        this.physics.add.collider(this.player.sprite, this.platforms);
 
-        // // Add collision with jump pads and special effect
-        // this.physics.add.overlap(this.player.sprite, this.jumpPads, this.handleJumpPad, null, this);
+        // Add collision with jump pads and special effect
+        this.physics.add.overlap(this.player.sprite, this.jumpPads, this.handleJumpPad, null, this);
 
-        this.levelLoaded = false;
+        // Set up physics overlap with finish line if it exists
+        if (this.finishObject) {
+            this.physics.add.overlap(this.player.sprite, this.finishObject, this.handleFinish, null, this);
+        }
 
         // Setup input
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -154,25 +140,25 @@ export class Game extends Scene {
             Space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
         };
 
-        // Add back button to return to level selector - only in top section
+        // Add back button to return to main menu - only in top section
         const backButton = this.add
             .rectangle(100, 50, 150, 40, 0x222222, 0.7)
             .setInteractive()
             .setScrollFactor(0) // Fixed to camera
             .on("pointerdown", () => {
-                if (this.lobbyId) {
+                if (this.socket && this.socket.connected && this.lobbyId) {
                     this.socket.emit("leaveLobby", { lobbyId: this.lobbyId });
                 }
 
-                // Go to level selector
-                this.scene.start("LevelSelector", {
+                // Go back to lobby
+                this.scene.start("Lobby", {
                     socket: this.socket,
                     playerName: this.playerName,
                 });
             });
 
         const backText = this.add
-            .text(100, 50, "Back to Levels", {
+            .text(100, 50, "Back to Lobby", {
                 fontFamily: "Arial",
                 fontSize: 14,
                 color: "#ffffff",
@@ -213,6 +199,7 @@ export class Game extends Scene {
                 .setDepth(100);
         }
 
+        // Add timer display
         this.timerText = this.add
             .text(this.scale.width - 100, 20, "03:00", {
                 fontSize: "24px",
@@ -237,16 +224,85 @@ export class Game extends Scene {
             loop: true,
         });
 
-        // Set up physics overlap with finish line
-        // this.physics.add.overlap(this.player.sprite, this.finishObject, this.handleFinish, null, this);
-
         // Set up moving platforms if any
         this.setupMovingPlatforms();
 
-        // Make sure we're receiving lobby updates
-        if (this.socket && this.lobbyId) {
-            console.log("Requesting lobby state in create method");
+        // If we're in a lobby, make sure to update our initial position
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            console.log("Sending initial position to server");
+            this.socket.emit("playerUpdate", {
+                lobbyId: this.lobbyId,
+                x: this.player.x,
+                y: this.player.y,
+                animation: this.player.animation,
+                direction: this.player.direction,
+                levelId: this.levelId,
+            });
+
+            // Also request lobby state to make sure we see other players
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
+        }
+
+        // Add a multiplayer status indicator
+        this.multiplayerStatusText = this.add
+            .text(this.scale.width - 150, 60, "Looking for players...", {
+                fontSize: "16px",
+                fill: "#ffffff",
+                backgroundColor: "#000000",
+                padding: { x: 5, y: 2 },
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        // Make it only visible in top camera
+        if (this.bottomCamera) {
+            this.bottomCamera.ignore(this.multiplayerStatusText);
+        }
+
+        // Set up a repeated sync timer to make sure we get other players
+        this.syncTimer = this.time.addEvent({
+            delay: 2000, // Try every 2 seconds for the first 10 seconds
+            callback: this.attemptSync,
+            callbackScope: this,
+            loop: true,
+            repeat: 5, // Try 5 times
+        });
+    }
+
+    attemptSync() {
+        this.syncAttempts++;
+
+        // If we already have other players, stop trying
+        if (Object.keys(this.otherPlayers).length > 0) {
+            if (this.syncTimer) {
+                this.syncTimer.remove();
+                this.syncTimer = null;
+            }
+            return;
+        }
+
+        // Try to get lobby state
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            console.log(`Sync attempt ${this.syncAttempts}: Requesting lobby state`);
+            this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
+
+            // Also send our position to make sure others can see us
+            this.socket.emit("playerUpdate", {
+                lobbyId: this.lobbyId,
+                x: this.player.x,
+                y: this.player.y,
+                animation: this.player.animation,
+                direction: this.player.direction,
+                levelId: this.levelId,
+            });
+        }
+
+        // If we've tried 5 times and still don't have other players, give up
+        if (this.syncAttempts >= 5 && this.syncTimer) {
+            console.log("Giving up on sync attempts after 5 tries");
+            this.syncTimer.remove();
+            this.syncTimer = null;
         }
     }
 
@@ -366,8 +422,8 @@ export class Game extends Scene {
                 this.player.sprite.setPosition(newX, newY);
                 this.player.sprite.body.setVelocity(0, 0);
 
-                // Send update to other players
-                if (this.socket && this.lobbyId) {
+                // Send update to other players immediately
+                if (this.socket && this.socket.connected && this.lobbyId) {
                     this.socket.emit("playerUpdate", {
                         lobbyId: this.lobbyId,
                         x: newX,
@@ -415,8 +471,8 @@ export class Game extends Scene {
         });
     }
 
-    update() {
-        if (!this.player || !this.connected || !this.lobbyId) return;
+    update(time, delta) {
+        if (!this.player) return;
 
         // Update main player
         this.player.update();
@@ -427,26 +483,39 @@ export class Game extends Scene {
         // Check if player needs to respawn
         this.checkPlayerRespawn();
 
-        this.cameraManager.updateCameras();
+        // Update cameras
+        if (this.cameraManager) {
+            this.cameraManager.updateCameras();
+        }
 
-        // Send updates to server regardless of movement
-        if (this.socket && this.socket.connected) {
-            this.socket.emit("playerUpdate", {
-                lobbyId: this.lobbyId,
-                x: this.player.x,
-                y: this.player.y,
-                animation: this.player.animation,
-                direction: this.player.direction,
-                levelId: this.levelId,
-            });
+        // Send player updates to server at controlled intervals to prevent flooding
+        const now = time;
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            if (moved || now - this.lastUpdateTime >= this.updateInterval) {
+                // Send update to server
+                this.socketManager.sendPlayerUpdate();
+                this.lastUpdateTime = now;
+            }
         }
 
         // Update other players
-        Object.entries(this.otherPlayers).forEach(([id, player]) => {
+        Object.values(this.otherPlayers).forEach(player => {
             if (player && typeof player.update === "function") {
                 player.update();
             }
         });
+
+        // Update multiplayer status text
+        const otherPlayerCount = Object.keys(this.otherPlayers).length;
+        if (this.multiplayerStatusText) {
+            if (otherPlayerCount > 0) {
+                this.multiplayerStatusText.setText(`Connected: ${otherPlayerCount} player(s)`);
+                this.multiplayerStatusText.setStyle({ fill: "#00ff00" });
+            } else {
+                this.multiplayerStatusText.setText("Looking for players...");
+                this.multiplayerStatusText.setStyle({ fill: "#ffff00" });
+            }
+        }
 
         // Update debug text if enabled
         if (this.debugMode && this.debugText) {
@@ -455,23 +524,45 @@ export class Game extends Scene {
                 .join("\n");
 
             this.debugText.setText(
-                `Player: ${this.socket.id.substring(0, 6)} (${Math.round(this.player.x)}, ${Math.round(
+                `Player: ${this.socket?.id?.substring(0, 6) || "No ID"} (${Math.round(this.player.x)}, ${Math.round(
                     this.player.y
                 )})` +
-                    `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
+                    `\nCamera: ${Math.round(this.topCamera?.scrollX || 0)}, ${Math.round(
+                        this.topCamera?.scrollY || 0
+                    )}` +
                     `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
                     `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
                     (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
-                    `\nLobby: ${this.lobbyId}` +
-                    `\nLevel: ${this.levelId}`
+                    `\nLobby: ${this.lobbyId || "None"}` +
+                    `\nLevel: ${this.levelId}` +
+                    `\nSync Attempts: ${this.syncAttempts}`
             );
         }
     }
 
     shutdown() {
+        // Clear timers
         if (this.timerEvent) {
             this.timerEvent.remove(false);
             this.timerEvent = null;
         }
+
+        if (this.syncTimer) {
+            this.syncTimer.remove();
+            this.syncTimer = null;
+        }
+
+        // Clean up socket manager
+        if (this.socketManager) {
+            this.socketManager.shutdown();
+        }
+
+        // Clean up player objects
+        Object.values(this.otherPlayers).forEach(player => {
+            if (player && typeof player.destroy === "function") {
+                player.destroy();
+            }
+        });
+        this.otherPlayers = {};
     }
 }

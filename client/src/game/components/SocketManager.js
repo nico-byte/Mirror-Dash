@@ -4,6 +4,8 @@ import { Player } from "../entities/Player";
 export class SocketManager {
     constructor(scene) {
         this.scene = scene;
+        this.synchronizationInterval = null;
+        this.lastReceivedUpdate = {};
     }
 
     setupLobby(data) {
@@ -14,6 +16,7 @@ export class SocketManager {
         if (data && data.socket) {
             this.scene.socket = data.socket;
             this.scene.connected = true;
+            console.log("Using existing socket connection");
         } else {
             // Connect to server if not already connected
             this.scene.socket = io(serverUrl);
@@ -29,22 +32,29 @@ export class SocketManager {
         if (data && data.lobbyId) {
             this.scene.lobbyId = data.lobbyId;
             this.scene.connected = true;
+            console.log("Joining existing lobby:", this.scene.lobbyId);
         } else if (import.meta.env.VITE_DIRECT_CONNECT) {
             // If direct connect is enabled, use the lobby ID from environment
             this.scene.lobbyId = import.meta.env.VITE_DIRECT_CONNECT;
             this.scene.connected = true;
+            console.log("Direct connect to lobby:", this.scene.lobbyId);
         }
     }
 
     setupSocketListeners() {
+        if (!this.scene || !this.scene.socket) {
+            console.error("Cannot setup socket listeners - scene or socket is undefined");
+            return;
+        }
+
         // Socket connection event
         this.scene.socket.on("connect", () => {
             console.log("Connected to server with ID:", this.scene.socket.id);
             this.scene.connected = true;
 
-            // If we don't have a lobby ID and we're coming from the old quick play,
-            // we need to create a lobby on the fly
-            if (!this.scene.lobbyId) {
+            // If we don't have a lobby ID and we're in the Game scene (not Lobby scene),
+            // we need to create a lobby on the fly for quick play
+            if (!this.scene.lobbyId && this.scene.scene.key === "Game") {
                 // Create a quick play lobby
                 this.scene.socket.emit(
                     "createLobby",
@@ -53,36 +63,52 @@ export class SocketManager {
                         playerName: this.scene.playerName,
                     },
                     response => {
-                        if (response.success) {
+                        if (response && response.success) {
                             this.scene.lobbyId = response.lobbyId;
                             console.log("Created quick play lobby:", this.scene.lobbyId);
-                            // Important: Request the lobby state again after creating it
+                            // Important: Request the lobby state after creating it
                             this.scene.socket.emit("requestLobbyState", { lobbyId: this.scene.lobbyId });
                         } else {
-                            alert("Failed to create a quick play session.");
+                            console.error("Failed to create a quick play session:", response);
+                            alert("Failed to create a quick play session. Please try again.");
                             this.scene.scene.start("MainMenu");
                         }
                     }
                 );
-            } else {
+            } else if (this.scene.lobbyId) {
                 // If we already have a lobby ID, request its state
+                console.log("Requesting state for existing lobby:", this.scene.lobbyId);
                 this.scene.socket.emit("requestLobbyState", { lobbyId: this.scene.lobbyId });
             }
         });
 
         // Receive lobby state updates (contains player information)
         this.scene.socket.on("lobbyState", lobby => {
-            console.log("Received lobby state in game:", lobby);
-            if (lobby && lobby.id === this.scene.lobbyId) {
-                this.updateGameState(lobby);
+            if (lobby && lobby.id) {
+                console.log("Received lobby state:", lobby.id);
+                if (this.scene.lobbyId && lobby.id === this.scene.lobbyId) {
+                    this.updateGameState(lobby);
+                }
+            } else {
+                console.warn("Received invalid lobby state:", lobby);
             }
         });
 
         // Other player moved
         this.scene.socket.on("playerMoved", playerInfo => {
+            // Record the time we received this update
+            const now = Date.now();
+
             if (playerInfo && playerInfo.id) {
-                // Skip our own player updates
+                // Skip updates for our own player
                 if (playerInfo.id !== this.scene.socket.id) {
+                    // Store the last update time for this player
+                    this.lastReceivedUpdate[playerInfo.id] = {
+                        data: playerInfo,
+                        timestamp: now,
+                    };
+
+                    // Update the player immediately
                     this.updateOtherPlayer(playerInfo);
                 }
             }
@@ -90,9 +116,27 @@ export class SocketManager {
 
         // Handle lobby error event
         this.scene.socket.on("lobbyError", ({ message }) => {
-            alert(message);
-            this.scene.scene.start("MainMenu");
+            console.error("Lobby error:", message);
+            alert("Lobby error: " + message);
+
+            // Only go to main menu if we're in the game scene
+            if (this.scene.scene.key === "Game") {
+                this.scene.scene.start("MainMenu");
+            }
         });
+
+        // Setup synchronization interval
+        if (this.synchronizationInterval) {
+            clearInterval(this.synchronizationInterval);
+        }
+
+        // Regularly request lobby state to ensure we're in sync
+        this.synchronizationInterval = setInterval(() => {
+            if (this.scene && this.scene.socket && this.scene.socket.connected && this.scene.lobbyId) {
+                console.log("Requesting lobby state sync for:", this.scene.lobbyId);
+                this.scene.socket.emit("requestLobbyState", { lobbyId: this.scene.lobbyId });
+            }
+        }, 5000); // Request sync every 5 seconds
     }
 
     updateGameState(lobby) {
@@ -101,9 +145,20 @@ export class SocketManager {
             return;
         }
 
-        console.log("Updating game state with lobby:", lobby);
-        console.log("Current player ID:", this.scene.socket.id);
+        console.log("Updating game state with lobby:", lobby.id);
+        console.log("Current player ID:", this.scene.socket?.id);
         console.log("Players in lobby:", Object.keys(lobby.players));
+
+        // Only proceed if we're in the Game scene
+        if (this.scene.scene.key !== "Game") {
+            console.log("Not in Game scene, skipping player updates");
+            return;
+        }
+
+        // Make sure we have the otherPlayers object
+        if (!this.scene.otherPlayers) {
+            this.scene.otherPlayers = {};
+        }
 
         // Remove players no longer in game
         Object.keys(this.scene.otherPlayers).forEach(id => {
@@ -112,6 +167,7 @@ export class SocketManager {
                     console.log("Removing player", id);
                     this.scene.otherPlayers[id].destroy();
                     delete this.scene.otherPlayers[id];
+                    delete this.lastReceivedUpdate[id];
                 }
             }
         });
@@ -127,33 +183,52 @@ export class SocketManager {
             console.log("Processing player:", playerId, playerInfo);
 
             if (!this.scene.otherPlayers[playerId]) {
-                // New player joined
+                // New player joined - create them at their reported position
                 console.log("Creating new player:", playerInfo.name);
+
+                const posX = playerInfo.x || 230;
+                const posY = playerInfo.y || 550;
+
                 this.scene.otherPlayers[playerId] = new Player(
                     this.scene,
-                    playerInfo.x || 230,
-                    playerInfo.y || 550,
+                    posX,
+                    posY,
                     playerInfo.name || `Player_${playerId.substring(0, 4)}`,
                     false // Not the main player
                 );
 
                 // Add collision between other player and platforms
-                if (this.scene.otherPlayers[playerId].sprite) {
+                if (this.scene.otherPlayers[playerId].sprite && this.scene.platforms) {
                     this.scene.physics.add.collider(this.scene.otherPlayers[playerId].sprite, this.scene.platforms);
-                    this.scene.physics.add.overlap(
-                        this.scene.otherPlayers[playerId].sprite,
-                        this.scene.jumpPads,
-                        this.scene.handleJumpPad,
-                        null,
-                        this.scene
-                    );
+
+                    // Add overlap for jump pads
+                    if (this.scene.jumpPads) {
+                        this.scene.physics.add.overlap(
+                            this.scene.otherPlayers[playerId].sprite,
+                            this.scene.jumpPads,
+                            this.scene.handleJumpPad,
+                            null,
+                            this.scene
+                        );
+                    }
+                }
+
+                // Set initial animation state
+                if (playerInfo.animation) {
+                    this.scene.otherPlayers[playerId].animation = playerInfo.animation;
+                }
+                if (playerInfo.direction) {
+                    this.scene.otherPlayers[playerId].direction = playerInfo.direction;
                 }
             } else {
-                // Update existing player
-                console.log("Updating existing player:", playerId);
+                // Update existing player with lobby data
                 this.updateOtherPlayer({
                     id: playerId,
-                    ...playerInfo,
+                    name: playerInfo.name,
+                    x: playerInfo.x,
+                    y: playerInfo.y,
+                    animation: playerInfo.animation || "idle",
+                    direction: playerInfo.direction || "right",
                 });
             }
         });
@@ -171,17 +246,28 @@ export class SocketManager {
         }
 
         // If we have this player in our list
-        if (this.scene.otherPlayers[playerInfo.id]) {
+        if (this.scene.otherPlayers && this.scene.otherPlayers[playerInfo.id]) {
             const otherPlayer = this.scene.otherPlayers[playerInfo.id];
-            otherPlayer.moveTo(
-                playerInfo.x,
-                playerInfo.y,
-                playerInfo.animation || "idle",
-                playerInfo.direction || "right"
-            );
-        } else if (playerInfo.x && playerInfo.y) {
+
+            // Update the player's position and state
+            if (typeof otherPlayer.moveTo === "function") {
+                otherPlayer.moveTo(
+                    playerInfo.x,
+                    playerInfo.y,
+                    playerInfo.animation || otherPlayer.animation || "idle",
+                    playerInfo.direction || otherPlayer.direction || "right"
+                );
+            } else {
+                console.error("Player object is missing moveTo method:", otherPlayer);
+            }
+        } else if (this.scene.scene.key === "Game" && playerInfo.x !== undefined && playerInfo.y !== undefined) {
             // We don't have this player yet but we have position data, so create them
             console.log("Creating missing player from update:", playerInfo.id);
+
+            if (!this.scene.otherPlayers) {
+                this.scene.otherPlayers = {};
+            }
+
             this.scene.otherPlayers[playerInfo.id] = new Player(
                 this.scene,
                 playerInfo.x,
@@ -191,20 +277,56 @@ export class SocketManager {
             );
 
             // Add collision between the new player and platforms
-            if (this.scene.otherPlayers[playerInfo.id].sprite) {
+            if (this.scene.otherPlayers[playerInfo.id].sprite && this.scene.platforms) {
                 this.scene.physics.add.collider(this.scene.otherPlayers[playerInfo.id].sprite, this.scene.platforms);
-                this.scene.physics.add.overlap(
-                    this.scene.otherPlayers[playerInfo.id].sprite,
-                    this.scene.jumpPads,
-                    this.scene.handleJumpPad,
-                    null,
-                    this.scene
-                );
+
+                // Add overlap for jump pads
+                if (this.scene.jumpPads) {
+                    this.scene.physics.add.overlap(
+                        this.scene.otherPlayers[playerInfo.id].sprite,
+                        this.scene.jumpPads,
+                        this.scene.handleJumpPad,
+                        null,
+                        this.scene
+                    );
+                }
             }
         } else {
             console.warn("Cannot update non-existent player:", playerInfo.id);
             // Request lobby state to try to get complete player info
-            this.socket.emit("requestLobbyState", { lobbyId: this.scene.lobbyId });
+            if (this.scene.socket && this.scene.socket.connected && this.scene.lobbyId) {
+                this.scene.socket.emit("requestLobbyState", { lobbyId: this.scene.lobbyId });
+            }
+        }
+    }
+
+    // Method to clean up resources when leaving the scene
+    shutdown() {
+        if (this.synchronizationInterval) {
+            clearInterval(this.synchronizationInterval);
+            this.synchronizationInterval = null;
+        }
+
+        this.lastReceivedUpdate = {};
+    }
+
+    // Method to send player position updates to the server
+    sendPlayerUpdate() {
+        if (!this.scene || !this.scene.socket || !this.scene.connected || !this.scene.lobbyId) {
+            return;
+        }
+
+        // Only send updates if we have a valid player
+        if (this.scene.player) {
+            this.scene.socket.emit("playerUpdate", {
+                lobbyId: this.scene.lobbyId,
+                x: this.scene.player.x,
+                y: this.scene.player.y,
+                animation: this.scene.player.animation,
+                direction: this.scene.player.direction,
+                levelId: this.scene.levelId,
+                timestamp: Date.now(),
+            });
         }
     }
 }

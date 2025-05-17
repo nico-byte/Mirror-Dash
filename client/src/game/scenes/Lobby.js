@@ -11,17 +11,28 @@ export class Lobby extends Scene {
         this.currentLobbyId = null;
         this.inLobby = false;
         this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
+        this.connectionError = false;
     }
 
     init(data) {
+        console.log("Lobby scene initialized with data:", data);
+
         // Get socket from data if it exists
         if (data && data.socket) {
             this.socket = data.socket;
+            console.log("Using existing socket connection");
         } else {
             // Connect to socket.io server using the environment variable or fallback to localhost
             const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
-            this.socket = io(serverUrl);
-            console.log("Connected to socket server:", serverUrl);
+            console.log("Connecting to socket server:", serverUrl);
+
+            try {
+                this.socket = io(serverUrl);
+                console.log("Socket created:", this.socket.id);
+            } catch (e) {
+                console.error("Error connecting to socket server:", e);
+                this.connectionError = true;
+            }
         }
 
         // Player name can be passed from the main menu
@@ -32,12 +43,37 @@ export class Lobby extends Scene {
         // Generate a new default lobby name for each session
         this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
 
+        // Reset state for new lobby scene
+        this.inLobby = false;
+        this.currentLobbyId = null;
+
         this.setupSocketListeners();
     }
 
     setupSocketListeners() {
+        if (!this.socket) {
+            console.error("Cannot setup listeners - socket is null");
+            return;
+        }
+
+        // Remove any existing listeners to prevent duplicates
+        this.socket.off("lobbiesList");
+        this.socket.off("lobbyState");
+        this.socket.off("gameStart");
+        this.socket.off("lobbyError");
+        this.socket.off("connect");
+
+        // Listen for socket connection event
+        this.socket.on("connect", () => {
+            console.log("Socket connected with ID:", this.socket.id);
+
+            // Request lobbies list on connection
+            this.socket.emit("getLobbyList");
+        });
+
         // Listen for available lobbies list
         this.socket.on("lobbiesList", lobbies => {
+            console.log("Received lobbies list:", lobbies);
             this.lobbies = lobbies;
             this.updateLobbiesList();
         });
@@ -53,6 +89,7 @@ export class Lobby extends Scene {
 
         // Listen for game start event
         this.socket.on("gameStart", lobby => {
+            console.log("Game is starting in lobby:", lobby.id);
             if (this.inLobby && lobby.id === this.currentLobbyId) {
                 // Start the game
                 this.scene.start("Game", {
@@ -65,11 +102,19 @@ export class Lobby extends Scene {
 
         // Listen for lobby errors
         this.socket.on("lobbyError", ({ message }) => {
+            console.error("Lobby error:", message);
             alert(message);
         });
     }
 
     create() {
+        // Check for connection error first
+        if (this.connectionError) {
+            alert("Failed to connect to game server. Please try again later.");
+            this.scene.start("MainMenu");
+            return;
+        }
+
         // Set a darker background for better visibility
         this.add.rectangle(512, 384, 1024, 768, 0x222222).setAlpha(0.5);
 
@@ -199,7 +244,13 @@ export class Lobby extends Scene {
             .rectangle(512, 680, 200, 50, 0x0066cc, 1)
             .setInteractive()
             .on("pointerdown", () => {
-                this.socket.emit("getLobbyList");
+                if (this.socket && this.socket.connected) {
+                    console.log("Requesting lobby list");
+                    this.socket.emit("getLobbyList");
+                } else {
+                    console.error("Socket not connected, cannot request lobby list");
+                    alert("Not connected to server. Please try again.");
+                }
             })
             .on("pointerover", () => refreshButton.setFillStyle(0x0088ee))
             .on("pointerout", () => refreshButton.setFillStyle(0x0066cc));
@@ -244,9 +295,20 @@ export class Lobby extends Scene {
             .setOrigin(0.5);
         this.lobbyUI.add(this.lobbyNameText);
 
+        // Add lobby ID display to help with debugging
+        this.lobbyIdText = this.add
+            .text(0, -100, "ID: ", {
+                fontFamily: "Arial",
+                fontSize: 16,
+                color: "#aaaaff",
+                align: "center",
+            })
+            .setOrigin(0.5);
+        this.lobbyUI.add(this.lobbyIdText);
+
         // Players list title with shadow
         const playersTitle = this.add
-            .text(0, -80, "Players", {
+            .text(0, -60, "Players", {
                 fontFamily: "Arial Black",
                 fontSize: 24,
                 color: "#ffffff",
@@ -258,7 +320,7 @@ export class Lobby extends Scene {
         this.lobbyUI.add(playersTitle);
 
         // Add a line under the title
-        const titleUnderline = this.add.rectangle(0, -60, 200, 2, 0xffffff, 0.7);
+        const titleUnderline = this.add.rectangle(0, -40, 200, 2, 0xffffff, 0.7);
         this.lobbyUI.add(titleUnderline);
 
         // Container for player list - this will be populated dynamically
@@ -270,7 +332,12 @@ export class Lobby extends Scene {
             .rectangle(0, 100, 240, 60, 0x00aa00, 1)
             .setInteractive()
             .on("pointerdown", () => {
-                this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
+                if (this.socket && this.socket.connected && this.currentLobbyId) {
+                    console.log("Requesting game start for lobby:", this.currentLobbyId);
+                    this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
+                } else {
+                    console.error("Cannot start game - socket or lobby ID is missing");
+                }
             })
             .on("pointerover", () => this.startGameButton.setFillStyle(0x00cc00))
             .on("pointerout", () => this.startGameButton.setFillStyle(0x00aa00));
@@ -315,8 +382,27 @@ export class Lobby extends Scene {
             .setOrigin(0.5);
         this.lobbyUI.add(leaveText);
 
+        // Socket connection status text
+        this.connectionStatusText = this.add
+            .text(512, 770, "Connecting to server...", {
+                fontFamily: "Arial",
+                fontSize: 14,
+                color: "#ffff00",
+                align: "center",
+            })
+            .setOrigin(0.5);
+
         // Request initial lobby list
-        this.socket.emit("getLobbyList");
+        if (this.socket && this.socket.connected) {
+            console.log("Socket already connected, requesting lobby list");
+            this.socket.emit("getLobbyList");
+            this.connectionStatusText.setText("Connected to server").setColor("#00ff00");
+        } else if (this.socket) {
+            console.log("Waiting for socket connection...");
+        } else {
+            console.error("Socket is null, cannot request lobby list");
+            this.connectionStatusText.setText("Failed to connect to server").setColor("#ff0000");
+        }
 
         // Debug setting - only show if debug mode is enabled
         const debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
@@ -330,6 +416,12 @@ export class Lobby extends Scene {
     }
 
     createNewLobby() {
+        if (!this.socket || !this.socket.connected) {
+            console.error("Cannot create lobby - socket not connected");
+            alert("Not connected to server. Please try again.");
+            return;
+        }
+
         const lobbyName = prompt("Enter lobby name:", this.defaultLobbyName);
         if (lobbyName && lobbyName.trim() !== "") {
             console.log("Creating lobby with name:", lobbyName.trim());
@@ -340,7 +432,7 @@ export class Lobby extends Scene {
                     playerName: this.playerName,
                 },
                 response => {
-                    if (response.success) {
+                    if (response && response.success) {
                         console.log("Lobby created successfully:", response.lobbyId);
                         this.currentLobbyId = response.lobbyId;
                         this.inLobby = true;
@@ -350,6 +442,7 @@ export class Lobby extends Scene {
                         this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
                     } else {
                         console.error("Failed to create lobby:", response);
+                        alert("Failed to create lobby. Please try again.");
                     }
                 }
             );
@@ -357,6 +450,12 @@ export class Lobby extends Scene {
     }
 
     joinLobby(lobbyId) {
+        if (!this.socket || !this.socket.connected) {
+            console.error("Cannot join lobby - socket not connected");
+            alert("Not connected to server. Please try again.");
+            return;
+        }
+
         console.log("Joining lobby:", lobbyId);
         this.socket.emit(
             "joinLobby",
@@ -365,7 +464,7 @@ export class Lobby extends Scene {
                 playerName: this.playerName,
             },
             response => {
-                if (response.success) {
+                if (response && response.success) {
                     console.log("Successfully joined lobby:", response.lobbyId);
                     this.currentLobbyId = response.lobbyId;
                     this.inLobby = true;
@@ -375,40 +474,67 @@ export class Lobby extends Scene {
                     this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
                 } else {
                     console.error("Failed to join lobby:", response);
+                    alert("Failed to join lobby. It may no longer exist.");
+                    // Refresh lobbies list
+                    this.socket.emit("getLobbyList");
                 }
             }
         );
     }
 
     leaveLobby() {
-        if (this.inLobby) {
+        if (!this.socket || !this.socket.connected) {
+            console.error("Cannot leave lobby - socket not connected");
+            this.inLobby = false;
+            this.currentLobbyId = null;
+            this.hideLobbyUI();
+            return;
+        }
+
+        if (this.inLobby && this.currentLobbyId) {
             console.log("Leaving lobby:", this.currentLobbyId);
             this.socket.emit("leaveLobby", { lobbyId: this.currentLobbyId });
             this.inLobby = false;
             this.currentLobbyId = null;
             this.hideLobbyUI();
+
+            // Request updated lobbies list
+            this.socket.emit("getLobbyList");
         }
     }
 
     showLobbyUI() {
-        this.lobbyListContainer.setVisible(false);
-        this.lobbyUI.setVisible(true);
+        if (this.lobbyListContainer) {
+            this.lobbyListContainer.setVisible(false);
+        }
+        if (this.lobbyUI) {
+            this.lobbyUI.setVisible(true);
+        }
     }
 
     hideLobbyUI() {
-        this.lobbyUI.setVisible(false);
-        this.lobbyListContainer.setVisible(true);
+        if (this.lobbyUI) {
+            this.lobbyUI.setVisible(false);
+        }
+        if (this.lobbyListContainer) {
+            this.lobbyListContainer.setVisible(true);
+        }
     }
 
     updateLobbiesList() {
         // Clear existing list
+        if (!this.lobbyListContainer) {
+            console.error("Lobby list container is undefined");
+            return;
+        }
+
         this.lobbyListContainer.removeAll();
 
         // If in a lobby, don't show the list
         if (this.inLobby) return;
 
         // Check if there are lobbies
-        const lobbyIds = Object.keys(this.lobbies);
+        const lobbyIds = Object.keys(this.lobbies || {});
 
         if (lobbyIds.length === 0) {
             // No lobbies available - show a nicer message
@@ -438,6 +564,7 @@ export class Lobby extends Scene {
         let yPos = -120;
         lobbyIds.forEach((lobbyId, index) => {
             const lobby = this.lobbies[lobbyId];
+            if (!lobby) return;
 
             // Background for this lobby entry with border
             const bgBorder = this.add.rectangle(0, yPos, 600, 56, 0xffffff, 0.3);
@@ -516,25 +643,33 @@ export class Lobby extends Scene {
         });
     }
 
-    // Fixed section for the Lobby updateLobbyState method to handle button state safely
-    // This is just the part that needs to be fixed - you should integrate it into your Lobby.js file
-
     updateLobbyState(lobby) {
         if (!lobby) {
             console.error("Invalid lobby state received:", lobby);
             return;
         }
 
-        console.log("Updating lobby state, players:", Object.keys(lobby.players));
+        console.log("Updating lobby state, players:", Object.keys(lobby.players || {}));
 
-        // Update lobby name with better styling
-        this.lobbyNameText.setText(`Lobby: ${lobby.name}`);
+        // Update lobby name and ID display
+        if (this.lobbyNameText) {
+            this.lobbyNameText.setText(`Lobby: ${lobby.name}`);
+        }
+
+        if (this.lobbyIdText) {
+            this.lobbyIdText.setText(`ID: ${lobby.id}`);
+        }
 
         // Clear player list
-        this.playerListContainer.removeAll();
+        if (this.playerListContainer) {
+            this.playerListContainer.removeAll();
+        } else {
+            console.error("Player list container is undefined");
+            return;
+        }
 
         // Determine if current player is host
-        const isHost = lobby.host === this.socket.id;
+        const isHost = lobby.host === this.socket?.id;
 
         // Safely update the start button visibility
         if (this.startGameButton) {
@@ -546,7 +681,7 @@ export class Lobby extends Scene {
         }
 
         // Draw each player with better styling
-        const playerIds = Object.keys(lobby.players);
+        const playerIds = Object.keys(lobby.players || {});
         let yPos = -20;
 
         playerIds.forEach((playerId, index) => {
@@ -557,7 +692,7 @@ export class Lobby extends Scene {
             }
 
             const isPlayerHost = playerId === lobby.host;
-            const isCurrentPlayer = playerId === this.socket.id;
+            const isCurrentPlayer = playerId === this.socket?.id;
 
             // Background for player entry
             const playerBg = this.add.rectangle(0, yPos, 400, 50, isCurrentPlayer ? 0x334433 : 0x333344, 0.7);
@@ -603,7 +738,10 @@ export class Lobby extends Scene {
                 this.startGameButton
                     .setInteractive()
                     .on("pointerdown", () => {
-                        this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
+                        if (this.socket && this.socket.connected && this.currentLobbyId) {
+                            console.log("Requesting game start for lobby:", this.currentLobbyId);
+                            this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
+                        }
                     })
                     .on("pointerover", () => this.startGameButton.setFillStyle(0x00cc00))
                     .on("pointerout", () => this.startGameButton.setFillStyle(0x00aa00));
@@ -648,13 +786,37 @@ export class Lobby extends Scene {
     }
 
     update() {
+        // Update socket connection status
+        if (this.connectionStatusText) {
+            if (this.socket && this.socket.connected) {
+                this.connectionStatusText.setText("Connected to server").setColor("#00ff00");
+            } else if (this.socket) {
+                this.connectionStatusText.setText("Connecting to server...").setColor("#ffff00");
+            } else {
+                this.connectionStatusText.setText("Not connected to server").setColor("#ff0000");
+            }
+        }
+
         // If in debug mode, update debug text
         if (this.debugText) {
             this.debugText.setText(
-                `Socket ID: ${this.socket.id}\n` +
+                `Socket ID: ${this.socket?.id || "None"}\n` +
+                    `Connected: ${this.socket?.connected || false}\n` +
                     `In Lobby: ${this.inLobby}\n` +
-                    `Lobby ID: ${this.currentLobbyId || "None"}`
+                    `Lobby ID: ${this.currentLobbyId || "None"}\n` +
+                    `Available Lobbies: ${Object.keys(this.lobbies || {}).length}`
             );
+        }
+    }
+
+    shutdown() {
+        // Clean up event listeners to prevent memory leaks
+        if (this.socket) {
+            this.socket.off("lobbiesList");
+            this.socket.off("lobbyState");
+            this.socket.off("gameStart");
+            this.socket.off("lobbyError");
+            this.socket.off("connect");
         }
     }
 }

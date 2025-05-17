@@ -1,8 +1,10 @@
 import { Scene } from "phaser";
+import { io } from "socket.io-client";
 
 export class Preloader extends Scene {
     constructor() {
         super("Preloader");
+        this.socket = null;
     }
 
     init() {
@@ -36,6 +38,9 @@ export class Preloader extends Scene {
 
         // Load player sprite
         this.load.image("sprite", "/assets/Player_Platforms/sprite.png");
+
+        // Load logo for main menu
+        this.load.image("logo", "/assets/logo.png");
     }
 
     create() {
@@ -55,20 +60,86 @@ export class Preloader extends Scene {
             defaultPlayerName,
         });
 
+        // If we're skipping directly to game with environment variables,
+        // pre-establish the socket connection
+        if ((startDirectly || skipMenu) && (skipLobby || directConnect)) {
+            const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
+            this.socket = io(serverUrl);
+
+            // Wait for socket to connect before proceeding
+            this.socket.on("connect", () => {
+                this.navigateBasedOnEnvVars(startDirectly, skipMenu, skipLobby, directConnect, defaultPlayerName);
+            });
+
+            // Set a timeout in case connection takes too long
+            setTimeout(() => {
+                if (!this.socket.connected) {
+                    console.error("Socket connection timed out, proceeding anyway");
+                    this.navigateBasedOnEnvVars(startDirectly, skipMenu, skipLobby, directConnect, defaultPlayerName);
+                }
+            }, 3000);
+        } else {
+            // No socket pre-connection needed, proceed normally
+            this.navigateBasedOnEnvVars(startDirectly, skipMenu, skipLobby, directConnect, defaultPlayerName);
+        }
+    }
+
+    navigateBasedOnEnvVars(startDirectly, skipMenu, skipLobby, directConnect, defaultPlayerName) {
         // Determine which scene to start based on development options
         if (startDirectly || skipMenu) {
             if (skipLobby || directConnect) {
-                // Skip directly to game
-                console.log("Skipping to Game scene");
-                this.scene.start("Game", {
-                    playerName: defaultPlayerName,
-                    lobbyId: directConnect,
-                });
+                // Create lobby first if we're skipping directly to game and have direct connect
+                if (directConnect) {
+                    console.log("Direct connecting to lobby:", directConnect);
+
+                    // Start the game directly with the lobby ID
+                    this.scene.start("Game", {
+                        playerName: defaultPlayerName,
+                        lobbyId: directConnect,
+                        socket: this.socket,
+                    });
+                } else {
+                    // Create a new quick play lobby first
+                    if (this.socket && this.socket.connected) {
+                        console.log("Creating quick play lobby for direct game start");
+                        this.socket.emit(
+                            "createLobby",
+                            {
+                                lobbyName: "Quick Play",
+                                playerName: defaultPlayerName,
+                            },
+                            response => {
+                                if (response && response.success) {
+                                    console.log("Created lobby:", response.lobbyId);
+                                    // Start the game with the new lobby ID
+                                    this.scene.start("Game", {
+                                        playerName: defaultPlayerName,
+                                        lobbyId: response.lobbyId,
+                                        socket: this.socket,
+                                    });
+                                } else {
+                                    console.error("Failed to create lobby, starting game without one");
+                                    this.scene.start("Game", {
+                                        playerName: defaultPlayerName,
+                                        socket: this.socket,
+                                    });
+                                }
+                            }
+                        );
+                    } else {
+                        // Start without socket connected
+                        console.log("Starting game without connected socket");
+                        this.scene.start("Game", {
+                            playerName: defaultPlayerName,
+                        });
+                    }
+                }
             } else {
                 // Skip to lobby
                 console.log("Skipping to Lobby scene");
                 this.scene.start("Lobby", {
                     playerName: defaultPlayerName,
+                    socket: this.socket,
                 });
             }
         } else {
