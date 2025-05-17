@@ -503,21 +503,36 @@ export class Game extends Scene {
 
     checkPlayerRespawn() {
         // Define the world bounds
-        const worldBottom = 900; // Adjust based on your level height
+        const worldBottom = 650; // Adjust based on your level height
 
-        // Check if the main player has fallen out of bounds
+        // Check if the main player has fallen out of bounds or is caught by the camera
         if (this.player && this.player.sprite && this.player.sprite.body) {
-            if (this.player.y > worldBottom) {
-                // Respawn from the top
-                this.player.sprite.setPosition(this.player.x, 0);
+            const caughtByCamera =
+                this.autoScrollCamera && this.topCamera && this.player.x < this.topCamera.scrollX + 10; // Player is behind camera's left edge
+            const fallenOffMap = this.player.y > worldBottom;
+
+            if (fallenOffMap || caughtByCamera) {
+                let newX = this.player.x;
+                let newY = 0; // Respawn from top
+
+                // If caught by camera, teleport ahead of camera position
+                if (caughtByCamera) {
+                    newX = this.topCamera.scrollX + 250; // Teleport 250 pixels ahead of camera
+                    console.log("Player caught by camera - respawning ahead");
+                } else if (fallenOffMap) {
+                    console.log("Player fell off map - respawning from top");
+                }
+
+                // Respawn player
+                this.player.sprite.setPosition(newX, newY);
                 this.player.sprite.body.setVelocity(0, 0);
 
                 // Send update to other players
                 if (this.socket && this.lobbyId) {
                     this.socket.emit("playerUpdate", {
                         lobbyId: this.lobbyId,
-                        x: this.player.x,
-                        y: 0,
+                        x: newX,
+                        y: newY,
                         animation: "idle",
                         direction: this.player.direction,
                     });
