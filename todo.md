@@ -16,13 +16,13 @@
 | [ ]    | Implement Music                                   |          |         |
 | [ ]    | Implement Start/Finish                            |          |         |
 | [ ]    | Implement Score in Stars                          |          |         |
-| [ ]    | When player falls from platform, respawn from top |          |         |
+| [x]    | When player falls from platform, respawn from top |          |         |
 
 ## Server
 
 | Status | Task                                                | Assignee | Comment |
 | ------ | --------------------------------------------------- | -------- | ------- |
-| [ ]    | Mirrored player should be other player not yourself |          |         |
+| [x]    | Mirrored player should be other player not yourself |          |         |
 
 ## General
 
