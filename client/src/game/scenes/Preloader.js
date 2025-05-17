@@ -23,10 +23,19 @@ export class Preloader extends Scene {
     }
 
     preload() {
-        //  Load the assets for the game - Replace with your own assets
-        this.load.setPath("assets");
+        // Load background images
+        this.load.image("bg1", "/assets/background/bg1.png");
+        this.load.image("bg2", "/assets/background/bg2.png");
+        this.load.image("bg3", "/assets/background/bg3.png");
+        this.load.image("bg4", "/assets/background/bg4.png");
+        this.load.image("bg5", "/assets/background/bg5.png");
 
-        this.load.image("logo", "logo.png");
+        // Load platform textures
+        this.load.image("platform_3x1", "/assets/Player_Platforms/platform_3x1.png");
+        this.load.image("platform_4x1", "/assets/Player_Platforms/platform_4x1.png");
+
+        // Load player sprite
+        this.load.image("sprite", "/assets/Player_Platforms/sprite.png");
     }
 
     create() {
@@ -51,7 +60,7 @@ export class Preloader extends Scene {
             if (skipLobby || directConnect) {
                 // Skip directly to game
                 console.log("Skipping to Game scene");
-                this.scene.start("Level", {
+                this.scene.start("Game", {
                     playerName: defaultPlayerName,
                     lobbyId: directConnect,
                 });

@@ -10,7 +10,8 @@ export class Player {
 
         // Create the player sprite
         // Main player is red, other players are blue
-        this.sprite = scene.add.circle(x, y, 20, isMainPlayer ? 0xff0000 : 0x0000ff);
+        this.sprite = scene.physics.add.sprite(x, y, "sprite");
+        this.sprite.setScale(0.5); // Adjust scale as needed
 
         // Add player name text
         this.text = scene.add
@@ -126,7 +127,7 @@ export class Player {
             const jumpStrength = 800; // Increased for better jump experience
 
             this.sprite.body.setAccelerationX(0); // Reset acceleration
-            this.sprite.body.setVelocityX(0);     // Reset horizontal speed
+            this.sprite.body.setVelocityX(0); // Reset horizontal speed
             let moved = false;
             let prevAnimation = this.animation;
             let prevDirection = this.direction;

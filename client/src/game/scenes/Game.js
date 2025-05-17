@@ -204,121 +204,189 @@ export class Game extends Scene {
         this.platforms = this.physics.add.staticGroup();
         this.jumpPads = this.physics.add.staticGroup();
 
-        // Regular platforms (top view)
+        // Create background container (for top view)
+        this.backgroundContainer = this.add.container(0, 0);
 
-        // Main ground platform
-        const ground = this.platforms
-            .create(512, 700, null)
-            .setScale(30, 1)
-            .setSize(30, 30)
-            .setDisplaySize(30 * 30, 30)
-            .setTint(0x009900)
-            .refreshBody();
+        // Add parallax background layers
+        const bg4 = this.add.image(0, 0, "bg4").setOrigin(0, 0);
+        const bg2 = this.add.image(720, -1, "bg2").setOrigin(0, 0);
+        const bg3 = this.add.image(1440, 0, "bg3").setOrigin(0, 0).setFlipX(true);
+        const bg5 = this.add.image(2160, 0, "bg5").setOrigin(0, 0);
+        const bg1 = this.add.image(2880, 0, "bg1").setOrigin(0, 0);
+        const bgExtra = this.add.image(3600, 0, "bg2").setOrigin(0, 0);
+        const bgExtra2 = this.add.image(4320, 0, "bg3").setOrigin(0, 0).setFlipX(true);
 
-        // Platform 1 - Starting platform
-        const plat1 = this.platforms
-            .create(230, 550, null)
-            .setScale(5, 1)
-            .setSize(30, 30)
-            .setDisplaySize(5 * 30, 30)
-            .setTint(0x888888)
-            .refreshBody();
+        this.backgroundContainer.add([bg4, bg2, bg3, bg5, bg1, bgExtra, bgExtra2]);
 
-        // Platform 2 - Middle jump
-        const plat2 = this.platforms
-            .create(400, 450, null)
-            .setScale(4, 1)
-            .setSize(30, 30)
-            .setDisplaySize(4 * 30, 30)
-            .setTint(0x888888)
-            .refreshBody();
+        // Create mirrored background for bottom view
+        this.mirrorBackgroundContainer = this.add.container(0, midPoint);
 
-        // Platform 3 - High jump
-        const plat3 = this.platforms
-            .create(600, 350, null)
-            .setScale(3, 1)
-            .setSize(30, 30)
-            .setDisplaySize(3 * 30, 30)
-            .setTint(0x888888)
-            .refreshBody();
+        // Create mirrored background images (flipped vertically)
+        const mirrorBg4 = this.add.image(0, 0, "bg4").setOrigin(0, 0).setFlipY(true);
+        const mirrorBg2 = this.add.image(720, -1, "bg2").setOrigin(0, 0).setFlipY(true);
+        const mirrorBg3 = this.add.image(1440, 0, "bg3").setOrigin(0, 0).setFlipX(true).setFlipY(true);
+        const mirrorBg5 = this.add.image(2160, 0, "bg5").setOrigin(0, 0).setFlipY(true);
+        const mirrorBg1 = this.add.image(2880, 0, "bg1").setOrigin(0, 0).setFlipY(true);
+        const mirrorBgExtra = this.add.image(3600, 0, "bg2").setOrigin(0, 0).setFlipY(true);
+        const mirrorBgExtra2 = this.add.image(4320, 0, "bg3").setOrigin(0, 0).setFlipX(true).setFlipY(true);
 
-        // Platform 4 - Final platform
-        const plat4 = this.platforms
-            .create(800, 500, null)
-            .setScale(6, 1)
-            .setSize(30, 30)
-            .setDisplaySize(6 * 30, 30)
-            .setTint(0x888888)
-            .refreshBody();
+        this.mirrorBackgroundContainer.add([
+            mirrorBg4,
+            mirrorBg2,
+            mirrorBg3,
+            mirrorBg5,
+            mirrorBg1,
+            mirrorBgExtra,
+            mirrorBgExtra2,
+        ]);
 
-        // Add jump pads
-        const jumpPad1 = this.createJumpPad(320, 670, 0xffff00);
-        const jumpPad2 = this.createJumpPad(500, 430, 0xffff00);
-        const jumpPad3 = this.createJumpPad(700, 330, 0xffff00);
+        // Set camera visibility for backgrounds
+        if (this.bottomCamera) this.bottomCamera.ignore(this.backgroundContainer);
+        if (this.topCamera) this.topCamera.ignore(this.mirrorBackgroundContainer);
 
-        // Create mirrored versions of all platforms for the bottom view
-        // These are just visual, without physics
+        // Create platforms using textures (following Level.js layout)
+        this.createPlatformWithMirror(85, 500, "platform_4x1", 1, 1.4);
+        this.createPlatformWithMirror(336, 570, "platform_3x1", 1, 1.4);
+        this.createPlatformWithMirror(606, 593, "platform_4x1", 1, 1.4);
+        this.createPlatformWithMirror(814, 565, "platform_4x1", 0.5, 1.4);
+        this.createPlatformWithMirror(996, 524, "platform_3x1", 1, 1.4);
+        this.createPlatformWithMirror(1211, 493, "platform_4x1", 1, 1.4);
+        this.createPlatformWithMirror(1434, 436, "platform_4x1", 1, 1.4);
+        this.createPlatformWithMirror(1610, 416, "platform_3x1", 1, 1.4);
+        this.createPlatformWithMirror(1764, 379, "platform_4x1", 0.5, 1.4);
 
-        // Create mirrored ground
-        const mirrorGround = this.add
-            .rectangle(
-                ground.x,
-                screenHeight - ground.y + midPoint,
-                ground.displayWidth,
-                ground.displayHeight,
-                0x009900
-            )
-            .setDepth(-1);
+        // Add a floating platform with animation
+        const floatingPlatform = this.createPlatformWithMirror(1921, 345, "platform_3x1", 1, 1.4, false); // Not static
 
-        // Create mirrored platforms
-        const mirrorPlat1 = this.add
-            .rectangle(plat1.x, screenHeight - plat1.y + midPoint, plat1.displayWidth, plat1.displayHeight, 0x888888)
-            .setDepth(-1);
-
-        const mirrorPlat2 = this.add
-            .rectangle(plat2.x, screenHeight - plat2.y + midPoint, plat2.displayWidth, plat2.displayHeight, 0x888888)
-            .setDepth(-1);
-
-        const mirrorPlat3 = this.add
-            .rectangle(plat3.x, screenHeight - plat3.y + midPoint, plat3.displayWidth, plat3.displayHeight, 0x888888)
-            .setDepth(-1);
-
-        const mirrorPlat4 = this.add
-            .rectangle(plat4.x, screenHeight - plat4.y + midPoint, plat4.displayWidth, plat4.displayHeight, 0x888888)
-            .setDepth(-1);
-
-        // Create mirrored jump pads
-        this.jumpPads.getChildren().forEach(jumpPad => {
-            const mirrorJumpPad = this.add
-                .rectangle(
-                    jumpPad.x,
-                    screenHeight - jumpPad.y + midPoint,
-                    jumpPad.displayWidth,
-                    jumpPad.displayHeight,
-                    jumpPad.fillColor || 0xffff00
-                )
-                .setDepth(-1);
-
-            // Create mirrored arrow indicators
-            const mirrorArrow = this.add
-                .triangle(jumpPad.x, screenHeight - (jumpPad.y - 20) + midPoint, 0, -15, 15, 15, 30, -15, 0xffffff)
-                .setDepth(-1);
+        // Add animation to floating platform
+        this.tweens.add({
+            targets: floatingPlatform.platform,
+            y: floatingPlatform.platform.y - 80,
+            duration: 2000,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.easeInOut",
         });
 
-        // Set visibility for cameras
-        [mirrorGround, mirrorPlat1, mirrorPlat2, mirrorPlat3, mirrorPlat4].forEach(obj => {
-            if (this.topCamera) this.topCamera.ignore(obj);
+        // Add same animation to mirrored platform (in reverse for the mirror effect)
+        this.tweens.add({
+            targets: floatingPlatform.mirrorPlatform,
+            y: floatingPlatform.mirrorPlatform.y + 80,
+            duration: 2000,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.easeInOut",
         });
 
-        // Make regular platforms invisible in bottom camera
-        this.platforms.getChildren().forEach(obj => {
-            if (this.bottomCamera) this.bottomCamera.ignore(obj);
-        });
+        // Add remaining platforms
+        this.createPlatformWithMirror(2069, 500, "platform_4x1", 0.5, 1.4);
+        this.createPlatformWithMirror(2633, 500, "platform_4x1", 5, 1.4);
 
-        // Make jump pads invisible in bottom camera
-        this.jumpPads.getChildren().forEach(obj => {
-            if (this.bottomCamera) this.bottomCamera.ignore(obj);
-        });
+        // Add jump pads at strategic locations
+        this.createJumpPadWithMirror(320, 670, 0xffff00);
+        this.createJumpPadWithMirror(700, 580, 0xffff00);
+        this.createJumpPadWithMirror(1100, 520, 0xffff00);
+
+        // Create finish object (red rectangle)
+        this.finishObject = this.physics.add.staticGroup();
+        this.finishObjectRect = this.finishObject
+            .create(2900, 450, null)
+            .setSize(100, 100)
+            .setDisplaySize(100, 100)
+            .setOrigin(0.5)
+            .refreshBody();
+        this.finishObjectRect.fillColor = 0xff0000;
+
+        // Visual fill for finish line (top view)
+        this.finishVisual = this.add.rectangle(2900, 450, 100, 100, 0xff0000);
+        this.finishVisual.setDepth(1);
+
+        // Mirror finish line for bottom view
+        this.mirrorFinishVisual = this.add.rectangle(2900, screenHeight - 450 + midPoint, 100, 100, 0xff0000);
+        this.mirrorFinishVisual.setDepth(1);
+
+        // Set camera visibility for finish objects
+        if (this.bottomCamera) this.bottomCamera.ignore([this.finishObjectRect, this.finishVisual]);
+        if (this.topCamera) this.topCamera.ignore(this.mirrorFinishVisual);
+
+        // Set world bounds based on level size
+        this.physics.world.setBounds(0, 0, 5000, 800);
+
+        // Set camera bounds
+        if (this.topCamera) this.topCamera.setBounds(0, 0, 5000, 800);
+        if (this.bottomCamera) this.bottomCamera.setBounds(0, 0, 5000, 800);
+    }
+
+    // Helper method to create a platform with its mirrored version
+    createPlatformWithMirror(x, y, texture, scaleX = 1, scaleY = 1, isStatic = true) {
+        const screenHeight = this.scale.height;
+        const midPoint = screenHeight / 2;
+
+        // Create the platform
+        let platform;
+
+        if (isStatic) {
+            platform = this.platforms.create(x, y, texture);
+            platform.setScale(scaleX, scaleY);
+            platform.body.moves = false;
+            platform.body.allowGravity = false;
+            platform.body.immovable = true;
+            platform.refreshBody();
+        } else {
+            platform = this.physics.add.image(x, y, texture);
+            platform.setScale(scaleX, scaleY);
+            platform.body.allowGravity = false;
+            platform.body.immovable = true;
+        }
+
+        // Create mirrored platform (visual only)
+        const mirrorPlatform = this.add
+            .image(x, screenHeight - y + midPoint, texture)
+            .setScale(scaleX, scaleY)
+            .setFlipY(true);
+
+        // Set camera visibility
+        if (this.topCamera) this.topCamera.ignore(mirrorPlatform);
+        if (this.bottomCamera) this.bottomCamera.ignore(platform);
+
+        return { platform, mirrorPlatform };
+    }
+
+    // Helper method to create a jump pad with its mirrored version
+    createJumpPadWithMirror(x, y, color) {
+        const screenHeight = this.scale.height;
+        const midPoint = screenHeight / 2;
+
+        // Create jump pad
+        const jumpPad = this.jumpPads.create(x, y, null);
+        jumpPad.setScale(2, 0.5).setSize(30, 15).setDisplaySize(60, 15).setTint(color).refreshBody();
+
+        // Add an indicator arrow
+        const arrow = this.add.triangle(x, y - 20, 0, 15, 15, -15, 30, 15, 0xffffff);
+        arrow.setDepth(1);
+
+        // Create mirrored jump pad (visual only)
+        const mirrorJumpPad = this.add.rectangle(x, screenHeight - y + midPoint, 60, 15, color);
+
+        // Create mirrored arrow (manually flip points vertically)
+        const mirrorArrow = this.add.triangle(
+            x,
+            screenHeight - (y - 20) + midPoint,
+            0,
+            -15, // Flip Y
+            15,
+            15, // Flip Y
+            30,
+            -15, // Flip Y
+            0xffffff
+        );
+        mirrorArrow.setDepth(1);
+
+        // Set camera visibility
+        if (this.topCamera) this.topCamera.ignore([mirrorJumpPad, mirrorArrow]);
+        if (this.bottomCamera) this.bottomCamera.ignore([jumpPad, arrow]);
+
+        return jumpPad;
     }
 
     createJumpPad(x, y, color) {
@@ -464,11 +532,11 @@ export class Game extends Scene {
                 `Player: ${this.socket.id.substring(0, 6)} (${Math.round(this.player.x)}, ${Math.round(
                     this.player.y
                 )})` +
-                `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
-                `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
-                `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
-                (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
-                `\nLobby: ${this.lobbyId}`
+                    `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
+                    `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
+                    `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
+                    (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
+                    `\nLobby: ${this.lobbyId}`
             );
         }
     }
