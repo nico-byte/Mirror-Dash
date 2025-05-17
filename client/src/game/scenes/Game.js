@@ -1,8 +1,8 @@
 import { Scene } from "phaser";
-import { io } from "socket.io-client";
 import { Player } from "../entities/Player";
 import { CameraManager } from "../components/CameraManager";
 import { SocketManager } from "../components/SocketManager";
+import { createLevelManager } from "../levels";
 
 export class Game extends Scene {
     constructor() {
@@ -65,11 +65,13 @@ export class Game extends Scene {
         this.cameraManager = new CameraManager(this, this.autoScrollCamera, this.scrollSpeed);
         this.cameraManager.setupCameras();
 
-        // Create level
-        this.createLevel();
+        this.levelManager = createLevelManager(this);
 
-        // Create main player at platform position
-        this.player = new Player(this, 230, 500, this.playerName, true);
+        // Load the first level and get the spawn position
+        const levelInfo = this.levelManager.loadLevel("level1");
+
+        // Create main player at level spawn position
+        this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
 
         // Add collision between player and platforms
         this.physics.add.collider(this.player.sprite, this.platforms);
@@ -174,6 +176,37 @@ export class Game extends Scene {
 
         this.physics.add.overlap(this.player.sprite, this.finishObject, this.handleFinish, null, this);
 
+        const floatingPlatform = this.platforms.getChildren().find(p => p.x === 1921 && p.y === 345);
+        if (floatingPlatform) {
+            // Find its corresponding mirror
+            const mirrorPlatforms = this.children.list.filter(
+                c => c.type === "Image" && c.x === 1921 && c.texture.key === "platform_3x1"
+            );
+            const mirrorPlatform = mirrorPlatforms.find(p => p.y > this.scale.height / 2);
+
+            // Add animation to floating platform
+            this.tweens.add({
+                targets: floatingPlatform,
+                y: floatingPlatform.y - 80,
+                duration: 2000,
+                yoyo: true,
+                repeat: -1,
+                ease: "Sine.easeInOut",
+            });
+
+            // Add same animation to mirrored platform (in reverse for the mirror effect)
+            if (mirrorPlatform) {
+                this.tweens.add({
+                    targets: mirrorPlatform,
+                    y: mirrorPlatform.y + 80,
+                    duration: 2000,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: "Sine.easeInOut",
+                });
+            }
+        }
+
         // Make sure we're receiving lobby updates
         if (this.socket && this.lobbyId) {
             console.log("Requesting lobby state in create method");
@@ -193,128 +226,6 @@ export class Game extends Scene {
         this.scene.start("FinishLevel", {
             timeLeft: this.timeLeft,
         });
-    }
-
-    createLevel() {
-        // Get screen dimensions for mirroring
-        const screenHeight = this.scale.height;
-        const midPoint = screenHeight / 2;
-
-        // Create physics groups
-        this.platforms = this.physics.add.staticGroup();
-        this.jumpPads = this.physics.add.staticGroup();
-
-        // Create background container (for top view)
-        this.backgroundContainer = this.add.container(0, 0);
-
-        // Add parallax background layers
-        const bg4 = this.add.image(0, 0, "bg4").setOrigin(0, 0);
-        const bg2 = this.add.image(720, -1, "bg2").setOrigin(0, 0);
-        const bg3 = this.add.image(1440, 0, "bg3").setOrigin(0, 0).setFlipX(true);
-        const bg5 = this.add.image(2160, 0, "bg5").setOrigin(0, 0);
-        const bg1 = this.add.image(2880, 0, "bg1").setOrigin(0, 0);
-        const bgExtra = this.add.image(3600, 0, "bg2").setOrigin(0, 0);
-        const bgExtra2 = this.add.image(4320, 0, "bg3").setOrigin(0, 0).setFlipX(true);
-
-        this.backgroundContainer.add([bg4, bg2, bg3, bg5, bg1, bgExtra, bgExtra2]);
-
-        // Create mirrored background for bottom view
-        this.mirrorBackgroundContainer = this.add.container(0, midPoint);
-
-        // Create mirrored background images (flipped vertically)
-        const mirrorBg4 = this.add.image(0, 0, "bg4").setOrigin(0, 0).setFlipY(true);
-        const mirrorBg2 = this.add.image(720, -1, "bg2").setOrigin(0, 0).setFlipY(true);
-        const mirrorBg3 = this.add.image(1440, 0, "bg3").setOrigin(0, 0).setFlipX(true).setFlipY(true);
-        const mirrorBg5 = this.add.image(2160, 0, "bg5").setOrigin(0, 0).setFlipY(true);
-        const mirrorBg1 = this.add.image(2880, 0, "bg1").setOrigin(0, 0).setFlipY(true);
-        const mirrorBgExtra = this.add.image(3600, 0, "bg2").setOrigin(0, 0).setFlipY(true);
-        const mirrorBgExtra2 = this.add.image(4320, 0, "bg3").setOrigin(0, 0).setFlipX(true).setFlipY(true);
-
-        this.mirrorBackgroundContainer.add([
-            mirrorBg4,
-            mirrorBg2,
-            mirrorBg3,
-            mirrorBg5,
-            mirrorBg1,
-            mirrorBgExtra,
-            mirrorBgExtra2,
-        ]);
-
-        // Set camera visibility for backgrounds
-        if (this.bottomCamera) this.bottomCamera.ignore(this.backgroundContainer);
-        if (this.topCamera) this.topCamera.ignore(this.mirrorBackgroundContainer);
-
-        // Create platforms using textures (following Level.js layout)
-        this.createPlatformWithMirror(85, 500, "platform_4x1", 1, 1.4);
-        this.createPlatformWithMirror(336, 570, "platform_3x1", 1, 1.4);
-        this.createPlatformWithMirror(606, 593, "platform_4x1", 1, 1.4);
-        this.createPlatformWithMirror(814, 565, "platform_4x1", 0.5, 1.4);
-        this.createPlatformWithMirror(996, 524, "platform_3x1", 1, 1.4);
-        this.createPlatformWithMirror(1211, 493, "platform_4x1", 1, 1.4);
-        this.createPlatformWithMirror(1434, 436, "platform_4x1", 1, 1.4);
-        this.createPlatformWithMirror(1610, 416, "platform_3x1", 1, 1.4);
-        this.createPlatformWithMirror(1764, 379, "platform_4x1", 0.5, 1.4);
-
-        // Add a floating platform with animation
-        const floatingPlatform = this.createPlatformWithMirror(1921, 345, "platform_3x1", 1, 1.4, false); // Not static
-
-        // Add animation to floating platform
-        this.tweens.add({
-            targets: floatingPlatform.platform,
-            y: floatingPlatform.platform.y - 80,
-            duration: 2000,
-            yoyo: true,
-            repeat: -1,
-            ease: "Sine.easeInOut",
-        });
-
-        // Add same animation to mirrored platform (in reverse for the mirror effect)
-        this.tweens.add({
-            targets: floatingPlatform.mirrorPlatform,
-            y: floatingPlatform.mirrorPlatform.y + 80,
-            duration: 2000,
-            yoyo: true,
-            repeat: -1,
-            ease: "Sine.easeInOut",
-        });
-
-        // Add remaining platforms
-        this.createPlatformWithMirror(2069, 500, "platform_4x1", 0.5, 1.4);
-        this.createPlatformWithMirror(2633, 500, "platform_4x1", 5, 1.4);
-
-        // Add jump pads at strategic locations
-        this.createJumpPadWithMirror(320, 670, 0xffff00);
-        this.createJumpPadWithMirror(700, 580, 0xffff00);
-        this.createJumpPadWithMirror(1100, 520, 0xffff00);
-
-        // Create finish object (red rectangle)
-        this.finishObject = this.physics.add.staticGroup();
-        this.finishObjectRect = this.finishObject
-            .create(2900, 450, null)
-            .setSize(100, 100)
-            .setDisplaySize(100, 100)
-            .setOrigin(0.5)
-            .refreshBody();
-        this.finishObjectRect.fillColor = 0xff0000;
-
-        // Visual fill for finish line (top view)
-        this.finishVisual = this.add.rectangle(2900, 450, 100, 100, 0xff0000);
-        this.finishVisual.setDepth(1);
-
-        // Mirror finish line for bottom view
-        this.mirrorFinishVisual = this.add.rectangle(2900, screenHeight - 450 + midPoint, 100, 100, 0xff0000);
-        this.mirrorFinishVisual.setDepth(1);
-
-        // Set camera visibility for finish objects
-        if (this.bottomCamera) this.bottomCamera.ignore([this.finishObjectRect, this.finishVisual]);
-        if (this.topCamera) this.topCamera.ignore(this.mirrorFinishVisual);
-
-        // Set world bounds based on level size
-        this.physics.world.setBounds(0, 0, 5000, 800);
-
-        // Set camera bounds
-        if (this.topCamera) this.topCamera.setBounds(0, 0, 5000, 800);
-        if (this.bottomCamera) this.bottomCamera.setBounds(0, 0, 5000, 800);
     }
 
     // Helper method to create a platform with its mirrored version
