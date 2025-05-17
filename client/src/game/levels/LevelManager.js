@@ -235,7 +235,6 @@ export class LevelManager {
                     platform.refreshBody();
                 }
             } else {
-                // Stelle sicher, dass die Gruppe existiert
                 if (!this.scene.movingPlatforms) {
                     this.scene.movingPlatforms = this.scene.physics.add.group({
                         immovable: true,
@@ -250,9 +249,10 @@ export class LevelManager {
                 platform.body.moves = true;
                 platform.body.velocity.set(0);
 
-                platform.body.checkCollision.down = false;
-                platform.body.checkCollision.left = false;
-                platform.body.checkCollision.right = false;        
+                platform.body.checkCollision.down = true;
+                platform.body.checkCollision.left = true;
+                platform.body.checkCollision.right = true;
+                platform.body.checkCollision.up = true;
 
                 platform.platformData = {
                     motion,
@@ -302,21 +302,19 @@ export class LevelManager {
         this.movingPlatforms.forEach(({platform, motion, range, speed, baseX, baseY}) => {
             if (!platform || !platform.body) return;
 
-            const timeScale = time / (speed || 2000);
-            const offset = Math.sin(timeScale) * (range || 80);
-            const velocity = Math.cos(timeScale) * (range || 80 ) * Math.PI / (speed / 1000);
-            
+            const t = time / (speed || 2000);
+            const amplitude = Math.abs(range || 80);
+
             if (motion === "vertical") {
-                const newY = baseY + offset;
-
-                platform.body.velocity.y = velocity;
-                platform.y = newY;
-            }
-            else if (motion === "horizontal") {
-                const newX = baseX + offset;
-
-                platform.body.velocity.x = velocity;
-                platform.x = newX;
+                const newY = baseY + Math.sin(t) * amplitude;
+                platform.setY(newY);
+                platform.body.velocity.y = Math.cos(t) * amplitude * Math.PI / (speed / 1000);
+                platform.body.velocity.x = 0; // Keine horizontale Bewegung
+            } else if (motion === "horizontal") {
+                const newX = baseX + Math.sin(t) * amplitude;
+                platform.setX(newX);
+                platform.body.velocity.x = Math.cos(t) * amplitude * Math.PI / (speed / 1000);
+                platform.body.velocity.y = 0; // Keine vertikale Bewegung
             }
 
             platform.body.updateFromGameObject();
