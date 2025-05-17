@@ -287,7 +287,7 @@ export class LevelManager {
 
             return { platform, mirrorPlatform };
         } catch (error) {
-            console.error("Error creating platform:", error, "at position:", x, y);
+            // console.error("Error creating platform:", error, "at position:", x, y);
             return { platform: null, mirrorPlatform: null };
         }
     }
