@@ -15,7 +15,7 @@
 | [x]    | Time Penalties                                            | Robin    |         |
 | [ ]    | Implement Music                                           |          |         |
 | [x]    | Implement Start/Finish                                    | Robin    |         |
-| [ ]    | Implement Score in Stars                                  |          |         |
+| [ ]    | Implement Score in Stars                                  | Robin    |         |
 | [x]    | When player falls from platform, respawn from top         | Milka    |         |
 | [ ]    | Add character customization options                       |          |         |
 | [ ]    | Implement leaderboard                                     |          |         |
