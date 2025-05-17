@@ -246,7 +246,8 @@ export class Game extends Scene {
 
         // Create finish object (red rectangle)
         this.finishObject = this.physics.add.staticGroup();
-        this.finishObjectRect = this.finishObject.create(900, 500, null)
+        this.finishObjectRect = this.finishObject
+            .create(900, 500, null)
             .setSize(100, 100)
             .setDisplaySize(100, 100)
             .setOrigin(0.5)
@@ -257,13 +258,7 @@ export class Game extends Scene {
         this.finishVisual = this.add.rectangle(900, 500, 100, 100, 0xff0000);
         this.finishVisual.setDepth(-1);
 
-        this.physics.add.overlap(
-            this.player.sprite,
-            this.finishObject,
-            this.handleFinish,
-            null,
-            this
-        );
+        this.physics.add.overlap(this.player.sprite, this.finishObject, this.handleFinish, null, this);
 
         // Make sure we're receiving lobby updates
         if (this.socket && this.lobbyId) {
@@ -271,7 +266,6 @@ export class Game extends Scene {
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
         }
     }
-
 
     handleFinish(playerSprite, finishObject) {
         console.log("Player reached finish!");
@@ -282,8 +276,8 @@ export class Game extends Scene {
         }
 
         // Switch to FinishLevel scene
-        this.scene.start('FinishLevel', {
-            timeLeft: this.timeLeft
+        this.scene.start("FinishLevel", {
+            timeLeft: this.timeLeft,
         });
     }
 
@@ -599,7 +593,8 @@ export class Game extends Scene {
 
                 // Apply 5-second penalty
                 if (typeof this.timeLeft === "number") {
-                    this.timeLeft = Math.max(0, this.timeLeft - 5); // Prevent going below 0
+                    const penalty = import.meta.env.VITE_INSTANT_DEATH_MODE === "true" ? this.timeLeft : 5; // Instant death mode
+                    this.timeLeft = Math.max(0, this.timeLeft - penalty); // Prevent going below 0
                     this.updateTimerDisplay(); // Immediately update the UI
                     console.log("Penalty applied: -5 seconds");
                 }
@@ -668,7 +663,7 @@ export class Game extends Scene {
         }
 
         */
-        this.scene.start('GameOver');
+        this.scene.start("GameOver");
     }
 
     update() {
@@ -748,11 +743,11 @@ export class Game extends Scene {
                 `Player: ${this.socket.id.substring(0, 6)} (${Math.round(this.player.x)}, ${Math.round(
                     this.player.y
                 )})` +
-                `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
-                `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
-                `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
-                (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
-                `\nLobby: ${this.lobbyId}`
+                    `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
+                    `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
+                    `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
+                    (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
+                    `\nLobby: ${this.lobbyId}`
             );
         }
     }

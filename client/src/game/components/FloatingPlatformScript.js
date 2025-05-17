@@ -7,7 +7,7 @@ class FloatingPlatformScript extends ScriptNode {
 
         this.scene.tweens.add({
             targets: platform,
-            y: platform.y - 80,
+            y: platform.y - 120,
             duration: 2000,
             yoyo: true,
             repeat: -1,

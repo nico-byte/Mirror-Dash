@@ -274,13 +274,49 @@
         },
         {
             "type": "ArcadeImage",
-            "id": "bba15c4d-b851-4ec2-affa-64be300a7f4a",
+            "id": "725a4ac1-620b-4d12-9a11-18ad8e1fa816",
+            "label": "platform_4x_5",
+            "texture": {
+                "key": "platform_4x1"
+            },
+            "x": 2069,
+            "y": 500,
+            "scaleX": 0.5,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 128,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "fd9cdf16-0292-4ce1-999d-fed89a000be8",
+            "label": "platform_4x_6",
+            "texture": {
+                "key": "platform_4x1"
+            },
+            "x": 2633,
+            "y": 500,
+            "scaleX": 5,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 1280,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeSprite",
+            "id": "b6f776bf-57c5-4f41-95e4-6a7e69e7d900",
             "label": "sprite",
             "texture": {
                 "key": "sprite"
             },
-            "x": 41,
-            "y": 454,
+            "x": 36,
+            "y": 457,
             "body.gravity.y": 500,
             "collideWorldBounds": true,
             "allowRotation": false,
