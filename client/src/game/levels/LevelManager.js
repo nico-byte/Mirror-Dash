@@ -247,7 +247,12 @@ export class LevelManager {
                 platform.setScale(scaleX, scaleY);
                 platform.setImmovable(true);
                 platform.body.allowGravity = false;
+                platform.body.moves = true;
                 platform.body.velocity.set(0);
+
+                platform.body.checkCollision.down = false;
+                platform.body.checkCollision.left = false;
+                platform.body.checkCollision.right = false;        
 
                 platform.platformData = {
                     motion,
@@ -259,7 +264,6 @@ export class LevelManager {
 
                 this.scene.movingPlatforms.add(platform);
 
-                // Optional: Merken für updateMovingPlatforms
                 if (!this.movingPlatforms) this.movingPlatforms = [];
                 this.movingPlatforms.push({
                     platform,
@@ -288,22 +292,36 @@ export class LevelManager {
         }
     }
 
+
+       /**
+     * Call this from scene.update()
+     */
     updateMovingPlatforms(time) {
         if (!this.movingPlatforms) return;
 
-        this.movingPlatforms.forEach(({ platform, motion, range, speed, baseX, baseY }) => {
-            const offset = Math.sin(time / (speed || 2000)) * (range || 80);
+        this.movingPlatforms.forEach(({platform, motion, range, speed, baseX, baseY}) => {
+            if (!platform || !platform.body) return;
 
+            const timeScale = time / (speed || 2000);
+            const offset = Math.sin(timeScale) * (range || 80);
+            const velocity = Math.cos(timeScale) * (range || 80 ) * Math.PI / (speed / 1000);
+            
             if (motion === "vertical") {
-                platform.y = baseY + offset;
-            } else if (motion === "horizontal") {
-                platform.x = baseX + offset;
+                const newY = baseY + offset;
+
+                platform.body.velocity.y = velocity;
+                platform.y = newY;
+            }
+            else if (motion === "horizontal") {
+                const newX = baseX + offset;
+
+                platform.body.velocity.x = velocity;
+                platform.x = newX;
             }
 
-            platform.body.updateFromGameObject(); // ❗ Wichtig für Kollisionsverhalten
+            platform.body.updateFromGameObject();
         });
     }
-
 
     /**
      * Create a jump pad with its mirrored version
@@ -452,5 +470,3 @@ export class LevelManager {
         return levelData.movingPlatforms || [];
     }
 }
-
-

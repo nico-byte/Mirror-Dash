@@ -23,12 +23,19 @@ export class GameCollisions {
 
         // Add collision with moving platforms
         if (player && player.sprite && movingPlatforms) {
-            this.scene.physics.add.collider(player.sprite, movingPlatforms);
+            const movingPlatformCollision = this.scene.physics.add.collider(
+                player.sprite, 
+                movingPlatforms,
+                this.handleMovingPlatformCollision,
+                null,
+                this
+            );
         }
+        this.movingPlatforms = movingPlatforms;
 
     }
 
-    setupOtherPlayerCollisions(otherPlayer, platforms, jumpPads) {
+    setupOtherPlayerCollisions(otherPlayer, platforms, jumpPads, movingPlatforms) {
         if (!this.scene.physics) return;
 
         // Add collision between other player and platforms
@@ -38,6 +45,16 @@ export class GameCollisions {
             // Add overlap for jump pads
             if (jumpPads) {
                 this.scene.physics.add.overlap(otherPlayer.sprite, jumpPads, this.handleJumpPad, null, this.scene);
+            }
+
+            if (this.movingPlatforms) {
+                this.scene.physics.add.collider(
+                    otherPlayer.sprite,
+                    movingPlatforms,
+                    this.handleMovingPlatformCollision,
+                    null,
+                    this
+                );
             }
         }
     }
@@ -54,5 +71,19 @@ export class GameCollisions {
             yoyo: true,
             ease: "Power1",
         });
+    }
+
+    handleMovingPlatformCollision(playerSprite, platform) {
+        // Check if the player is on top of the moving platform
+        if (playerSprite.body.touching.down && platform.body.touching.up) {
+            // Set the player's velocity to match the moving platform's velocity
+            if (platform.body.velocity.x !== 0) {
+                playerSprite.body.velocity.x += platform.body.velocity.x;
+            }
+
+            if (platform.body.velocity.y !== 0) {
+                playerSprite.body.velocity.y += platform.body.velocity.y;
+            }
+        }
     }
 }

@@ -127,7 +127,7 @@ export const Level1 = {
         { x: 1610, y: 416, texture: "platform_3x1", scaleY: 1.4 },
         { x: 1764, y: 379, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
 
-        // Floating platform (vertical motion)
+         // Floating platform (vertical motion)
         { x: 1921, y: 345, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'vertical', range: -100, speed: 2000 },
 
         { x: 2069 , y: 500, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
