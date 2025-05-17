@@ -159,6 +159,23 @@ export class FinishLevel extends Scene {
                 color: "#ffffff",
             })
             .setOrigin(0.5);
+
+        // Leaderboard button
+        const leaderboardButton = this.add
+            .rectangle(width / 2, isNextLevelAvailable ? 770 : 690, 280, 60, 0x8844aa, 0.8)
+            .setStrokeStyle(3, 0xffffff)
+            .setInteractive({ useHandCursor: true })
+            .on("pointerover", () => leaderboardButton.setFillStyle(0xaa66cc, 0.8))
+            .on("pointerout", () => leaderboardButton.setFillStyle(0x8844aa, 0.8))
+            .on("pointerdown", () => this.goToLeaderboard());
+
+        this.add
+            .text(width / 2, isNextLevelAvailable ? 770 : 690, "Leaderboard", {
+                fontFamily: "Orbitron, Arial",
+                fontSize: 22,
+                color: "#ffffff",
+            })
+            .setOrigin(0.5);
     }
 
     startNextLevel() {
@@ -217,4 +234,11 @@ export class FinishLevel extends Scene {
 
         this.scene.start("MainMenu");
     }
+
+    goToLeaderboard() {
+        this.scene.start("Leaderboard", {
+            socket: this.socket,
+            playerName: this.playerName,
+        });
+}
 }
