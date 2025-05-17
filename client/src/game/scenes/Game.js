@@ -544,19 +544,12 @@ export class Game extends Scene {
                 this.topCamera.startFollow(this.player.sprite, false, 0, 1); // Only follow Y (0 for X, 1 for Y)
             }
 
-            // If auto-scrolling is enabled, move camera horizontally
+            // If auto-scrolling is enabled, move camera horizontally (not the player)
             if (this.autoScrollCamera) {
                 this.topCamera.scrollX += this.scrollSpeed * (this.game.loop.delta / 1000);
 
-                // Keep player visible by adjusting their position if needed
-                const screenWidth = this.scale.width;
-                const buffer = screenWidth * 0.3; // Buffer space
-
-                if (this.player.x < this.topCamera.scrollX + buffer && this.player.sprite.body) {
-                    this.player.sprite.body.setVelocityX(
-                        Math.max(this.player.sprite.body.velocity.x, this.scrollSpeed * 1.2)
-                    );
-                }
+                // Camera scrolls independently, player can move at their own pace
+                // No automatic player movement - let player control their character
             }
         }
 
