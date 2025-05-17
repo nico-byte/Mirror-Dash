@@ -15,6 +15,55 @@ export const Level1 = {
         height: 720,
     },
 
+    // Platform configurations
+    platforms: [
+        { x: 85, y: 500, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 336, y: 570, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 606, y: 593, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 814, y: 565, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
+        { x: 996, y: 524, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 1211, y: 493, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 1434, y: 436, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 1610, y: 416, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 1764, y: 379, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
+
+         // Floating platform (vertical motion)
+        { x: 1921, y: 345, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'vertical', range: -100, speed: 2000 },
+
+        { x: 2069 , y: 500, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
+        { x: 2433, y: 500, texture: "platform_4x1", scaleX: 3, scaleY: 1.4 },
+
+        // New section
+        { x: 2900, y: 470, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 3100, y: 420, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 3280, y: 370, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 3450, y: 330, texture: "platform_3x1", scaleY: 1.4 },
+
+        // Sideways platform (horizontal motion)
+        { x: 3750, y: 300, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'horizontal', range: 100 , speed: 1600 },
+
+        { x: 3900, y: 460, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 4250, y: 500, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 4550, y: 520, texture: "platform_3x1", scaleY: 1.4 },
+    ],
+
+    // Jump pad configurations
+    jumpPads: [
+        { x: 320, y: 570, color: 0xffff00 },
+        { x: 700, y: 580, color: 0xffff00 },
+        { x: 1100, y: 520, color: 0xffff00 },
+        { x: 3050, y: 430, color: 0xff00ff },
+        { x: 4100, y: 470, color: 0x00ffff },
+    ],
+
+    // Finish line configuration
+    finish: {
+        x: 4700,
+        y: 440,
+        width: 100,
+        height: 100,
+    },
+
     // Background creation function
     createBackground: (scene, midPoint) => {
         // Create background container (for top view)
@@ -66,9 +115,19 @@ export const Level1 = {
                 ? scene.physics.add.staticImage(cfg.x, cfg.y, cfg.texture)
                 : scene.physics.add.image(cfg.x, cfg.y, cfg.texture);
 
-            platform.setScale(cfg.scaleX || 1, cfg.scaleY || 1.4);
+            const scaleX = cfg.scaleX || 1;
+            const scaleY = cfg.scaleY || 1.4;
+
+            platform.setScale(scaleX, scaleY);
             platform.body.setAllowGravity(false);
             platform.body.immovable = true;
+
+            // Shrink the collider size (80% width and 50% height of the original scaled size)
+            const frame = scene.textures.get(cfg.texture).getSourceImage();
+            const bodyWidth = frame.width * scaleX * 0.5;
+            const bodyHeight = frame.height * scaleY * 0.0;
+            platform.body.setSize(10, bodyHeight, true);
+
             if (platform.refreshBody) platform.refreshBody();
 
             scene.platformGroup.add(platform);
@@ -113,54 +172,5 @@ export const Level1 = {
                 scene.tweens.add(tween);
             }
         }
-    },
-
-    // Platform configurations
-    platforms: [
-        { x: 85, y: 500, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 336, y: 570, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 606, y: 593, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 814, y: 565, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
-        { x: 996, y: 524, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 1211, y: 493, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 1434, y: 436, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 1610, y: 416, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 1764, y: 379, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
-
-         // Floating platform (vertical motion)
-        { x: 1921, y: 345, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'vertical', range: -100, speed: 2000 },
-
-        { x: 2069 , y: 500, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
-        { x: 2433, y: 500, texture: "platform_4x1", scaleX: 3, scaleY: 1.4 },
-
-        // New section
-        { x: 2900, y: 470, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 3100, y: 420, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 3280, y: 370, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 3450, y: 330, texture: "platform_3x1", scaleY: 1.4 },
-
-        // Sideways platform (horizontal motion)
-        { x: 3750, y: 300, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'horizontal', range: 100 , speed: 1600 },
-
-        { x: 3900, y: 460, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4250, y: 500, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4550, y: 520, texture: "platform_3x1", scaleY: 1.4 },
-    ],
-
-    // Jump pad configurations
-    jumpPads: [
-        { x: 320, y: 570, color: 0xffff00 },
-        { x: 700, y: 580, color: 0xffff00 },
-        { x: 1100, y: 520, color: 0xffff00 },
-        { x: 3050, y: 430, color: 0xff00ff },
-        { x: 4100, y: 470, color: 0x00ffff },
-    ],
-
-    // Finish line configuration
-    finish: {
-        x: 4700,
-        y: 440,
-        width: 100,
-        height: 100,
     },
 };

@@ -18,7 +18,7 @@ export class PlayerPhysics {
         this.sprite.body.setFriction(1, 0);
         this.sprite.body.setMaxVelocity(600, 1000);
         this.sprite.body.setGravityY(1000);
-        this.sprite.body.setSize(32, 32).setOffset(-12, -12); // Adjust for circle hitbox
+        this.sprite.body.setSize(32, 64, true); // Adjust for circle hitbox
     }
 
     applyMovement(cursors, wasd, animation, direction) {
