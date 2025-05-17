@@ -139,6 +139,15 @@ export class Game extends Scene {
     }
 
     create() {
+        // Reset timer to full duration
+        this.timeLeft = 180;
+
+        // Remove any previous timer event if exists (for hot reload or reuse safety)
+        if (this.timerEvent) {
+            this.timerEvent.remove(false);
+            this.timerEvent = null;
+        }
+
         // Setup cameras for split screen
         this.setupCameras();
 
@@ -745,6 +754,13 @@ export class Game extends Scene {
                 (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
                 `\nLobby: ${this.lobbyId}`
             );
+        }
+    }
+
+    shutdown() {
+        if (this.timerEvent) {
+            this.timerEvent.remove(false);
+            this.timerEvent = null;
         }
     }
 }
