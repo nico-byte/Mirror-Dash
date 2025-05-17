@@ -7,6 +7,7 @@ import { Lobby } from "./scenes/Lobby";
 import { AUTO, Game, Scale } from "phaser";
 import { FinishLevel } from "./scenes/FinishLevel";
 import { LevelSelector } from "./scenes/LevelSelector";
+import { Leaderboard } from "./scenes/Leaderboard";
 
 //  Find out more information about the Game Config at:
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
@@ -29,7 +30,7 @@ const config = {
             debug: true,
         },
     },
-    scene: [Boot, Preloader, MainMenu, Lobby, LevelSelector, MainGame, GameOver, FinishLevel],
+    scene: [Boot, Preloader, MainMenu, Lobby, LevelSelector, MainGame, GameOver, FinishLevel, Leaderboard],
     // Add explicit input configuration to ensure touch/mouse works properly
     input: {
         activePointers: 2, // Enable multi-touch

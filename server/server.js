@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { createServer } from "http";
+import { createServer, get } from "http";
 import { uuid } from "uuidv4";
 
 const httpServer = createServer();
@@ -12,6 +12,8 @@ const io = new Server(httpServer, {
 
 const MAX_PLAYERS_PER_LOBBY = 2;
 const DEBUG_MODE = process.env.DEBUG === "true"; // Set to true to enable debug logs
+
+const leaderboard = {}
 
 // Helper function for logging in debug mode
 function debugLog(...args) {
@@ -211,6 +213,11 @@ io.on("connection", socket => {
     // Send available lobbies on connection
     socket.emit("lobbiesList", getAvailableLobbies());
 
+    // Client can request the current leaderboard
+    socket.on("getLeaderboard", () => {
+        socket.emit("leaderboardUpdate", getSortedLeaderboard());
+    });
+
     // Create a new lobby
     socket.on("createLobby", ({ lobbyName, playerName }, callback) => {
         try {
@@ -295,13 +302,29 @@ io.on("connection", socket => {
 
     socket.on("playerFinished", ({ lobbyId, playerId }) => {
         if (lobbyId) {
+            const lobby = lobbies[lobbyId];
+            const player = lobby?.players?.[playerId];
+
+            if (player) {
+                if (!leaderboard[player.name]) {
+                    leaderboard[player.name] = { wins: 0, lastWin: null };
+            }
+            leaderbpard[player.name].wins += 1;
+            leaderboard[player.name].lastWin = Date.now();
             console.log(`Player ${playerId} finished in lobby ${lobbyId}`);
             // Broadcast to all other players in the lobby
             socket.to(lobbyId).emit("playerFinished", {
                 playerId: socket.id,
                 lobbyId,
-            });
+                leaderboard: getSortedLeaderboard(),
+            })};
+
+            io.emit("leaderboardUpdate", getSortedLeaderboard());
         }
+    });
+
+    socket.on("requestLeaderboard", () => {
+        socket.emit("leaderboardUpdate", getSortedLeaderboard());
     });
 
     socket.on("changeLevel", ({ lobbyId, levelId }) => {
@@ -338,6 +361,13 @@ io.on("connection", socket => {
         removePlayerFromAllLobbies(socket.id);
     });
 });
+
+const getSortedLeaderboard = () => {
+    return Object.entries(leaderboard)
+        .map(([name, stats]) => ({ name, ...stats }))
+        .sort((a, b) => b.wins - a.wins || b.lastWin - a.lastWin)
+        .slice(0, 10); // Top 10 players
+};
 
 // Clean up inactive lobbies periodically
 setInterval(() => {
