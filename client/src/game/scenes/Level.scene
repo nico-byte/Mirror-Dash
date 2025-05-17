@@ -1,0 +1,185 @@
+{
+    "id": "8809d17e-765e-470f-82b4-4c7951848307",
+    "sceneType": "SCENE",
+    "settings": {
+        "preloadPackFiles": [],
+        "createMethodName": "editorCreate",
+        "sceneKey": "Level",
+        "borderWidth": 5040,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "b5b2194c-ce15-4b17-bd27-c283548e93ad",
+            "label": "backgroundcontainer",
+            "list": [
+                {
+                    "type": "Image",
+                    "id": "18e1f77b-47d5-4fbd-9606-867c5afded2b",
+                    "label": "bg4",
+                    "texture": {
+                        "key": "bg4"
+                    },
+                    "originX": 0,
+                    "originY": 0
+                },
+                {
+                    "type": "Image",
+                    "id": "7db0b2bc-389f-4f21-9228-53e95c596afa",
+                    "label": "bg2",
+                    "texture": {
+                        "key": "bg2"
+                    },
+                    "x": 720,
+                    "y": -1,
+                    "originX": 0,
+                    "originY": 0
+                },
+                {
+                    "type": "Image",
+                    "id": "8a24c837-60e7-4491-92b1-d59a3cd57e78",
+                    "label": "bg3",
+                    "texture": {
+                        "key": "bg3"
+                    },
+                    "x": 1440,
+                    "originX": 0,
+                    "originY": 0,
+                    "flipX": true
+                },
+                {
+                    "type": "Image",
+                    "id": "c7b1c2c9-1cdb-4a8e-8e2b-32381091c566",
+                    "label": "bg5",
+                    "texture": {
+                        "key": "bg5"
+                    },
+                    "x": 2160,
+                    "originX": 0,
+                    "originY": 0
+                },
+                {
+                    "type": "Image",
+                    "id": "cb7b8494-5f7f-46b3-8bbc-f2cbda5d068a",
+                    "label": "bg1",
+                    "texture": {
+                        "key": "bg1"
+                    },
+                    "x": 2880,
+                    "originX": 0,
+                    "originY": 0
+                },
+                {
+                    "type": "Image",
+                    "id": "44af1682-5aa2-4e1b-9bc9-23d489399b48",
+                    "label": "bg",
+                    "texture": {
+                        "key": "bg2"
+                    },
+                    "x": 3600,
+                    "originX": 0,
+                    "originY": 0
+                },
+                {
+                    "type": "Image",
+                    "id": "8fd477c6-ffb6-480d-82cb-b42ac872202c",
+                    "label": "bg_1",
+                    "texture": {
+                        "key": "bg3"
+                    },
+                    "x": 4320,
+                    "originX": 0,
+                    "originY": 0,
+                    "flipX": true
+                }
+            ]
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "dcf5f50c-9737-459f-8e3b-fa4f6994e837",
+            "label": "platform_4x1",
+            "texture": {
+                "key": "platform_4x1"
+            },
+            "x": 85,
+            "y": 500,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 256,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "5844d328-1bca-41b7-836c-62f67ae3eba4",
+            "label": "platform_3x1",
+            "texture": {
+                "key": "platform_3x1"
+            },
+            "x": 336,
+            "y": 570,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 192,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "0fa578a5-d671-4667-bd80-a6066173c404",
+            "label": "platform_4x",
+            "texture": {
+                "key": "platform_4x1"
+            },
+            "x": 606,
+            "y": 593,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 256,
+            "body.height": 64
+        },
+        {
+            "type": "ArcadeImage",
+            "id": "7c6f1da0-0006-4bcb-90a2-8ca1ae8ff70f",
+            "label": "platform_4x_1",
+            "texture": {
+                "key": "platform_4x1"
+            },
+            "x": 814,
+            "y": 565,
+            "scaleX": 0.5,
+            "scaleY": 1.4,
+            "physicsType": 1,
+            "moves": false,
+            "allowGravity": false,
+            "immovable": true,
+            "body.width": 128,
+            "body.height": 64
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    },
+    "lists": [
+        {
+            "id": "00748561-1f45-40d6-a057-a874278da44d",
+            "label": "platforms",
+            "objectIds": [
+                "dcf5f50c-9737-459f-8e3b-fa4f6994e837",
+                "5844d328-1bca-41b7-836c-62f67ae3eba4"
+            ]
+        }
+    ]
+}
