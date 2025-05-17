@@ -36,6 +36,22 @@ export class Preloader extends Scene {
         this.load.image("platform_3x1", "/assets/Player_Platforms/platform_3x1.png");
         this.load.image("platform_4x1", "/assets/Player_Platforms/platform_4x1.png");
 
+        // Load jump pad textures
+        this.load.image("jumpPad", "/assets/Player_Platforms/jump_pad.png");
+
+        // Load finish line textures
+        this.load.image("pokal", "/assets/Player_Platforms/pokal.png");
+
+        // wall textures
+        this.load.image("wall", "/assets/Player_Platforms/wall.png");
+
+        // Load spike textures
+        this.load.image("spike", "/assets/Player_Platforms/spikes.png");
+
+        // powerup ufo textures
+        this.load.image("ufo", "/assets/Player_Platforms/ufo.png");
+        this.load.image("portal", "/assets/Player_Platforms/portal.png");     
+
         // Load player sprite
         this.load.image("sprite", "/assets/Player_Platforms/sprite.png");
 
