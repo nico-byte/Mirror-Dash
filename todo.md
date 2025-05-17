@@ -23,7 +23,7 @@
 | [ ]    | Fix Lobby UI design                                       |          | Einige buggy elemente |
 | [ ]    | Flying platform collision fix                             |          |                       |
 | [ ]    | Platform collision reduction                              |          |                       |
-| [ ]    | Camera y follow                                           |          |                       |
+| [ ]    | Camera y follow                                           | Nico     |                       |
 | [ ]    | Jump pad sprite                                           | Robin    |                       |
 | [ ]    | Flying power up                                           |          |                       |
 | [ ]    | Platform collision collision reduction                    |          |                       |
