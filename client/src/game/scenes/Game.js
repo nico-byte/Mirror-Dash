@@ -27,6 +27,11 @@ export class Game extends Scene {
         // Level properties
         this.platforms = null;
         this.jumpPads = null;
+
+        // Timer
+        this.timerText = null;
+        this.timeLeft = 180; // in seconds
+        this.timerEvent = null;
     }
 
     init(data) {
@@ -205,6 +210,30 @@ export class Game extends Scene {
                 .setScrollFactor(0) // Fixed to camera
                 .setDepth(100);
         }
+
+        this.timerText = this.add
+            .text(this.scale.width - 100, 20, "03:00", {
+                fontSize: "24px",
+                fill: "#ffffff",
+                backgroundColor: "#000000",
+                padding: { x: 10, y: 5 },
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        // Make the timer only visible in the top camera
+        if (this.bottomCamera) {
+            this.bottomCamera.ignore(this.timerText);
+        }
+
+        // Create the countdown timer event
+        this.timerEvent = this.time.addEvent({
+            delay: 1000, // 1 second
+            callback: this.updateTimer,
+            callbackScope: this,
+            loop: true,
+        });
 
         // Make sure we're receiving lobby updates
         if (this.socket && this.lobbyId) {
@@ -526,6 +555,45 @@ export class Game extends Scene {
         }
     }
 
+    updateTimer() {
+        this.timeLeft--;
+
+        const minutes = Math.floor(this.timeLeft / 60);
+        const seconds = this.timeLeft % 60;
+        const formatted = `${minutes.toString().padStart(2, "0")}:${seconds
+            .toString()
+            .padStart(2, "0")}`;
+
+        if (this.timerText) {
+            this.timerText.setText(formatted);
+        }
+
+        if (this.timeLeft <= 0) {
+            this.timerEvent.remove(false);
+            this.onTimerEnd();
+        }
+    }
+
+    onTimerEnd() {
+        console.log("Timer finished!");
+
+        // Example action: show a message or transition
+        const gameOverText = this.add
+            .text(this.scale.width / 2, this.scale.height / 4, "Time's up!", {
+                fontSize: "32px",
+                fill: "#ff0000",
+                backgroundColor: "#000000",
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        // Optional: ignore it in the bottom camera
+        if (this.bottomCamera) {
+            this.bottomCamera.ignore(gameOverText);
+        }
+    }
+
     update() {
         if (!this.player || !this.connected || !this.lobbyId) return;
 
@@ -603,11 +671,11 @@ export class Game extends Scene {
                 `Player: ${this.socket.id.substring(0, 6)} (${Math.round(this.player.x)}, ${Math.round(
                     this.player.y
                 )})` +
-                    `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
-                    `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
-                    `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
-                    (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
-                    `\nLobby: ${this.lobbyId}`
+                `\nCamera: ${Math.round(this.topCamera.scrollX)}, ${Math.round(this.topCamera.scrollY)}` +
+                `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
+                `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
+                (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
+                `\nLobby: ${this.lobbyId}`
             );
         }
     }
