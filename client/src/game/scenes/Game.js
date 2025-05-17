@@ -22,7 +22,7 @@ export class Game extends Scene {
         this.bottomCamera = null;
 
         // Camera scrolling properties
-        this.autoScrollCamera = true;
+        this.autoScrollCamera = import.meta.env.VITE_AUTO_SCROLL_CAMERA === "true";
         this.scrollSpeed = 50;
 
         // Level properties
@@ -617,7 +617,7 @@ export class Game extends Scene {
     onTimerEnd() {
         console.log("Timer finished!");
 
-        this.scene.start('GameOver');
+        this.scene.start("GameOver");
     }
 
     update() {
@@ -631,7 +631,7 @@ export class Game extends Scene {
 
         // Check if player needs to respawn
         this.checkPlayerRespawn();
-        
+
         this.cameraManager.updateCameras();
 
         // Send updates to server regardless of movement
