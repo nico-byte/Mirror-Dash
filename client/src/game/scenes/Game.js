@@ -136,7 +136,7 @@ export class Game extends Scene {
         this.playerConnection.initialize();
 
         // Setup collisions
-        this.collisionManager.setupCollisions(this.player, this.platforms, this.jumpPads, this.finishObject);
+        this.collisionManager.setupCollisions(this.player, this.platforms, this.jumpPads, this.finishObject, this.movingPlatforms);
 
         // Setup input
         const inputs = this.gameInput.setupInputs();

@@ -235,17 +235,32 @@ export class LevelManager {
                     platform.refreshBody();
                 }
             } else {
+                // Stelle sicher, dass die Gruppe existiert
+                if (!this.scene.movingPlatforms) {
+                    this.scene.movingPlatforms = this.scene.physics.add.group({
+                        immovable: true,
+                        allowGravity: false
+                    });
+                }
+
                 platform = this.scene.physics.add.image(x, y, texture);
                 platform.setScale(scaleX, scaleY);
+                platform.setImmovable(true);
                 platform.body.allowGravity = false;
-                platform.body.immovable = true;
-                platform.body.moves = true;
+                platform.body.velocity.set(0);
 
-                platform.platformData = { motion, range, speed, originX: x, originY: y };
+                platform.platformData = {
+                    motion,
+                    range,
+                    speed,
+                    originX: x,
+                    originY: y
+                };
+
                 this.scene.movingPlatforms.add(platform);
 
+                // Optional: Merken für updateMovingPlatforms
                 if (!this.movingPlatforms) this.movingPlatforms = [];
-
                 this.movingPlatforms.push({
                     platform,
                     motion,
@@ -254,7 +269,6 @@ export class LevelManager {
                     baseX: x,
                     baseY: y
                 });
-                
             }
 
             if (this.scene.add) {
@@ -275,20 +289,20 @@ export class LevelManager {
     }
 
     updateMovingPlatforms(time) {
-    if (!this.movingPlatforms) return;
+        if (!this.movingPlatforms) return;
 
-    this.movingPlatforms.forEach(({ platform, motion, range, speed, baseX, baseY }) => {
-        const offset = Math.sin(time / (speed || 2000)) * (range || 80);
+        this.movingPlatforms.forEach(({ platform, motion, range, speed, baseX, baseY }) => {
+            const offset = Math.sin(time / (speed || 2000)) * (range || 80);
 
-        if (motion === "vertical") {
-            platform.y = baseY + offset;
-        } else if (motion === "horizontal") {
-            platform.x = baseX + offset;
-        }
+            if (motion === "vertical") {
+                platform.y = baseY + offset;
+            } else if (motion === "horizontal") {
+                platform.x = baseX + offset;
+            }
 
-        platform.body.updateFromGameObject(); // ❗ Wichtig für Kollisionsverhalten
-    });
-}
+            platform.body.updateFromGameObject(); // ❗ Wichtig für Kollisionsverhalten
+        });
+    }
 
 
     /**

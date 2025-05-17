@@ -3,7 +3,7 @@ export class GameCollisions {
         this.scene = scene;
     }
 
-    setupCollisions(player, platforms, jumpPads, finishObject) {
+    setupCollisions(player, platforms, jumpPads, finishObject, movingPlatforms) {
         if (!this.scene.physics) return;
 
         // Add collision between player and platforms
@@ -20,6 +20,12 @@ export class GameCollisions {
         if (player && player.sprite && finishObject) {
             this.scene.physics.add.overlap(player.sprite, finishObject, this.scene.handleFinish, null, this.scene);
         }
+
+        // Add collision with moving platforms
+        if (player && player.sprite && movingPlatforms) {
+            this.scene.physics.add.collider(player.sprite, movingPlatforms);
+        }
+
     }
 
     setupOtherPlayerCollisions(otherPlayer, platforms, jumpPads) {
