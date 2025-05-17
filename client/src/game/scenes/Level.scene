@@ -267,9 +267,8 @@
             "list": [
                 {
                     "type": "ScriptNode",
-                    "id": "bc5354ea-e547-4e08-ad1e-4e1320813bc4",
-                    "label": "FloatingPlatformScript",
-                    "scope": "CLASS"
+                    "id": "a7da862a-71e5-432e-bbb6-641ff9656a12",
+                    "label": "FloatingPlatformScript"
                 }
             ]
         },
