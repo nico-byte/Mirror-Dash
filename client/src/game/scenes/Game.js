@@ -54,6 +54,10 @@ export class Game extends Scene {
         this.syncAttempts = 0;
     }
 
+    preload() {
+        this.load.audio('levelMusic', '../assets/music/dnb_og.wav');
+    }
+
     init(data) {
         console.log("Game Scene initialized with data:", data);
 
@@ -104,6 +108,10 @@ export class Game extends Scene {
 
     create() {
         console.log("Game scene created. Lobby ID:", this.lobbyId);
+
+        this.levelMusic = this.sound.add('levelMusic', { loop: true, volume: 0.5 });
+        this.levelMusic.play();
+        this.gameTimer.setLevelMusic(this.levelMusic);
 
         if (!this.textures.exists("particle")) {
             const graphics = this.add.graphics();
@@ -324,6 +332,16 @@ export class Game extends Scene {
                     levelId: this.levelId,
                     timeLeft: this.gameTimer.getTimeLeft(),
                     stars: result.stars,
+                });
+            }
+
+            // Stop Music
+            if (this.levelMusic) {
+                this.tweens.add({
+                    targets: this.levelMusic,
+                    volume: 0,
+                    duration: 1000,
+                    onComplete: () => this.levelMusic.stop()
                 });
             }
 

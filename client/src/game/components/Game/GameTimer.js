@@ -10,6 +10,10 @@ export class GameTimer {
         this.gameUI = gameUI;
     }
 
+    setLevelMusic(levelMusic) {
+        this.levelMusic = levelMusic;
+    }
+
     startTimer() {
         // Reset timer to full duration
         this.timeLeft = 180;
@@ -51,11 +55,31 @@ export class GameTimer {
     onTimerEnd() {
         console.log("Timer finished!");
 
-        this.scene.scene.start("GameOver", {
-            levelId: this.scene.levelId,
-            playerName: this.scene.playerName,
-            socket: this.scene.socket,
-        });
+        // Fade out and stop music if it exists
+        if (this.levelMusic) {
+            this.scene.tweens.add({
+                targets: this.levelMusic,
+                volume: 0,
+                duration: 1000,
+                onComplete: () => {
+                    this.levelMusic.stop();
+
+                    // Now switch to GameOver scene after fade completes
+                    this.scene.scene.start("GameOver", {
+                        levelId: this.scene.levelId,
+                        playerName: this.scene.playerName,
+                        socket: this.scene.socket,
+                    });
+                }
+            });
+        } else {
+            // No music to fade, switch immediately
+            this.scene.scene.start("GameOver", {
+                levelId: this.scene.levelId,
+                playerName: this.scene.playerName,
+                socket: this.scene.socket,
+            });
+        }
     }
 
     applyPenalty(seconds = 5) {
