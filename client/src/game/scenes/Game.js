@@ -85,17 +85,62 @@ export class Game extends Scene {
 
         this.levelManager = createLevelManager(this);
 
+        this.physics.world.on("worldstep", () => {
+            // This ensures the physics system is fully ready
+            if (this.levelManager && !this.levelManager.initialized) {
+                console.log("Initializing LevelManager after physics world is ready");
+                this.levelManager.initialize();
+
+                // If the level hasn't been loaded yet, load it now
+                if (!this.levelLoaded) {
+                    console.log(`Loading level: ${this.levelId}`);
+                    const levelInfo = this.levelManager.loadLevel(this.levelId);
+                    this.levelLoaded = true;
+
+                    // If player hasn't been created yet, create it now
+                    if (!this.player) {
+                        this.player = new Player(
+                            this,
+                            levelInfo.spawnPoint.x,
+                            levelInfo.spawnPoint.y,
+                            this.playerName,
+                            true
+                        );
+
+                        // Add collision between player and platforms
+                        this.physics.add.collider(this.player.sprite, this.platforms);
+
+                        // Add collision with jump pads and special effect
+                        this.physics.add.overlap(this.player.sprite, this.jumpPads, this.handleJumpPad, null, this);
+
+                        // Set up physics overlap with finish line if it exists
+                        if (this.finishObject) {
+                            this.physics.add.overlap(
+                                this.player.sprite,
+                                this.finishObject,
+                                this.handleFinish,
+                                null,
+                                this
+                            );
+                        }
+                    }
+                }
+            }
+        });
+
         // Load the specified level and get the spawn position
-        const levelInfo = this.levelManager.loadLevel(this.levelId);
+        // const levelInfo = this.levelManager.loadLevel(this.levelId);
 
-        // Create main player at level spawn position
-        this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
+        // // Create main player at level spawn position
+        // this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
 
-        // Add collision between player and platforms
-        this.physics.add.collider(this.player.sprite, this.platforms);
+        // // Add collision between player and platforms
+        // this.physics.add.collider(this.player.sprite, this.platforms);
 
-        // Add collision with jump pads and special effect
-        this.physics.add.overlap(this.player.sprite, this.jumpPads, this.handleJumpPad, null, this);
+        // // Add collision with jump pads and special effect
+        // this.physics.add.overlap(this.player.sprite, this.jumpPads, this.handleJumpPad, null, this);
+
+        this.levelLoaded = false;
 
         // Setup input
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -193,7 +238,7 @@ export class Game extends Scene {
         });
 
         // Set up physics overlap with finish line
-        this.physics.add.overlap(this.player.sprite, this.finishObject, this.handleFinish, null, this);
+        // this.physics.add.overlap(this.player.sprite, this.finishObject, this.handleFinish, null, this);
 
         // Set up moving platforms if any
         this.setupMovingPlatforms();

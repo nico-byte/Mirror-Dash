@@ -6,6 +6,9 @@ export class LevelManager {
         this.scene = scene;
         this.currentLevel = null;
         this.levels = {};
+        this.pendingPlatforms = [];
+        this.pendingJumpPads = [];
+        this.initialized = false;
     }
 
     /**
@@ -15,6 +18,75 @@ export class LevelManager {
      */
     registerLevel(key, levelData) {
         this.levels[key] = levelData;
+    }
+
+    /**
+     * Ensure the scene is fully initialized
+     * @returns {boolean} - Whether the scene is ready
+     */
+    isSceneReady() {
+        return this.scene && this.scene.sys && this.scene.physics && this.scene.physics.world;
+    }
+
+    /**
+     * Initialize the LevelManager with the scene
+     * Should be called when scene is fully ready
+     */
+    initialize() {
+        if (this.isSceneReady() && !this.initialized) {
+            this.initialized = true;
+
+            // Create physics groups if they don't exist
+            if (!this.scene.platforms) {
+                this.scene.platforms = this.scene.physics.add.staticGroup();
+            }
+
+            if (!this.scene.jumpPads) {
+                this.scene.jumpPads = this.scene.physics.add.staticGroup();
+            }
+
+            // Process any pending platforms and jump pads
+            this.processPendingObjects();
+
+            console.log("LevelManager initialized successfully");
+        } else if (!this.isSceneReady()) {
+            console.warn("Scene not fully ready for LevelManager initialization");
+        }
+    }
+
+    /**
+     * Process any pending game objects created before initialization
+     */
+    processPendingObjects() {
+        if (!this.isSceneReady()) {
+            console.warn("Scene not ready, cannot process pending objects");
+            return;
+        }
+
+        // Process pending platforms
+        if (this.pendingPlatforms.length > 0) {
+            console.log(`Processing ${this.pendingPlatforms.length} pending platforms`);
+            this.pendingPlatforms.forEach(platform => {
+                this.createPlatformWithMirror(
+                    platform.x,
+                    platform.y,
+                    platform.texture,
+                    platform.scaleX,
+                    platform.scaleY,
+                    platform.isStatic
+                );
+            });
+            this.pendingPlatforms = [];
+        }
+
+        // Process pending jump pads
+        if (this.pendingJumpPads.length > 0) {
+            console.log(`Processing ${this.pendingJumpPads.length} pending jump pads`);
+            this.pendingJumpPads.forEach(jumpPad => {
+                this.createJumpPadWithMirror(jumpPad.x, jumpPad.y, jumpPad.color);
+            });
+            this.pendingJumpPads = [];
+        }
     }
 
     /**
@@ -28,48 +100,65 @@ export class LevelManager {
             return null;
         }
 
+        // Ensure LevelManager is initialized
+        this.initialize();
+
         this.currentLevel = key;
         const levelData = this.levels[key];
 
         // Calculate screen dimensions for mirroring
-        const screenHeight = this.scene.scale.height;
+        const screenHeight = this.scene.scale ? this.scene.scale.height : 768; // Fallback height
         const midPoint = screenHeight / 2;
 
-        // Create physics groups if they don't exist
-        if (!this.scene.platforms) {
-            this.scene.platforms = this.scene.physics.add.staticGroup();
-        }
-
-        if (!this.scene.jumpPads) {
-            this.scene.jumpPads = this.scene.physics.add.staticGroup();
-        }
-
         // Create background if provided
-        if (levelData.createBackground) {
+        if (levelData.createBackground && this.isSceneReady()) {
             levelData.createBackground(this.scene, midPoint);
         }
 
-        // Create platforms
+        // Create platforms - either directly or queue for later
         levelData.platforms.forEach(platform => {
-            this.createPlatformWithMirror(
-                platform.x,
-                platform.y,
-                platform.texture,
-                platform.scaleX || 1,
-                platform.scaleY || 1,
-                platform.isStatic !== false // Default to static if not specified
-            );
+            if (this.isSceneReady()) {
+                this.createPlatformWithMirror(
+                    platform.x,
+                    platform.y,
+                    platform.texture,
+                    platform.scaleX || 1,
+                    platform.scaleY || 1,
+                    platform.isStatic !== false // Default to static if not specified
+                );
+            } else {
+                // Queue for later creation
+                this.pendingPlatforms.push({
+                    x: platform.x,
+                    y: platform.y,
+                    texture: platform.texture,
+                    scaleX: platform.scaleX || 1,
+                    scaleY: platform.scaleY || 1,
+                    isStatic: platform.isStatic !== false,
+                });
+                console.log(`Queued platform at ${platform.x}, ${platform.y} for later creation`);
+            }
         });
 
-        // Create jump pads
+        // Create jump pads - either directly or queue for later
         if (levelData.jumpPads) {
             levelData.jumpPads.forEach(jumpPad => {
-                this.createJumpPadWithMirror(jumpPad.x, jumpPad.y, jumpPad.color || 0xffff00);
+                if (this.isSceneReady()) {
+                    this.createJumpPadWithMirror(jumpPad.x, jumpPad.y, jumpPad.color || 0xffff00);
+                } else {
+                    // Queue for later creation
+                    this.pendingJumpPads.push({
+                        x: jumpPad.x,
+                        y: jumpPad.y,
+                        color: jumpPad.color || 0xffff00,
+                    });
+                    console.log(`Queued jump pad at ${jumpPad.x}, ${jumpPad.y} for later creation`);
+                }
             });
         }
 
         // Create finish line
-        if (levelData.finish) {
+        if (levelData.finish && this.isSceneReady()) {
             this.createFinishWithMirror(
                 levelData.finish.x,
                 levelData.finish.y,
@@ -79,23 +168,25 @@ export class LevelManager {
         }
 
         // Set world and camera bounds
-        const worldWidth = levelData.worldBounds?.width || 5000;
-        const worldHeight = levelData.worldBounds?.height || 800;
-        this.scene.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+        if (this.isSceneReady()) {
+            const worldWidth = levelData.worldBounds?.width || 5000;
+            const worldHeight = levelData.worldBounds?.height || 800;
+            this.scene.physics.world.setBounds(0, 0, worldWidth, worldHeight);
 
-        if (this.scene.topCamera) {
-            this.scene.topCamera.setBounds(0, 0, worldWidth, worldHeight);
+            if (this.scene.topCamera) {
+                this.scene.topCamera.setBounds(0, 0, worldWidth, worldHeight);
+            }
+
+            if (this.scene.bottomCamera) {
+                this.scene.bottomCamera.setBounds(0, 0, worldWidth, worldHeight);
+            }
         }
 
-        if (this.scene.bottomCamera) {
-            this.scene.bottomCamera.setBounds(0, 0, worldWidth, worldHeight);
-        }
-
-        console.log(`Level "${key}" loaded successfully`);
+        console.log(`Level "${key}" loading process initiated`);
 
         return {
             spawnPoint: levelData.spawnPoint || { x: 230, y: 500 },
-            worldBounds: { width: worldWidth, height: worldHeight },
+            worldBounds: levelData.worldBounds || { width: 5000, height: 800 },
         };
     }
 
@@ -103,8 +194,9 @@ export class LevelManager {
      * Create a platform with its mirrored version
      */
     createPlatformWithMirror(x, y, texture, scaleX = 1, scaleY = 1, isStatic = true) {
-        if (!this.scene || !this.scene.sys) {
-            console.error("Scene or scene.sys is not initialized! Cannot create platform.");
+        if (!this.isSceneReady()) {
+            console.warn("Scene not fully initialized! Queuing platform for later creation.");
+            this.pendingPlatforms.push({ x, y, texture, scaleX, scaleY, isStatic });
             return { platform: null, mirrorPlatform: null };
         }
 
@@ -117,7 +209,7 @@ export class LevelManager {
         try {
             if (isStatic) {
                 if (!this.scene.platforms) {
-                    console.error("Platforms group is not initialized!");
+                    console.warn("Platforms group is not initialized, creating it now");
                     this.scene.platforms = this.scene.physics.add.staticGroup();
                 }
 
@@ -136,11 +228,6 @@ export class LevelManager {
                     }
                 }
             } else {
-                if (!this.scene.physics) {
-                    console.error("Physics system is not initialized!");
-                    return { platform: null, mirrorPlatform: null };
-                }
-
                 platform = this.scene.physics.add.image(x, y, texture);
 
                 if (platform) {
@@ -177,86 +264,107 @@ export class LevelManager {
      * Create a jump pad with its mirrored version
      */
     createJumpPadWithMirror(x, y, color) {
-        if (!this.scene || !this.scene.sys) {
-            console.error("Scene or scene.sys is not initialized! Cannot create jump pad.");
+        if (!this.isSceneReady()) {
+            console.warn("Scene not fully initialized! Queuing jump pad for later creation.");
+            this.pendingJumpPads.push({ x, y, color });
             return null;
         }
 
         const screenHeight = this.scene.scale.height;
         const midPoint = screenHeight / 2;
 
-        const jumpPad = this.scene.jumpPads.create(x, y, null);
-        jumpPad.setScale(2, 0.5).setSize(30, 15).setDisplaySize(60, 15).setTint(color).refreshBody();
+        try {
+            if (!this.scene.jumpPads) {
+                console.warn("Jump pads group is not initialized, creating it now");
+                this.scene.jumpPads = this.scene.physics.add.staticGroup();
+            }
 
-        const arrow = this.scene.add.triangle(x, y - 20, 0, 15, 15, -15, 30, 15, 0xffffff);
-        arrow.setDepth(1);
+            const jumpPad = this.scene.jumpPads.create(x, y, null);
+            jumpPad.setScale(2, 0.5).setSize(30, 15).setDisplaySize(60, 15).setTint(color).refreshBody();
 
-        const mirrorJumpPad = this.scene.add.rectangle(x, screenHeight - y + midPoint, 60, 15, color);
+            const arrow = this.scene.add.triangle(x, y - 20, 0, 15, 15, -15, 30, 15, 0xffffff);
+            arrow.setDepth(1);
 
-        const mirrorArrow = this.scene.add.triangle(
-            x,
-            screenHeight - (y - 20) + midPoint,
-            0,
-            -15,
-            15,
-            15,
-            30,
-            -15,
-            0xffffff
-        );
-        mirrorArrow.setDepth(1);
+            const mirrorJumpPad = this.scene.add.rectangle(x, screenHeight - y + midPoint, 60, 15, color);
 
-        if (this.scene.topCamera) this.scene.topCamera.ignore([mirrorJumpPad, mirrorArrow]);
-        if (this.scene.bottomCamera) this.scene.bottomCamera.ignore([jumpPad, arrow]);
+            const mirrorArrow = this.scene.add.triangle(
+                x,
+                screenHeight - (y - 20) + midPoint,
+                0,
+                -15,
+                15,
+                15,
+                30,
+                -15,
+                0xffffff
+            );
+            mirrorArrow.setDepth(1);
 
-        return jumpPad;
+            if (this.scene.topCamera) this.scene.topCamera.ignore([mirrorJumpPad, mirrorArrow]);
+            if (this.scene.bottomCamera) this.scene.bottomCamera.ignore([jumpPad, arrow]);
+
+            return jumpPad;
+        } catch (error) {
+            console.error("Error creating jump pad:", error, "at position:", x, y);
+            return null;
+        }
     }
 
     /**
      * Create a finish line with its mirrored version
      */
     createFinishWithMirror(x, y, width, height) {
-        const screenHeight = this.scene.scale.height;
-        const midPoint = screenHeight / 2;
-
-        // Create finish object (collision)
-        this.scene.finishObject = this.scene.physics.add.staticGroup();
-        this.scene.finishObjectRect = this.scene.finishObject
-            .create(x, y, null)
-            .setSize(width, height)
-            .setDisplaySize(width, height)
-            .setOrigin(0.5)
-            .refreshBody();
-        this.scene.finishObjectRect.fillColor = 0xff0000;
-
-        // Visual fill for finish line (top view)
-        this.scene.finishVisual = this.scene.add.rectangle(x, y, width, height, 0xff0000);
-        this.scene.finishVisual.setDepth(1);
-
-        // Mirror finish line for bottom view
-        this.scene.mirrorFinishVisual = this.scene.add.rectangle(
-            x,
-            screenHeight - y + midPoint,
-            width,
-            height,
-            0xff0000
-        );
-        this.scene.mirrorFinishVisual.setDepth(1);
-
-        // Set camera visibility
-        if (this.scene.bottomCamera) {
-            this.scene.bottomCamera.ignore([this.scene.finishObjectRect, this.scene.finishVisual]);
+        if (!this.isSceneReady()) {
+            console.warn("Scene not fully initialized! Cannot create finish line yet.");
+            return null;
         }
 
-        if (this.scene.topCamera) {
-            this.scene.topCamera.ignore(this.scene.mirrorFinishVisual);
-        }
+        try {
+            const screenHeight = this.scene.scale.height;
+            const midPoint = screenHeight / 2;
 
-        return {
-            finishObject: this.scene.finishObject,
-            finishVisual: this.scene.finishVisual,
-            mirrorFinishVisual: this.scene.mirrorFinishVisual,
-        };
+            // Create finish object (collision)
+            this.scene.finishObject = this.scene.physics.add.staticGroup();
+            this.scene.finishObjectRect = this.scene.finishObject
+                .create(x, y, null)
+                .setSize(width, height)
+                .setDisplaySize(width, height)
+                .setOrigin(0.5)
+                .refreshBody();
+            this.scene.finishObjectRect.fillColor = 0xff0000;
+
+            // Visual fill for finish line (top view)
+            this.scene.finishVisual = this.scene.add.rectangle(x, y, width, height, 0xff0000);
+            this.scene.finishVisual.setDepth(1);
+
+            // Mirror finish line for bottom view
+            this.scene.mirrorFinishVisual = this.scene.add.rectangle(
+                x,
+                screenHeight - y + midPoint,
+                width,
+                height,
+                0xff0000
+            );
+            this.scene.mirrorFinishVisual.setDepth(1);
+
+            // Set camera visibility
+            if (this.scene.bottomCamera) {
+                this.scene.bottomCamera.ignore([this.scene.finishObjectRect, this.scene.finishVisual]);
+            }
+
+            if (this.scene.topCamera) {
+                this.scene.topCamera.ignore(this.scene.mirrorFinishVisual);
+            }
+
+            return {
+                finishObject: this.scene.finishObject,
+                finishVisual: this.scene.finishVisual,
+                mirrorFinishVisual: this.scene.mirrorFinishVisual,
+            };
+        } catch (error) {
+            console.error("Error creating finish line:", error, "at position:", x, y);
+            return null;
+        }
     }
 
     /**
