@@ -78,11 +78,11 @@ export class GameCollisions {
         if (playerSprite.body.touching.down && platform.body.touching.up) {
             // Set the player's velocity to match the moving platform's velocity
             if (platform.body.velocity.x !== 0) {
-                playerSprite.body.velocity.x += platform.body.velocity.x;
+                playerSprite.body.velocity.x = platform.body.velocity.x;
             }
 
             if (platform.body.velocity.y !== 0) {
-                playerSprite.body.velocity.y += platform.body.velocity.y;
+                playerSprite.body.velocity.y = platform.body.velocity.y;
             }
         }
     }
