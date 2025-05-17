@@ -51,7 +51,7 @@ export class Preloader extends Scene {
             if (skipLobby || directConnect) {
                 // Skip directly to game
                 console.log("Skipping to Game scene");
-                this.scene.start("Game", {
+                this.scene.start("Level", {
                     playerName: defaultPlayerName,
                     lobbyId: directConnect,
                 });

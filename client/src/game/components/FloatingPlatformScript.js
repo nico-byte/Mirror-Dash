@@ -1,13 +1,14 @@
-// FloatingPlatformScript.js
-
-class FloatingPlatformScript extends ScriptNode {
+export default class FloatingPlatformScript {
+    constructor(gameObject, scene) {
+        this.gameObject = gameObject;
+        this.scene = scene;
+        this.awake();
+    }
 
     awake() {
-        const platform = this.gameObject;
-
         this.scene.tweens.add({
-            targets: platform,
-            y: platform.y - 120,
+            targets: this.gameObject,
+            y: this.gameObject.y - 80,
             duration: 2000,
             yoyo: true,
             repeat: -1,
@@ -15,5 +16,3 @@ class FloatingPlatformScript extends ScriptNode {
         });
     }
 }
-
-

@@ -1,9 +1,9 @@
 // You can write more code here
-import FloatingPlatformScript from "./FloatingPlatformScript.js";
+//import FloatingPlatformScript from "./src/game/components/FloatingPlatformScript.js";
 
 /* START OF COMPILED CODE */
 
-class Level extends Phaser.Scene {
+export class Level extends Phaser.Scene {
 
 	constructor() {
 		super("Level");
@@ -12,6 +12,23 @@ class Level extends Phaser.Scene {
         // Write your code here.
         /* END-USER-CTR-CODE */
 	}
+
+	preload() {
+		// Hintergrundbilder
+		this.load.image("bg1", "/assets/background/bg1.png");
+		this.load.image("bg2", "/assets/background/bg2.png");
+		this.load.image("bg3", "/assets/background/bg3.png");
+		this.load.image("bg4", "/assets/background/bg4.png");
+		this.load.image("bg5", "/assets/background/bg5.png");
+
+		// Plattformen
+		this.load.image("platform_3x1", "/assets/Player_Platforms/platform_3x1.png");
+		this.load.image("platform_4x1", "/assets/Player_Platforms/platform_4x1.png");
+
+		// Spieler
+		this.load.image("sprite", "/assets/Player_Platforms/sprite.png");
+	}
+
 
 	/** @returns {void} */
 	editorCreate() {
@@ -138,7 +155,7 @@ class Level extends Phaser.Scene {
 		platform_upanddown.body.setSize(192, 64, false);
 
 		// FloatingPlatformScript
-		new ScriptNode(platform_upanddown);
+		//new FloatingPlatformScript(platform_upanddown, this);
 
 		// platform_4x_5
 		const platform_4x_5 = this.physics.add.staticImage(2069, 500, "platform_4x1");
@@ -181,7 +198,8 @@ class Level extends Phaser.Scene {
     // Write your code here
 
     create() {
-        this.editorCreate();
+		this.editorCreate();
+		
     }
 
     /* END-USER-CODE */
