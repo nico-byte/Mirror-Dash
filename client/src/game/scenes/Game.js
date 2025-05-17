@@ -235,11 +235,47 @@ export class Game extends Scene {
             loop: true,
         });
 
+        // Create finish object (red rectangle)
+        this.finishObject = this.physics.add.staticGroup();
+        this.finishObjectRect = this.finishObject.create(900, 500, null)
+            .setSize(100, 100)
+            .setDisplaySize(100, 100)
+            .setOrigin(0.5)
+            .refreshBody();
+        this.finishObjectRect.fillColor = 0xff0000;
+
+        // Just visual fill (draw rectangle)
+        this.finishVisual = this.add.rectangle(900, 500, 100, 100, 0xff0000);
+        this.finishVisual.setDepth(-1);
+
+        this.physics.add.overlap(
+            this.player.sprite,
+            this.finishObject,
+            this.handleFinish,
+            null,
+            this
+        );
+
         // Make sure we're receiving lobby updates
         if (this.socket && this.lobbyId) {
             console.log("Requesting lobby state in create method");
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
         }
+    }
+
+
+    handleFinish(playerSprite, finishObject) {
+        console.log("Player reached finish!");
+
+        // Stop timer
+        if (this.timerEvent) {
+            this.timerEvent.remove(false);
+        }
+
+        // Switch to FinishLevel scene
+        this.scene.start('FinishLevel', {
+            timeLeft: this.timeLeft
+        });
     }
 
     setupCameras() {
