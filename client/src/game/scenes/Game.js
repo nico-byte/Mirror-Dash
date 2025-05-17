@@ -552,6 +552,12 @@ export class Game extends Scene {
                     console.log("Player fell off map - respawning from top");
                 }
 
+                // Apply 5-second penalty
+                if (typeof this.timeLeft === "number") {
+                    this.timeLeft = Math.max(0, this.timeLeft - 5); // Prevent going below 0
+                    this.updateTimerDisplay(); // Immediately update the UI
+                    console.log("Penalty applied: -5 seconds");
+                }
                 // Respawn player
                 this.player.sprite.setPosition(newX, newY);
                 this.player.sprite.body.setVelocity(0, 0);
@@ -571,26 +577,34 @@ export class Game extends Scene {
     }
 
     updateTimer() {
-        this.timeLeft--;
+        if (typeof this.timeLeft === "number") {
+            this.timeLeft = Math.max(0, this.timeLeft - 1);
+            this.updateTimerDisplay();
 
-        const minutes = Math.floor(this.timeLeft / 60);
-        const seconds = this.timeLeft % 60;
-        const formatted = `${minutes.toString().padStart(2, "0")}:${seconds
-            .toString()
-            .padStart(2, "0")}`;
+            if (this.timeLeft <= 0) {
+                this.onTimerEnd(); // Optional: handle time-up
+                this.timerEvent.remove(); // Stop the timer
+            }
+        }
+    }
+
+    updateTimerDisplay() {
+        if (typeof this.timeLeft !== "number") return;
+
+        const clampedTime = Math.max(0, this.timeLeft);
+        const minutes = Math.floor(clampedTime / 60);
+        const seconds = clampedTime % 60;
+        const formatted = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
         if (this.timerText) {
             this.timerText.setText(formatted);
-        }
-
-        if (this.timeLeft <= 0) {
-            this.timerEvent.remove(false);
-            this.onTimerEnd();
         }
     }
 
     onTimerEnd() {
         console.log("Timer finished!");
+
+        /*
 
         // Example action: show a message or transition
         const gameOverText = this.add
@@ -607,6 +621,9 @@ export class Game extends Scene {
         if (this.bottomCamera) {
             this.bottomCamera.ignore(gameOverText);
         }
+
+        */
+        this.scene.start('GameOver');
     }
 
     update() {
