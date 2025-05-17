@@ -103,72 +103,109 @@ export class LevelManager {
      * Create a platform with its mirrored version
      */
     createPlatformWithMirror(x, y, texture, scaleX = 1, scaleY = 1, isStatic = true) {
+        if (!this.scene || !this.scene.sys) {
+            console.error("Scene or scene.sys is not initialized! Cannot create platform.");
+            return { platform: null, mirrorPlatform: null };
+        }
+
         const screenHeight = this.scene.scale.height;
         const midPoint = screenHeight / 2;
 
         // Create the platform
         let platform;
 
-        if (isStatic) {
-            platform = this.scene.platforms.create(x, y, texture);
-            platform.setScale(scaleX, scaleY);
-            platform.body.moves = false;
-            platform.body.allowGravity = false;
-            platform.body.immovable = true;
-            platform.refreshBody();
-        } else {
-            platform = this.scene.physics.add.image(x, y, texture);
-            platform.setScale(scaleX, scaleY);
-            platform.body.allowGravity = false;
-            platform.body.immovable = true;
+        try {
+            if (isStatic) {
+                if (!this.scene.platforms) {
+                    console.error("Platforms group is not initialized!");
+                    this.scene.platforms = this.scene.physics.add.staticGroup();
+                }
+
+                platform = this.scene.platforms.create(x, y, texture);
+
+                if (platform) {
+                    platform.setScale(scaleX, scaleY);
+
+                    if (platform.body) {
+                        platform.body.moves = false;
+                        platform.body.allowGravity = false;
+                        platform.body.immovable = true;
+                        platform.refreshBody();
+                    } else {
+                        console.warn("Platform body is undefined - physics may not work correctly");
+                    }
+                }
+            } else {
+                if (!this.scene.physics) {
+                    console.error("Physics system is not initialized!");
+                    return { platform: null, mirrorPlatform: null };
+                }
+
+                platform = this.scene.physics.add.image(x, y, texture);
+
+                if (platform) {
+                    platform.setScale(scaleX, scaleY);
+
+                    if (platform.body) {
+                        platform.body.allowGravity = false;
+                        platform.body.immovable = true;
+                    } else {
+                        console.warn("Non-static platform body is undefined - physics may not work correctly");
+                    }
+                }
+            }
+
+            let mirrorPlatform = null;
+            if (this.scene.add) {
+                mirrorPlatform = this.scene.add
+                    .image(x, screenHeight - y + midPoint, texture)
+                    .setScale(scaleX, scaleY)
+                    .setFlipY(true);
+            }
+
+            if (this.scene.topCamera && mirrorPlatform) this.scene.topCamera.ignore(mirrorPlatform);
+            if (this.scene.bottomCamera && platform) this.scene.bottomCamera.ignore(platform);
+
+            return { platform, mirrorPlatform };
+        } catch (error) {
+            console.error("Error creating platform:", error, "at position:", x, y);
+            return { platform: null, mirrorPlatform: null };
         }
-
-        // Create mirrored platform (visual only)
-        const mirrorPlatform = this.scene.add
-            .image(x, screenHeight - y + midPoint, texture)
-            .setScale(scaleX, scaleY)
-            .setFlipY(true);
-
-        // Set camera visibility
-        if (this.scene.topCamera) this.scene.topCamera.ignore(mirrorPlatform);
-        if (this.scene.bottomCamera) this.scene.bottomCamera.ignore(platform);
-
-        return { platform, mirrorPlatform };
     }
 
     /**
      * Create a jump pad with its mirrored version
      */
     createJumpPadWithMirror(x, y, color) {
+        if (!this.scene || !this.scene.sys) {
+            console.error("Scene or scene.sys is not initialized! Cannot create jump pad.");
+            return null;
+        }
+
         const screenHeight = this.scene.scale.height;
         const midPoint = screenHeight / 2;
 
-        // Create jump pad
         const jumpPad = this.scene.jumpPads.create(x, y, null);
         jumpPad.setScale(2, 0.5).setSize(30, 15).setDisplaySize(60, 15).setTint(color).refreshBody();
 
-        // Add an indicator arrow
         const arrow = this.scene.add.triangle(x, y - 20, 0, 15, 15, -15, 30, 15, 0xffffff);
         arrow.setDepth(1);
 
-        // Create mirrored jump pad (visual only)
         const mirrorJumpPad = this.scene.add.rectangle(x, screenHeight - y + midPoint, 60, 15, color);
 
-        // Create mirrored arrow (manually flip points vertically)
         const mirrorArrow = this.scene.add.triangle(
             x,
             screenHeight - (y - 20) + midPoint,
             0,
-            -15, // Flip Y
+            -15,
             15,
-            15, // Flip Y
+            15,
             30,
-            -15, // Flip Y
+            -15,
             0xffffff
         );
         mirrorArrow.setDepth(1);
 
-        // Set camera visibility
         if (this.scene.topCamera) this.scene.topCamera.ignore([mirrorJumpPad, mirrorArrow]);
         if (this.scene.bottomCamera) this.scene.bottomCamera.ignore([jumpPad, arrow]);
 
