@@ -6,7 +6,7 @@ export const Level3 = {
     description: "Height shifts, moving platforms, and floating spike hazards",
 
     // Player spawn position
-    spawnPoint: { x: 100, y: 500 },
+    spawnPoint: { x: 100, y: 460 },
 
     worldBounds: {
         width: 6000,
@@ -44,11 +44,11 @@ export const Level3 = {
     ],
 
     spikes: [
-        { x: 4850, y: 440, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 5010, y: 280, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 5170, y: 400, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 5330, y: 300, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 5490, y: 420, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 4850, y: 580, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5010, y: 160, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5170, y: 520, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5330, y: 220, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5490, y: 460, texture: "spike", scaleX: 1, scaleY: 1 },
         { x: 5650, y: 280, texture: "spike", scaleX: 1, scaleY: 1 },
 
         // ☠️ Strafen bei Fehltritten
