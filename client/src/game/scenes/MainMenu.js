@@ -7,12 +7,12 @@ export class MainMenu extends Scene {
     }
 
     create() {
-        this.add.image(512, 384, "background");
-
-        this.add.image(512, 160, "logo");
+        this.add.rectangle(512, 384, 1024, 786, 0x060322)
+        this.logo = this.add.image(512, 125, "logo");
+        this.logo.setScale(0.5);
 
         this.add.text(512, 260, "Main Menu", {
-            fontFamily: "Orbitron, Arial",
+            fontFamily: "Orbitron",
             fontSize: "48px",
             color: "#ffffff",
             stroke: "#000000",

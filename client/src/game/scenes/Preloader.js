@@ -56,7 +56,7 @@ export class Preloader extends Scene {
         this.load.image("sprite", "/assets/Player_Platforms/sprite.png");
 
         // Load logo for main menu
-        this.load.image("logo", "/assets/logo.png");
+        this.load.image("logo", "/assets/logo_4.png");
 
         this.load.image("particle", "/assets/particle.png");
 

@@ -115,11 +115,14 @@ export class Lobby extends Scene {
         }
 
         this.lobbyListContainer = this.add.container(512, 520).setDepth(1000);
+        this.add.rectangle(512, 384, 1024, 786, 0x060322)
 
         // Set a darker background for better visibility
-        this.lobbyListBackground = this.add.rectangle(512, 384, 512*1.9, 384*1.9, 0x222222).setAlpha(0.5);
+        this.lobbyListBackground = this.add.rectangle(512, 384, 512*1.9, 384*1.9, 0x222266)
+            .setAlpha(0.8)
+            .setStrokeStyle(2, 0x6666ff);
 
-        this.add.image(512, 384, "background").setAlpha(0.2);
+        // this.add.image(512, 384, "background").setAlpha(0.2);
 
         this.lobbyListGameLobbyText = this.add.text(512, 80, "Game Lobbies", {
             fontFamily: "Orbitron, Arial",
