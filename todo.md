@@ -39,6 +39,8 @@
 | [ ]    | Add partial star review                                   |          |                       |
 | [x]    | Shared Game Over                                          | Milka    |                       |
 | [x]    | Jump possible 0,5sec after corner                         | Milka    |                       |
+| [ ]    | LevelManager: Custom Level Sound and Camera Speed         | Milka    |                       |
+| [ ]    | Feedback                                                  |          |                       |
 
 ## Server
 

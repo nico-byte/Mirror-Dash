@@ -13,6 +13,12 @@ export const Level3 = {
         height: 720,
     },
 
+    settings: {
+        music: "levelMusic", // Default music key
+        cameraSpeed: 50, // Camera scroll speed
+        autoScroll: true, // Whether camera auto-scrolls
+    },
+
     platforms: [
         { x: 100, y: 500, texture: "platform_3x1", scaleY: 1.4 },
         { x: 450, y: 500, texture: "platform_4x1", scaleY: 1.4 },
@@ -38,7 +44,7 @@ export const Level3 = {
         { x: 4300, y: 420, texture: "platform_3x1", scaleY: 1.4 },
     ],
 
-    jumpPads: [    
+    jumpPads: [
         { x: 460, y: 480, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
         { x: 1780, y: 480, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
     ],
@@ -57,13 +63,9 @@ export const Level3 = {
         { x: 2900, y: 468, texture: "spike", scaleX: 1, scaleY: 1 },
     ],
 
-    portal: [
-        { x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1}
-    ],
+    portal: [{ x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1 }],
 
-    portals: [
-        { x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1}
-    ],
+    portals: [{ x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1 }],
 
     finish: {
         x: 5800,

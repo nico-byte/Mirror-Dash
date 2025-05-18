@@ -235,6 +235,8 @@ export class Game extends Scene {
         const levelInfo = this.levelManager.loadLevel(this.levelId);
         this.levelLoaded = true;
 
+        this.applyLevelSettings(levelInfo.settings);
+
         // Create main player at level spawn position
         this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
 
@@ -268,11 +270,12 @@ export class Game extends Scene {
             };
         }
 
-        // Add U key for toggling UFO mode - only available if env debug mode is on
-        this.uKey = this.input.keyboard.addKey('U');
-        this.uKey.on('down', () => {
-            // Check if environment debug mode is enabled
-            if (this.debugMode && this.player && typeof this.player.toggleUfoMode === 'function') {
+        // Add U key for toggling UFO mode - only available in physics debug mode
+        this.uKey = this.input.keyboard.addKey("U");
+        this.uKey.on("down", () => {
+            // Check if physics debug mode is enabled
+            const isPhysicsDebugMode = this.physics.world.drawDebug;
+            if (isPhysicsDebugMode && this.player && typeof this.player.toggleUfoMode === "function") {
                 this.player.toggleUfoMode();
             }
         });
@@ -309,6 +312,27 @@ export class Game extends Scene {
             loop: true,
             repeat: 5, // Try 5 times
         });
+    }
+
+    applyLevelSettings(settings) {
+        // Apply camera settings
+        if (this.cameraManager) {
+            this.cameraManager.autoScrollCamera = settings.autoScroll;
+            this.cameraManager.scrollSpeed = settings.cameraSpeed;
+        }
+
+        // Apply music settings - stop current music if playing
+        if (this.levelMusic && this.levelMusic.isPlaying) {
+            this.levelMusic.stop();
+        }
+
+        // Load and play level-specific music
+        this.levelMusic = this.sound.add(settings.music, { loop: true, volume: 0.5 });
+        this.levelMusic.play();
+
+        // Update references to music
+        this.gameTimer.setLevelMusic(this.levelMusic);
+        this.gameUI.setLevelMusic(this.levelMusic);
     }
 
     attemptSync() {

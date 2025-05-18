@@ -13,12 +13,18 @@ export const Level4 = {
         height: 720,
     },
 
+    settings: {
+        music: "levelMusic", // Default music key
+        cameraSpeed: 50, // Camera scroll speed
+        autoScroll: true, // Whether camera auto-scrolls
+    },
+
     platforms: [
         { x: 100, y: 500, texture: "platform_3x1", scaleY: 1.4 },
-        { 
-            x: 450, 
-            y: 400, 
-            texture: "platform_4x1", 
+        {
+            x: 450,
+            y: 400,
+            texture: "platform_4x1",
             scaleY: 1.4,
             isStatic: false,
             motion: "vertical",
@@ -37,10 +43,10 @@ export const Level4 = {
             speed: 1800,
         },
 
-        { 
-            x: 1000, 
-            y: 500, 
-            texture: "platform_4x1", 
+        {
+            x: 1000,
+            y: 500,
+            texture: "platform_4x1",
             scaleY: 1.4,
             isStatic: false,
             motion: "vertical",
@@ -59,9 +65,8 @@ export const Level4 = {
             speed: 1800,
         },
 
-
         { x: 1600, y: 600, texture: "platform_4x1", scaleY: 1.4 },
-        
+
         { x: 2550, y: 460, texture: "platform_4x1", scaleY: 1.4 },
         { x: 2900, y: 500, texture: "platform_3x1", scaleY: 1.4 },
         { x: 3250, y: 460, texture: "platform_4x1", scaleY: 1.4 },
@@ -70,21 +75,16 @@ export const Level4 = {
         { x: 4300, y: 420, texture: "platform_3x1", scaleY: 1.4 },
     ],
 
-    jumpPads: [    
-        { x: 1670, y: 585, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
-    ],
+    jumpPads: [{ x: 1670, y: 585, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 }],
 
     spikes: [
         { x: 450, y: 370, texture: "spike", scaleX: 1, scaleY: 1 },
         { x: 750, y: 325, texture: "spike", scaleX: 1, scaleY: 1 },
         { x: 950, y: 400, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 980, y: 500, texture: "spike", scaleX: 1, scaleY: 1 }
-        
+        { x: 980, y: 500, texture: "spike", scaleX: 1, scaleY: 1 },
     ],
 
-    portal: [
-        { x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1}
-    ],
+    portal: [{ x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1 }],
 
     finish: {
         x: 5800,
