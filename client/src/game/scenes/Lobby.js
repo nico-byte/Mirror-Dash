@@ -283,18 +283,18 @@ export class Lobby extends Scene {
         this.lobbyPlayerListContainer = this.add.container(0, 0);
         this.lobbyUI.add(this.lobbyPlayerListContainer);
 
-        this.lobbyStartGameButton = makeButton(460, "Start Game", 0x00aa00, 0x00cc00, () => {
+        this.lobbyStartGameButton = makeButton(500, "Start Game", 0x00aa00, 0x00cc00, () => {
             if (this.socket?.connected && this.currentLobbyId) {
                 this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
             }
         }).setVisible(false);
 
-        this.lobbyLeaveLobbyButton = makeButton(530, "Leave Lobby", 0xaa0000, 0xcc0000, () =>
+        this.lobbyLeaveLobbyButton = makeButton(570, "Leave Lobby", 0xaa0000, 0xcc0000, () =>
             this.leaveLobby()
         ).setVisible(false);
 
         this.connectionStatusText = this.add
-            .text(512, 600, "Connecting to server...", {
+            .text(512, 612, "Connecting to server...", {
                 fontFamily: "Orbitron, Arial",
                 fontSize: 14,
                 color: "#ffff00",
@@ -362,7 +362,6 @@ export class Lobby extends Scene {
 
     joinLobby(lobbyId) {
         if (!this.socket || !this.socket.connected) {
-            // console.error("Cannot join lobby - socket not connected");
             alert("Not connected to server. Please try again.");
             return;
         }
@@ -383,87 +382,12 @@ export class Lobby extends Scene {
 
                     // Request lobby state to ensure UI is updated
                     this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
+
+                    // Update Start Game button visibility based on host status
+                    const isHost = response.lobbyHost === this.socket.id;
+                    this.lobbyStartGameButton.setVisible(isHost);
                 } else {
-                    // console.error("Failed to join lobby:", response);
                     alert("Failed to join lobby. It may no longer exist.");
-                    // Refresh lobbies list
-                    this.socket.emit("getLobbyList");
-                }
-            }
-        );
-    }
-
-    promptName() {
-        const newName = prompt("Enter your name:", this.playerName);
-        if (newName && newName.trim() !== "") {
-            this.playerName = newName.trim();
-            this.lobbyListPlayerNameText.setText(this.playerName);
-        }
-    }
-
-    createNewLobby() {
-        if (!this.socket || !this.socket.connected) {
-            alert("Not connected to server. Please try again.");
-            return;
-        }
-
-        const lobbyName = prompt("Enter lobby name:", this.defaultLobbyName);
-        if (lobbyName && lobbyName.trim() !== "") {
-            console.log("Creating lobby with name:", lobbyName.trim());
-            this.socket.emit(
-                "createLobby",
-                {
-                    lobbyName: lobbyName.trim(),
-                    playerName: this.playerName,
-                },
-                response => {
-                    if (response && response.success) {
-                        console.log("Lobby created successfully:", response.lobbyId);
-                        this.currentLobbyId = response.lobbyId;
-                        this.inLobby = true;
-
-                        // Request lobby state immediately after creating
-                        this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
-
-                        // Small delay to ensure we get lobby data before showing UI
-                        this.time.delayedCall(200, () => {
-                            this.showLobbyUI();
-                        });
-                    } else {
-                        alert("Failed to create lobby. Please try again.");
-                    }
-                }
-            );
-        }
-    }
-
-    joinLobby(lobbyId) {
-        if (!this.socket || !this.socket.connected) {
-            // console.error("Cannot join lobby - socket not connected");
-            alert("Not connected to server. Please try again.");
-            return;
-        }
-
-        console.log("Joining lobby:", lobbyId);
-        this.socket.emit(
-            "joinLobby",
-            {
-                lobbyId,
-                playerName: this.playerName,
-            },
-            response => {
-                if (response && response.success) {
-                    console.log("Successfully joined lobby:", response.lobbyId);
-                    this.currentLobbyId = response.lobbyId;
-                    this.inLobby = true;
-                    this.showLobbyUI();
-
-                    // Request lobby state to ensure UI is updated
-                    this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
-                } else {
-                    // console.error("Failed to join lobby:", response);
-                    alert("Failed to join lobby. It may no longer exist.");
-                    // Refresh lobbies list
                     this.socket.emit("getLobbyList");
                 }
             }
