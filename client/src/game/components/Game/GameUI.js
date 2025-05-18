@@ -5,6 +5,12 @@ export class GameUI {
         this.timerText = null;
     }
 
+    init(scene) {
+        this.scene = scene;
+        this.debugText = null;
+        this.timerText = null;
+    }
+
     createUI(playerName, levelId, debugMode) {
         // Add back button to return to main menu - only in top section
         const backButton = this.scene.add

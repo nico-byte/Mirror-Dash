@@ -15,6 +15,14 @@ export class Lobby extends Scene {
     }
 
     init(data) {
+        this.socket = null;
+        this.lobbies = {};
+        this.selectedLobbyId = null;
+        this.playerName = "Player_" + Math.floor(Math.random() * 1000);
+        this.currentLobbyId = null;
+        this.inLobby = false;
+        this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
+        this.connectionError = false;
         console.log("Lobby scene initialized with data:", data);
 
         // Get socket from data if it exists

@@ -11,6 +11,15 @@ export class LevelManager {
         this.initialized = false;
     }
 
+    init(scene) {
+        this.scene = scene;
+        this.currentLevel = null;
+        this.levels = {};
+        this.pendingPlatforms = [];
+        this.pendingJumpPads = [];
+        this.initialized = false;
+    }
+
     /**
      * Register a level with the manager
      * @param {string} key - The level identifier

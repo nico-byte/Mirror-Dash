@@ -4,6 +4,11 @@ export class PlayerRespawn {
         this.gameTimer = null;
     }
 
+    init(scene) {
+        this.scene = scene;
+        this.gameTimer = null;
+    }
+
     setGameTimer(gameTimer) {
         this.gameTimer = gameTimer;
     }

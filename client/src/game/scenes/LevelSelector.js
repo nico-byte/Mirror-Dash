@@ -12,6 +12,11 @@ export class LevelSelector extends Scene {
     }
 
     init(data) {
+        this.levelData = [];
+        this.progressManager = new ProgressManager();
+        this.socket = null;
+        this.currentPage = 0;
+        this.levelsPerPage = 5;
         // Initialize with socket if passed from previous scene
         if (data && data.socket) {
             this.socket = data.socket;

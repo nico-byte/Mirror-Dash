@@ -8,6 +8,15 @@ export class PlayerVisuals {
         this.mirrorText = null;
     }
 
+    init(scene, player) {
+        this.scene = scene;
+        this.player = player;
+        this.sprite = null;
+        this.text = null;
+        this.mirrorSprite = null;
+        this.mirrorText = null;
+    }
+
     createSprites(x, y, name, isMainPlayer) {
         // Calculate screen midpoint for mirroring
         const screenHeight = this.scene.scale.height;

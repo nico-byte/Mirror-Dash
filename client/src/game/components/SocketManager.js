@@ -8,6 +8,12 @@ export class SocketManager {
         this.lastReceivedUpdate = {};
     }
 
+    init(scene) {
+        this.scene = scene;
+        this.synchronizationInterval = null;
+        this.lastReceivedUpdate = {};
+    }
+
     setupLobby(data) {
         // Get server URL from environment variable or use default
         const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";

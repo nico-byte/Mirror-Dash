@@ -10,6 +10,17 @@ export class CameraManager {
         this.lastAutoScrollX = 0;
     }
 
+    init(scene, autoScrollCamera = false, scrollSpeed = 0) {
+        this.scene = scene;
+        // Camera scrolling properties
+        this.autoScrollCamera = autoScrollCamera;
+        this.scrollSpeed = scrollSpeed;
+        // New property to track if player is controlling camera
+        this.playerControllingCamera = false;
+        // Keep track of the last auto-scroll position
+        this.lastAutoScrollX = 0;
+    }
+
     setupCameras() {
         const { cameras, scale, add } = this.scene;
 

@@ -3,6 +3,10 @@ export class GameCollisions {
         this.scene = scene;
     }
 
+    init(scene) {
+        this.scene = scene;
+    }
+
     setupCollisions(player, platforms, jumpPads, finishObject, movingPlatforms, spikes) {
         if (!this.scene.physics) return;
 

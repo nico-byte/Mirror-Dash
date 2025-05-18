@@ -36,6 +36,40 @@ export class Player {
         console.log("Player created:", name, x, y, isMainPlayer);
     }
 
+    init(scene, x, y, name, isMainPlayer = false) {
+        this.scene = scene;
+        this.name = name || "Player";
+        this.isMainPlayer = isMainPlayer;
+        this.x = x;
+        this.y = y;
+        this.animation = "idle";
+        this.direction = "right";
+        this.midPoint = scene.scale.height / 2;
+        this.screenHeight = scene.scale.height;
+        this.lastUpdate = Date.now();
+
+        // Initialize components
+        this.visuals = new PlayerVisuals(scene, this);
+        const sprites = this.visuals.createSprites(x, y, name, isMainPlayer);
+        this.sprite = sprites.sprite;
+        this.text = sprites.text;
+        this.mirrorSprite = sprites.mirrorSprite;
+        this.mirrorText = sprites.mirrorText;
+
+        // Setup camera visibility
+        this.visuals.setupCameraVisibility(isMainPlayer);
+
+        // Setup physics if this is a playable character
+        if (isMainPlayer && scene.physics) {
+            this.physics = new PlayerPhysics(scene, this.sprite);
+            
+            // Store reference to the player in the sprite for collision handling
+            this.sprite.playerRef = this;
+        }
+
+        console.log("Player created:", name, x, y, isMainPlayer);
+    }
+
     update() {
         // Update position properties
         if (this.isMainPlayer && this.sprite && this.sprite.body) {

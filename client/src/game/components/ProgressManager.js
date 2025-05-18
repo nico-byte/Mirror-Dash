@@ -11,6 +11,14 @@ export class ProgressManager {
         };
     }
 
+    init() {
+        this.progress = {
+            playerName: "",
+            levels: {},
+            lastUpdate: Date.now(),
+        };
+    }
+
     /**
      * Load player progress from local storage
      * @param {string} playerName - The player's name
