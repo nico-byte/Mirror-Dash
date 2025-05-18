@@ -341,15 +341,27 @@ export class LevelManager {
                 const newY = baseY + Math.sin(t) * amplitude;
                 platform.setY(newY);
                 platform.body.velocity.y = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
-                platform.body.velocity.x = 0; // Keine horizontale Bewegung
+                platform.body.velocity.x = 0;
             } else if (motion === "horizontal") {
                 const newX = baseX + Math.sin(t) * amplitude;
                 platform.setX(newX);
                 platform.body.velocity.x = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
-                platform.body.velocity.y = 0; // Keine vertikale Bewegung
+                platform.body.velocity.y = 0;
             }
 
+            // Make sure the physics body is synced with the visual position
+            // This is crucial for proper collision detection
             platform.body.updateFromGameObject();
+
+            // Set proper platform properties every frame to ensure collisions work
+            platform.body.immovable = true;
+            platform.body.moves = true;
+            platform.body.allowGravity = false;
+
+            // Explicitly refresh collision box dimensions
+            if (platform.refreshBody) {
+                platform.refreshBody();
+            }
         });
     }
 
@@ -418,7 +430,8 @@ export class LevelManager {
             spike.refreshBody();
 
             // Create mirrored spike
-            const mirrorSpike = this.scene.add.image(x, screenHeight - y + midPoint, texture)
+            const mirrorSpike = this.scene.add
+                .image(x, screenHeight - y + midPoint, texture)
                 .setScale(scaleX, scaleY)
                 .setFlipY(true);
 

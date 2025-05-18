@@ -113,8 +113,27 @@ export class GameCollisions {
             }
 
             if (platform.body.velocity.y !== 0) {
-                playerSprite.body.velocity.y = platform.body.velocity.y;
+                // When the platform moves down, make the player stick to it
+                // When the platform moves up, allow the player to jump off naturally
+                if (platform.body.velocity.y > 0) {
+                    playerSprite.body.velocity.y = platform.body.velocity.y;
+                } else {
+                    // If platform is moving up, only apply upward velocity if player is firmly on the platform
+                    const playerBottom = playerSprite.body.y + playerSprite.body.height;
+                    const platformTop = platform.body.y - platform.body.height / 2;
+                    const distanceToTop = Math.abs(playerBottom - platformTop);
+
+                    if (distanceToTop < 5) {
+                        playerSprite.body.velocity.y = platform.body.velocity.y;
+                    }
+                }
             }
+
+            // Mark the player as standing on a moving platform for the next frame
+            playerSprite.isOnMovingPlatform = true;
+        } else {
+            // Player is not touching the platform (or not from above)
+            playerSprite.isOnMovingPlatform = false;
         }
     }
 
@@ -125,7 +144,7 @@ export class GameCollisions {
         this.scene.scene.start("GameOver", {
             levelId: this.scene.levelId,
             playerName: this.scene.playerName,
-            socket: this.scene.socket
+            socket: this.scene.socket,
         });
     }
 }

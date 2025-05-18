@@ -27,10 +27,19 @@ export const Level1 = {
         { x: 1610, y: 416, texture: "platform_3x1", scaleY: 1.4 },
         { x: 1764, y: 379, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
 
-         // Floating platform (vertical motion)
-        { x: 1921, y: 345, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'vertical', range: -100, speed: 2000 },
+        // Floating platform (vertical motion)
+        {
+            x: 1921,
+            y: 345,
+            texture: "platform_3x1",
+            scaleY: 1.4,
+            isStatic: false,
+            motion: "vertical",
+            range: -100,
+            speed: 2000,
+        },
 
-        { x: 2069 , y: 500, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
+        { x: 2069, y: 500, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
         { x: 2433, y: 500, texture: "platform_4x1", scaleX: 3, scaleY: 1.4 },
 
         // New section
@@ -40,7 +49,16 @@ export const Level1 = {
         { x: 3450, y: 330, texture: "platform_3x1", scaleY: 1.4 },
 
         // Sideways platform (horizontal motion)
-        { x: 3750, y: 300, texture: "platform_3x1", scaleY: 1.4, isStatic: false, motion: 'horizontal', range: 100 , speed: 1600 },
+        {
+            x: 3750,
+            y: 300,
+            texture: "platform_3x1",
+            scaleY: 1.4,
+            isStatic: false,
+            motion: "horizontal",
+            range: 100,
+            speed: 1600,
+        },
 
         { x: 3900, y: 460, texture: "platform_4x1", scaleY: 1.4 },
         { x: 4250, y: 530, texture: "platform_4x1", scaleY: 1.4 },
@@ -50,7 +68,7 @@ export const Level1 = {
     // Jump pad configurations
     jumpPads: [
         { x: 380, y: 555, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
-        { x: 1250, y: 480,  texture: "jumpPad" , scaleX: 0.5, scaleY: 0.5 },
+        { x: 1250, y: 480, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
         { x: 2650, y: 485, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
     ],
 
@@ -86,7 +104,7 @@ export const Level1 = {
 
         // Add parallax background layers
         const bg4 = scene.add.image(0, 0, "bg4").setOrigin(0, 0);
-        const bg2 = scene.add.image(720, 0, "bg4").setOrigin(0, 0).setFlipX(true);  
+        const bg2 = scene.add.image(720, 0, "bg4").setOrigin(0, 0).setFlipX(true);
         const bg3 = scene.add.image(1440, 0, "bg4").setOrigin(0, 0);
         const bg5 = scene.add.image(2160, 0, "bg4").setOrigin(0, 0).setFlipX(true);
         const bg1 = scene.add.image(2880, 0, "bg4").setOrigin(0, 0);
@@ -122,13 +140,14 @@ export const Level1 = {
         if (scene.topCamera) scene.topCamera.ignore(scene.mirrorBackgroundContainer);
     },
 
-    createPlatforms: (scene) => {
+    createPlatforms: scene => {
         scene.platformGroup = scene.add.group();
 
         for (const cfg of Level1.platforms) {
-            const platform = cfg.isStatic !== false
-                ? scene.physics.add.staticImage(cfg.x, cfg.y, cfg.texture)
-                : scene.physics.add.image(cfg.x, cfg.y, cfg.texture);
+            const platform =
+                cfg.isStatic !== false
+                    ? scene.physics.add.staticImage(cfg.x, cfg.y, cfg.texture)
+                    : scene.physics.add.image(cfg.x, cfg.y, cfg.texture);
 
             const scaleX = cfg.scaleX || 1;
             const scaleY = cfg.scaleY || 1.4;
@@ -139,9 +158,9 @@ export const Level1 = {
 
             // Shrink the collider size (80% width and 50% height of the original scaled size)
             const frame = scene.textures.get(cfg.texture).getSourceImage();
-            const bodyWidth = frame.width * scaleX * 0.5;
-            const bodyHeight = frame.height * scaleY * 0.0;
-            platform.body.setSize(10, bodyHeight, true);
+            const bodyWidth = frame.width * scaleX * 0.8;
+            const bodyHeight = frame.height * scaleY * 0.2; // Give it proper height
+            platform.body.setSize(bodyWidth, bodyHeight, true);
 
             if (platform.refreshBody) platform.refreshBody();
 
@@ -153,7 +172,7 @@ export const Level1 = {
                     duration: cfg.speed || 2000,
                     repeat: -1,
                     yoyo: true,
-                    ease: "Sine.easeInOut"
+                    ease: "Sine.easeInOut",
                 };
 
                 if (cfg.motion === "vertical") {
@@ -167,7 +186,7 @@ export const Level1 = {
         }
     },
 
-    setupMovingPlatforms: (scene) => {
+    setupMovingPlatforms: scene => {
         for (const platform of scene.platformGroup.getChildren()) {
             if (platform.body?.immovable === false) {
                 const data = Level1.platforms.find(p => p.x === platform.x && p.y === platform.y);
@@ -178,7 +197,7 @@ export const Level1 = {
                     duration: data.speed || 2000,
                     repeat: -1,
                     yoyo: true,
-                    ease: "Sine.easeInOut"
+                    ease: "Sine.easeInOut",
                 };
 
                 if (data.motion === "vertical") tween.y = platform.y - (data.range || 80);

@@ -40,6 +40,20 @@ export class Player {
                 // Get position from physics body for main player
                 this.x = this.sprite.x;
                 this.y = this.sprite.y;
+
+                // If the player was on a moving platform last frame but isn't anymore,
+                // and isn't pressing any movement keys, reset horizontal velocity
+                if (
+                    this.sprite.wasOnMovingPlatform &&
+                    !this.sprite.isOnMovingPlatform &&
+                    !this.keyInput.left.isDown &&
+                    !this.keyInput.right.isDown
+                ) {
+                    this.sprite.body.velocity.x = 0;
+                }
+
+                // Remember if player was on a moving platform for the next frame
+                this.sprite.wasOnMovingPlatform = this.sprite.isOnMovingPlatform;
             } catch (error) {
                 console.error("Error updating player position from physics body:", error);
             }
