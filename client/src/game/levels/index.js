@@ -6,12 +6,12 @@
 import { LevelManager } from "./LevelManager.js";
 import { Level1 } from "./Level1.js";
 import { Level2 } from "./Level2.js";
-import { Level3 } from "./level3.js";
+import { Level3 } from "./Level3.js";
 //import { Level4 } from "./Level4.js";
 //import { Level5 } from "./Level5.js";
 
 // Export individual levels
-export { Level1, Level2, Level3};
+export { Level1, Level2, Level3 };
 
 // Export the LevelManager class
 export { LevelManager };

@@ -32,13 +32,13 @@
 | [ ]    | Ufo Power Up                                              |          |                       |
 | [x]    | Fix Level Selector                                        | Milka    |                       |
 | [ ]    | Brush Up Game Over Menu                                   |          |                       |
-| [ ]    | Add Leaderboard Logic                                     |          |                       |
+| [x]    | Add Leaderboard Logic                                     | Nico     |                       |
 | [x]    | Player Animations                                         | Josef    |                       |
 | [x]    | Fix Quick Play                                            | Milka    |                       |
 | [ ]    | Ufo Name Change                                           |          |                       |
 | [ ]    | Add partial star review                                   |          |                       |
-| [ ]    | Shared Game Over                                          |          |                       |
-| [ ]    | Jump possible 0,5sec after corner                         |          |                       |
+| [x]    | Shared Game Over                                          | Milka    |                       |
+| [x]    | Jump possible 0,5sec after corner                         | Milka    |                       |
 
 ## Server
 
