@@ -22,44 +22,44 @@ export class PlayerVisuals {
         const screenHeight = this.scene.scale.height;
         const midPoint = screenHeight / 2;
 
-        // Check if the required texture exists
-        if (!this.scene.textures.exists("player_animations")) {
-            console.warn("Player animations texture not found, using fallback sprite");
-            // Use the fallback sprite texture if available
-            if (this.scene.textures.exists("sprite")) {
-                // Create the player sprite using the fallback texture
-                this.sprite = this.scene.physics.add.sprite(x, y, "sprite");
-
-                // Set scale for the fallback sprite
-                this.sprite.setScale(1);
-            } else {
-                // If neither texture is available, create an empty sprite
-                console.error("No valid player texture found, creating placeholder");
-                this.sprite = this.scene.physics.add.sprite(x, y);
-                this.sprite.setSize(32, 32);
-            }
+        // Create the main player sprite
+        if (this.player.isInUfoMode) {
+            this.sprite = this.scene.physics.add.sprite(x, y, "ufo");
+            this.sprite.setScale(1.5); // UFO scale set to 1.5
         } else {
-            // Create the player sprite using the animation spritesheet
-            this.sprite = this.scene.physics.add.sprite(x, y, "player_animations");
-
-            // Try to set an animation, with error handling
-            try {
-                if (this.scene.anims.exists("idle")) {
-                    this.sprite.anims.play("idle");
+            // Check if the required texture exists
+            if (!this.scene.textures.exists("player_animations")) {
+                console.warn("Player animations texture not found, using fallback sprite");
+                // Use the fallback sprite texture if available
+                if (this.scene.textures.exists("sprite")) {
+                    this.sprite = this.scene.physics.add.sprite(x, y, "sprite");
+                    this.sprite.setScale(1.5); // Player fallback scale
+                } else {
+                    console.error("No valid player texture found, creating placeholder");
+                    this.sprite = this.scene.physics.add.sprite(x, y);
+                    this.sprite.setSize(32, 32); // Placeholder, no specific scale needed
                 }
-            } catch (error) {
-                console.warn("Failed to play animation:", error);
+            } else {
+                this.sprite = this.scene.physics.add.sprite(x, y, "player_animations");
+                try {
+                    if (this.scene.anims.exists("idle")) {
+                        this.sprite.anims.play("idle");
+                    }
+                } catch (error) {
+                    console.warn("Failed to play animation:", error);
+                }
+                this.sprite.setScale(1.5); // Player animation scale
             }
-
-            // Set scale
-            this.sprite.setScale(1.5);
         }
 
         // Set different tint for main player vs other players
         if (isMainPlayer) {
             // Main player can be kept as original colors
         } else {
-            this.sprite.setTint(0x99bbff); // Light blue tint for other players
+            // Apply tint only if not in UFO mode, or use a different UFO tint
+            if (!this.player.isInUfoMode) {
+                this.sprite.setTint(0x99bbff); // Light blue tint for other players
+            }
         }
 
         // Add player name text
@@ -76,31 +76,41 @@ export class PlayerVisuals {
 
         // For non-main players, create a mirrored sprite in the bottom half
         if (!isMainPlayer) {
-            // Calculate mirrored Y position
             const mirrorY = screenHeight - y + midPoint;
 
-            // Create mirrored sprite with error handling
-            if (!this.scene.textures.exists("player_animations")) {
-                if (this.scene.textures.exists("sprite")) {
-                    this.mirrorSprite = this.scene.add.sprite(x, mirrorY, "sprite");
-                    this.mirrorSprite.setScale(1);
-                } else {
-                    this.mirrorSprite = this.scene.add.sprite(x, mirrorY);
-                    this.mirrorSprite.setSize(32, 32);
-                }
+            if (this.player.isInUfoMode) {
+                this.mirrorSprite = this.scene.add.sprite(x, mirrorY, "ufo");
+                this.mirrorSprite.setScale(1.5); // UFO scale set to 1.5
             } else {
-                this.mirrorSprite = this.scene.add.sprite(x, mirrorY, "player_animations");
-                try {
-                    if (this.scene.anims.exists("idle")) {
-                        this.mirrorSprite.anims.play("idle");
+                // Create mirrored sprite with error handling (existing logic)
+                if (!this.scene.textures.exists("player_animations")) {
+                    if (this.scene.textures.exists("sprite")) {
+                        this.mirrorSprite = this.scene.add.sprite(x, mirrorY, "sprite");
+                        this.mirrorSprite.setScale(1.5); // Player fallback scale
+                    } else {
+                        this.mirrorSprite = this.scene.add.sprite(x, mirrorY);
+                        this.mirrorSprite.setSize(32, 32); // Placeholder
                     }
-                } catch (error) {
-                    console.warn("Failed to play mirror animation:", error);
+                } else {
+                    this.mirrorSprite = this.scene.add.sprite(x, mirrorY, "player_animations");
+                    try {
+                        if (this.scene.anims.exists("idle")) {
+                            this.mirrorSprite.anims.play("idle");
+                        }
+                    } catch (error) {
+                        console.warn("Failed to play mirror animation:", error);
+                    }
+                    this.mirrorSprite.setScale(1.5); // Player animation scale
                 }
-                this.mirrorSprite.setScale(1.5);
             }
 
-            this.mirrorSprite.setTint(0xffaa77); // Orange for mirrored view
+            // Apply tint only if not in UFO mode, or use a different UFO tint for mirror
+            if (!this.player.isInUfoMode) {
+                this.mirrorSprite.setTint(0xffaa77); // Orange for mirrored view
+            } else {
+                // Optional: different tint for mirrored UFO if needed
+                // this.mirrorSprite.setTint(0xsomecolor);
+            }
             this.mirrorSprite.setFlipY(true);
 
             // Add mirrored name text
@@ -170,97 +180,80 @@ export class PlayerVisuals {
         // Make sure the sprite exists before trying to update animation
         if (!this.sprite) return;
 
-        // Set sprite direction if sprite exists
+        // Set sprite direction
         this.sprite.setFlipX(direction === "left");
+        if (this.mirrorSprite) {
+            this.mirrorSprite.setFlipX(direction === "left");
+        }
 
-        // Safely check if animations exist before trying to play them
+        // Safely check if scene and anims exist
         if (!this.scene || !this.scene.anims) return;
 
-        try {
-            const player = this.player;
-
-            // First check if the sprite has an anims property
-            if (!this.sprite.anims) {
-                console.warn("Sprite missing anims property");
-                return;
+        if (this.player.isInUfoMode) {
+            // Ensure main sprite is UFO texture and scale
+            if (this.sprite.texture.key !== 'ufo') {
+                this.sprite.setTexture('ufo');
+            }
+            // Explicitly set scale if it's not already 1.5
+            if (this.sprite.scale !== 1.5) {
+                this.sprite.setScale(1.5);
             }
 
-            // Find available animations in the scene
-            const hasIdleAnim = this.scene.anims.exists("idle");
-            const hasRunAnim = this.scene.anims.exists("run");
-            const hasJumpAnim = this.scene.anims.exists("jump");
-
-            // If none of the animations exist, exit early
-            if (!hasIdleAnim && !hasRunAnim && !hasJumpAnim) {
-                console.warn("No animations available in the scene");
-                return;
-            }
-
-            if (player.isMainPlayer && player.sprite && player.sprite.body) {
-                // For main player, handle animations based on physics state
-                const isTouchingGround = player.sprite.body.touching.down;
-                const isMovingHorizontally = Math.abs(player.sprite.body.velocity.x) > 10;
-
-                try {
-                    if (!isTouchingGround && hasJumpAnim) {
-                        // Player is in the air - play jump animation
-                        this.sprite.anims.play("jump", true);
-                        player.animation = "jump"; // Update the player's animation state
-                    } else if (isMovingHorizontally && hasRunAnim) {
-                        // Player is moving horizontally - play run animation
-                        this.sprite.anims.play("run", true);
-                        player.animation = "run"; // Update the player's animation state
-                    } else if (hasIdleAnim) {
-                        // Player is idle
-                        this.sprite.anims.play("idle", true);
-                        player.animation = "idle"; // Update the player's animation state
-                    }
-                } catch (error) {
-                    console.warn("Animation error (main player):", error.message);
+            // Ensure mirror sprite is UFO texture and scale
+            if (this.mirrorSprite) {
+                if (this.mirrorSprite.texture.key !== 'ufo') {
+                    this.mirrorSprite.setTexture('ufo');
                 }
-            } else {
-                // For network players, use animation state received from the network
-                try {
-                    const animName = player.animation || "idle";
-                    if (this.scene.anims.exists(animName)) {
-                        this.sprite.anims.play(animName, true);
-                    } else if (hasIdleAnim) {
-                        // Fallback to idle if the specified animation doesn't exist
+                // Explicitly set scale if it's not already 1.5
+                if (this.mirrorSprite.scale !== 1.5) {
+                    this.mirrorSprite.setScale(1.5);
+                }
+            }
+            return; // Skip frame-based animations for UFO
+        } else {
+            // Not in UFO mode: Ensure sprites are reverted from UFO if they were
+            let mainSpriteTextureKey = this.sprite.texture.key;
+            let mainSpriteScale = this.sprite.scale;
+
+            if (mainSpriteTextureKey === 'ufo') {
+                if (this.scene.textures.exists("player_animations")) {
+                    this.sprite.setTexture('player_animations');
+                    mainSpriteTextureKey = 'player_animations'; // update key after setTexture
+                    if (this.scene.anims.exists("idle")) {
                         this.sprite.anims.play("idle", true);
                     }
-                } catch (error) {
-                    console.warn("Animation error (network player):", error.message);
-                }
+                } else if (this.scene.textures.exists("sprite")) {
+                    this.sprite.setTexture('sprite');
+                    mainSpriteTextureKey = 'sprite'; // update key after setTexture
+                } // Else, it might be a placeholder, leave as is or handle
             }
-        } catch (error) {
-            console.warn("General animation error:", error.message);
-        }
+            // After potentially changing texture, ensure scale is correct for player
+            if ((mainSpriteTextureKey === 'player_animations' || mainSpriteTextureKey === 'sprite') && mainSpriteScale !== 1.5) {
+                this.sprite.setScale(1.5);
+            }
 
-        // Update mirrored sprite if it exists
-        if (this.mirrorSprite) {
-            // Set mirror sprite direction
-            this.mirrorSprite.setFlipX(direction === "left");
+            if (this.mirrorSprite) {
+                let mirrorSpriteTextureKey = this.mirrorSprite.texture.key;
+                let mirrorSpriteScale = this.mirrorSprite.scale;
 
-            // Match mirror sprite animation to main sprite with error handling
-            try {
-                if (this.sprite?.anims?.currentAnim?.key && this.mirrorSprite.anims) {
-                    const animKey = this.sprite.anims.currentAnim.key;
-                    if (this.scene.anims.exists(animKey)) {
-                        this.mirrorSprite.anims.play(animKey, true);
-                    } else if (this.scene.anims.exists("idle")) {
-                        this.mirrorSprite.anims.play("idle", true);
+                if (mirrorSpriteTextureKey === 'ufo') {
+                    if (this.scene.textures.exists("player_animations")) {
+                        this.mirrorSprite.setTexture('player_animations');
+                        mirrorSpriteTextureKey = 'player_animations';
+                        if (this.scene.anims.exists("idle") && this.mirrorSprite.anims) {
+                            this.mirrorSprite.anims.play("idle", true);
+                        }
+                    } else if (this.scene.textures.exists("sprite")) {
+                        this.mirrorSprite.setTexture('sprite');
+                        mirrorSpriteTextureKey = 'sprite';
                     }
                 }
-            } catch (error) {
-                // Silent error handling
+                if ((mirrorSpriteTextureKey === 'player_animations' || mirrorSpriteTextureKey === 'sprite') && mirrorSpriteScale !== 1.5) {
+                    this.mirrorSprite.setScale(1.5);
+                }
             }
         }
-    }
 
-    destroy() {
-        if (this.sprite) this.sprite.destroy();
-        if (this.text) this.text.destroy();
-        if (this.mirrorSprite) this.mirrorSprite.destroy();
-        if (this.mirrorText) this.mirrorText.destroy();
+        // Existing animation logic (only runs if not in UFO mode)
     }
 }

@@ -5,7 +5,7 @@ import { SocketManager } from "../components/SocketManager";
 import { createLevelManager } from "../levels";
 import { ProgressManager } from "../components/ProgressManager";
 import { GameUI } from "../components/Game/GameUI";
-import { GameInput } from "../components/Game/GameInput";
+import { GameInput } from "../components/Game/GameInput"; // Added import
 import { GameCollisions } from "../components/Game/GameCollisions";
 import { GameTimer } from "../components/Game/GameTimer";
 import { PlayerRespawn } from "../entities/PlayerRespawn";
@@ -263,6 +263,14 @@ export class Game extends Scene {
                 ...this.wasd,
             };
         }
+
+        // Add U key for toggling UFO mode
+        this.uKey = this.input.keyboard.addKey('U');
+        this.uKey.on('down', () => {
+            if (this.player && typeof this.player.toggleUfoMode === 'function') {
+                this.player.toggleUfoMode();
+            }
+        });
 
         // Setup UI elements
         const ui = this.gameUI.createUI(this.playerName, this.levelId, this.debugMode);

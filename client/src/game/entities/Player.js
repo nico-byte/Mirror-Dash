@@ -13,6 +13,7 @@ export class Player {
         this.midPoint = scene.scale.height / 2;
         this.screenHeight = scene.scale.height;
         this.lastUpdate = Date.now();
+        this.isInUfoMode = false; // Added for simple UFO mechanic
 
         // Initialize components
         this.visuals = new PlayerVisuals(scene, this);
@@ -47,6 +48,7 @@ export class Player {
         this.midPoint = scene.scale.height / 2;
         this.screenHeight = scene.scale.height;
         this.lastUpdate = Date.now();
+        this.isInUfoMode = false; // Added for simple UFO mechanic
 
         // Initialize components
         this.visuals = new PlayerVisuals(scene, this);
@@ -108,7 +110,7 @@ export class Player {
     applyMovement(cursors, wasd) {
         if (!this.isMainPlayer || !this.physics) return false;
 
-        const result = this.physics.applyMovement(cursors, wasd, this.animation, this.direction);
+        const result = this.physics.applyMovement(cursors, wasd, this.animation, this.direction, this.isInUfoMode); // Pass UFO mode status
         const moved = result.moved;
 
         // Update animation and direction
@@ -138,6 +140,7 @@ export class Player {
         this.animation = animation;
         this.direction = direction;
         this.lastUpdate = Date.now();
+        // this.isInUfoMode = ufoMode; // Removed: UFO mode state is not synced for simple version
 
         // Safe update of sprite position
         if (this.sprite) {
@@ -171,5 +174,34 @@ export class Player {
 
     destroy() {
         this.visuals.destroy();
+        // if (this.ufoParticlesEmitter) { // Removed: No particles for simple UFO
+        //     this.ufoParticlesEmitter.destroy();
+        // }
     }
+
+    toggleUfoMode() {
+        if (!this.isMainPlayer || !this.sprite || !this.physics) return;
+
+        this.isInUfoMode = !this.isInUfoMode;
+
+        if (this.isInUfoMode) {
+            this.sprite.setTexture("ufo");
+            this.sprite.setScale(0.5); // Adjust scale for UFO sprite
+            this.physics.setUfoPhysics(true);
+            // Removed sound and particle effects
+            console.log("Player entered simple UFO mode.");
+        } else {
+            this.sprite.setTexture("player_animations"); // Revert to player sprite
+            this.sprite.setScale(1); // Revert scale
+            this.physics.setUfoPhysics(false);
+            // Removed sound and particle effects
+            console.log("Player exited simple UFO mode.");
+        }
+        // Ensure physics body is updated if it exists
+        if (this.sprite.body) {
+            this.sprite.body.setSize(this.sprite.width, this.sprite.height);
+        }
+    }
+
+    // Removed createUfoParticles method
 }
