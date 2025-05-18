@@ -119,15 +119,13 @@ export class GameCollisions {
     }
 
     handleSpikeCollision(playerSprite, spike) {
-        console.log("Player hit a spike!", { playerSprite, spike });
+        console.log("Player hit a spike! Game Over.", { playerSprite, spike });
 
-        // Logic to handle player death or damage
-        playerSprite.setTint(0xff0000); // Visual feedback (red tint)
-        this.scene.time.delayedCall(1000, () => {
-            playerSprite.clearTint();
+        // Direkt zur Game Over Szene wechseln
+        this.scene.scene.start("GameOver", {
+            levelId: this.scene.levelId,
+            playerName: this.scene.playerName,
+            socket: this.scene.socket
         });
-
-        // Optionally, respawn the player or end the game
-        this.scene.playerRespawn.respawnPlayer();
     }
 }

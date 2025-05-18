@@ -144,13 +144,17 @@ export class Game extends Scene {
         this.playerConnection = new PlayerConnection(this);
         this.playerConnection.initialize();
 
+        // Initialisiere die Spike-Gruppe aus dem LevelManager
+        this.spikes = this.levelManager.scene.spikeGroup;
+
         // Setup collisions
         this.collisionManager.setupCollisions(
             this.player,
             this.platforms,
             this.jumpPads,
             this.finishObject,
-            this.movingPlatforms
+            this.movingPlatforms,
+            this.spikes 
         );
 
         // Setup input
