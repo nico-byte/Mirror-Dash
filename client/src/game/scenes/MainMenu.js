@@ -52,6 +52,24 @@ export class MainMenu extends Scene {
         makeButton(540, "Quick Play", 0xcc9933, 0xffbb55, () => {
             this.scene.start("Game", { playerName: this.playerName });
         });
+
+        makeButton(620, "Leaderboard", 0x3366cc, 0x5588ee, () => {
+            this.goToLeaderboard();
+        });
+    }
+
+    goToLeaderboard() {
+        // Prevent multiple clicks
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
+        // Clean up resources
+        this.cleanupCurrentScene();
+
+        this.scene.start("Leaderboard", {
+            socket: this.socket,
+            playerName: this.playerName,
+        });
     }
 
     promptName() {
