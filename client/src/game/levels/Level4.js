@@ -81,11 +81,31 @@ export const Level4 = {
         { x: 2200, y: 400, texture: "platform_4x1", scaleY: 1.4 },
         { x: 2500, y: 320, texture: "platform_3x1", scaleY: 1.4 },
         { x: 3200, y: 520, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 3600, y: 350, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 3900, y: 250, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 4200, y: 175, texture: "platform_3x1", scaleY: 1.4 },
+
+        {
+            x: 4500,
+            y: 375,
+            texture: "platform_4x1",
+            scaleY: 1.4,
+            isStatic: false,
+            motion: "vertical",
+            range: 200, // ±150px Bewegung
+            speed: 1800,
+        },
+
+        { x: 4800, y: 575, texture: "platform_3x1", scaleY: 1.4 },
+
 
      
     ],
 
-    jumpPads: [{ x: 1670, y: 585, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 }],
+    jumpPads: [
+        { x: 1670, y: 585, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
+        { x: 3270, y: 505, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },    
+    ],
 
     spikes: [
         { x: 450, y: 370, texture: "spike", scaleX: 1, scaleY: 1 },
@@ -125,7 +145,7 @@ export const Level4 = {
     ],
 
     wall: [
-        { x: 4382, y: 356, texture: "wall", scaleX: 1, scaleY: 1}
+        { x: 5000, y: 550, texture: "wall", scaleX: 1, scaleY: 1}
     ],
 
     finish: {
