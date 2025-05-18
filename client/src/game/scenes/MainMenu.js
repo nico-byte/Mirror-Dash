@@ -7,7 +7,6 @@ export class MainMenu extends Scene {
     }
 
     init() {
-        this.playerName = "Player_" + Math.floor(Math.random() * 1000);
     }
 
     create() {
