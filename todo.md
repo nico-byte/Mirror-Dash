@@ -18,18 +18,26 @@
 | [x]    | Implement Score in Stars                                  | Robin    |                       |
 | [x]    | When player falls from platform, respawn from top         | Milka    |                       |
 | [ ]    | Add character customization options                       |          |                       |
-| [ ]    | Implement leaderboard                                     | Nico     |                       |
+| [x]    | Implement leaderboard UI                                  | Nico     |                       |
 | [ ]    | Add environmental hazards (e.g., traps, moving platforms) |          |                       |
 | [x]    | Fix Lobby UI design                                       | Nico     | Einige buggy elemente |
-| [ ]    | Flying platform collision fix                             |          |                       |
+| [x]    | Flying platform collision fix                             | Josef    |                       |
 | [x]    | Platform collision reduction                              | Nico     |                       |
 | [ ]    | Camera y follow                                           | Milka    |                       |
 | [x]    | Jump pad sprite                                           | Robin    |                       |
-| [ ]    | Add Jump pad sprite into game                             |          |                       |
+| [x]    | Add Jump pad sprite into game                             | Matthias |                       |
 | [ ]    | Flying power up                                           |          |                       |
-| [ ]    | Connect player with beam                                  |          |                       |
+| [x]    | Connect player with beam                                  | Milka    |                       |
 | [ ]    | Banner creation                                           | Matthias |                       |
-| [ ]    |                                                           |          |                       |
+| [ ]    | Ufo Power Up                                              |          |                       |
+| [ ]    | Fix Level Selector                                        |          |                       |
+| [ ]    | Brush Up Game Over Menu                                   |          |                       |
+| [ ]    | Add Leaderboard Logic                                     |          |                       |
+| [ ]    | Player Animations                                         |          |                       |
+| [ ]    | Fix Quick Play                                            |          |                       |
+| [ ]    | Ufo Name Change                                           |          |                       |
+| [ ]    | Add partial star review                                   |          |                       |
+
 
 ## Server
 
