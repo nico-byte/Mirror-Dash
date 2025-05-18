@@ -376,11 +376,15 @@ export class LevelManager {
             jumpPad.setScale(scaleX, scaleY);
             jumpPad.refreshBody();
 
-            // Optional: gespiegelt anzeigen
+            // Create mirrored version for bottom view
             const mirrorJumpPad = this.scene.add
                 .image(x, screenHeight - y + midPoint, texture)
                 .setScale(scaleX, scaleY)
                 .setFlipY(true);
+
+            // Set camera visibility - THIS IS THE FIX
+            if (this.scene.topCamera) this.scene.topCamera.ignore(mirrorJumpPad);
+            if (this.scene.bottomCamera) this.scene.bottomCamera.ignore(jumpPad);
 
             return jumpPad;
         } catch (error) {
