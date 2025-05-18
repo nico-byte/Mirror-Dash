@@ -100,7 +100,7 @@ export class GameCollisions {
                 console.warn("JumpPad conditions not met", { playerBottom, padTop, isAbove, isFalling });
             }
         } catch (error) {
-            console.error("Error in handleJumpPad", error);
+            // console.error("Error in handleJumpPad", error);
         }
     }
 

@@ -58,7 +58,7 @@ export class Player {
                 // Remember if player was on a moving platform for the next frame
                 this.sprite.wasOnMovingPlatform = this.sprite.isOnMovingPlatform;
             } catch (error) {
-                console.error("Error updating player position from physics body:", error);
+                // console.error("Error updating player position from physics body:", error);
             }
         } else if (this.sprite) {
             // For non-main players, update sprite position from player position
@@ -94,7 +94,7 @@ export class Player {
         if (this.isMainPlayer) return; // Don't tween the main player
 
         if (typeof x !== "number" || typeof y !== "number") {
-            console.error("Invalid position for player move:", x, y);
+            // console.error("Invalid position for player move:", x, y);
             return;
         }
 

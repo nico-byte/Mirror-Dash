@@ -102,7 +102,7 @@ export class LevelManager {
      */
     loadLevel(key) {
         if (!this.levels[key]) {
-            console.error(`Level "${key}" not found!`);
+            // console.error(`Level "${key}" not found!`);
             return null;
         }
 
@@ -440,7 +440,7 @@ export class LevelManager {
 
             return jumpPad;
         } catch (error) {
-            console.error("Error creating jump pad:", error, "at position:", x, y);
+            // console.error("Error creating jump pad:", error, "at position:", x, y);
             return null;
         }
     }
@@ -477,7 +477,7 @@ export class LevelManager {
 
             return spike;
         } catch (error) {
-            console.error("Error creating spikes:", error, "at position:", x, y);
+            // console.error("Error creating spikes:", error, "at position:", x, y);
             return null;
         }
     }
@@ -523,7 +523,7 @@ export class LevelManager {
                     console.warn("JumpPad conditions not met", { playerBottom, padTop, isAbove, isFalling });
                 }
             } catch (error) {
-                console.error("Error during JumpPad collision handling", error);
+                // console.error("Error during JumpPad collision handling", error);
             }
         });
     }
@@ -577,7 +577,7 @@ export class LevelManager {
                 mirrorFinishVisual: this.scene.mirrorFinishVisual,
             };
         } catch (error) {
-            console.error("Error creating finish line:", error, "at position:", x, y);
+            // console.error("Error creating finish line:", error, "at position:", x, y);
             return null;
         }
     }
