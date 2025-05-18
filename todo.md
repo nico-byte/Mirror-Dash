@@ -29,7 +29,7 @@
 | [ ]    | Flying power up                                           |          |                       |
 | [x]    | Connect player with beam                                  | Milka    |                       |
 | [ ]    | Banner creation                                           | Matthias |                       |
-| [ ]    | Ufo Power Up                                              |          |                       |
+| [x]    | Ufo Power Up                                              | Josef    |                       |
 | [x]    | Fix Level Selector                                        | Milka    |                       |
 | [ ]    | Brush Up Game Over Menu                                   |          |                       |
 | [x]    | Add Leaderboard Logic                                     | Nico     |                       |
