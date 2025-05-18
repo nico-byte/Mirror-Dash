@@ -58,6 +58,12 @@ export class PlayerPhysics {
                 this.sprite.body.setVelocityY(-jumpStrength);
                 newAnimation = "jump";
                 moved = true;
+                
+                // Clear any platform-related properties to prevent snapping back when jumping
+                this.sprite.platformRelativePosition = null;
+                this.sprite.previousX = null;
+                this.sprite.inputVelocityX = null;
+                this.sprite.isOnMovingPlatform = false;
             }
 
             return {

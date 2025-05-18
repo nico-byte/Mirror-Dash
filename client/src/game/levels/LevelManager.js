@@ -338,19 +338,59 @@ export class LevelManager {
             const amplitude = Math.abs(range || 80);
 
             if (motion === "vertical") {
+                // Calculate new position based on sine wave with high precision
                 const newY = baseY + Math.sin(t) * amplitude;
+                
+                // Store old position before update for precise delta calculation
+                const oldY = platform.y;
+                
+                // Update position
                 platform.setY(newY);
-                platform.body.velocity.y = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
-                platform.body.velocity.x = 0;
+                
+                // Calculate velocity based on cosine (derivative of sine) for smooth movement
+                // Multiply by appropriate factor to match the sine wave's amplitude and frequency
+                const velocity = Math.cos(t) * amplitude * Math.PI / (speed / 1000);
+                platform.body.velocity.y = velocity;
+                platform.body.velocity.x = 0; // No horizontal movement
+                
+                // Set precise previous position for exact delta calculation
+                platform.body.prev.y = oldY;
+                
+                // Store exact delta value for collision handler to use
+                platform.body._deltaY = newY - oldY;
+                
             } else if (motion === "horizontal") {
+                // Calculate new position based on sine wave with high precision
                 const newX = baseX + Math.sin(t) * amplitude;
+                
+                // Store old position before update for precise delta calculation
+                const oldX = platform.x;
+                
+                // Update position
                 platform.setX(newX);
-                platform.body.velocity.x = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
-                platform.body.velocity.y = 0;
+                
+                // Calculate velocity based on cosine (derivative of sine) for smooth movement
+                const velocity = Math.cos(t) * amplitude * Math.PI / (speed / 1000);
+                platform.body.velocity.x = velocity;
+                platform.body.velocity.y = 0; // No vertical movement
+                
+                // Set precise previous position for exact delta calculation
+                platform.body.prev.x = oldX;
+                
+                // Store exact delta value for collision handler to use
+                platform.body._deltaX = newX - oldX;
             }
 
-            // Make sure the physics body is synced with the visual position
-            // This is crucial for proper collision detection
+            // Override the built-in deltaX/deltaY methods to use our precise values
+            platform.body.deltaX = function() {
+                return this._deltaX !== undefined ? this._deltaX : this.position.x - this.prev.x;
+            };
+            
+            platform.body.deltaY = function() {
+                return this._deltaY !== undefined ? this._deltaY : this.position.y - this.prev.y;
+            };
+
+            // Make sure the physics body is updated with new position
             platform.body.updateFromGameObject();
 
             // Set proper platform properties every frame to ensure collisions work
