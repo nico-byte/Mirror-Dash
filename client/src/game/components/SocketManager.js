@@ -355,6 +355,10 @@ export class SocketManager {
             this.scene.otherPlayers = {};
         }
 
+        // Check if this is a first join for this client (new players added)
+        const hadNoPlayersBeforeUpdate = Object.keys(this.scene.otherPlayers).length === 0;
+        let newPlayerJoined = false;
+
         // Remove players no longer in game
         Object.keys(this.scene.otherPlayers).forEach(id => {
             if (!lobby.players[id] || id === this.scene.socket.id) {
@@ -378,6 +382,7 @@ export class SocketManager {
             if (!this.scene.otherPlayers[playerId]) {
                 // New player joined - create them at their reported position
                 console.log("Creating new player:", playerInfo.name);
+                newPlayerJoined = true;
 
                 try {
                     const posX = playerInfo.x || 230;
@@ -439,6 +444,27 @@ export class SocketManager {
                 });
             }
         });
+
+        // If we've just transitioned from having no players to having players
+        // (new player joined) or we had no players and we're first joining others,
+        // ensure we don't duplicate the music
+        if ((newPlayerJoined && hadNoPlayersBeforeUpdate) && this.scene.levelManager) {
+            // Get current level settings
+            const levelSettings = this.scene.levelManager.getLevelSettings(this.scene.levelId);
+            if (levelSettings && this.scene.audioManager && this.scene.levelMusic) {
+                console.log("Re-syncing audio for player join event");
+                
+                // Make sure we don't restart music that's already playing
+                // We set forcePlay to false to avoid duplicating music
+                this.scene.levelMusic = this.scene.audioManager.playMusic(
+                    levelSettings.music, 
+                    true, 
+                    this.scene.audioManager.musicVolume, 
+                    false, // Don't stop current
+                    false  // Don't force play
+                );
+            }
+        }
     }
 
     updateOtherPlayer(playerInfo) {

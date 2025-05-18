@@ -1,5 +1,6 @@
 import { Scene } from "phaser";
 import { ProgressManager } from "../components/ProgressManager";
+import { AudioManager } from "../components/AudioManager";
 
 export class FinishLevel extends Scene {
     constructor() {
@@ -13,6 +14,7 @@ export class FinishLevel extends Scene {
         this.lobbyId = null;
         this.nextLevelId = null;
         this.isTransitioning = false;
+        this.audioManager = null;
     }
 
     init(data) {
@@ -25,6 +27,9 @@ export class FinishLevel extends Scene {
         this.lobbyId = data?.lobbyId;
         this.nextLevelId = data?.nextLevelId;
         this.isTransitioning = false;
+        
+        // Initialize audio manager
+        this.audioManager = new AudioManager(this);
 
         if (this.playerName) {
             this.progressManager.loadProgress(this.playerName);
@@ -55,9 +60,21 @@ export class FinishLevel extends Scene {
         }
     }
 
+    preload() {
+        // Make sure audio manager preloads its audio resources
+        if (this.audioManager) {
+            this.audioManager.preloadAudio();
+        }
+    }
+
     create() {
         // Force camera to a solid background color
         this.cameras.main.setBackgroundColor(0x060322);
+
+        // Play success fanfare
+        if (this.audioManager) {
+            this.audioManager.playSfx("win", 0.5);
+        }
 
         const { width, height } = this.scale;
 

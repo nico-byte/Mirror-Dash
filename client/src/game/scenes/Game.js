@@ -10,6 +10,7 @@ import { GameCollisions } from "../components/Game/GameCollisions";
 import { GameTimer } from "../components/Game/GameTimer";
 import { PlayerRespawn } from "../entities/PlayerRespawn";
 import { PlayerConnection } from "../entities/PlayerConnection";
+import { AudioManager } from "../components/AudioManager";
 
 export class Game extends Scene {
     constructor() {
@@ -65,6 +66,7 @@ export class Game extends Scene {
         this.playerConnection = null;
         this.levelManager = null;
         this.cameraManager = null;
+        this.audioManager = null;
 
         // Music and sounds
         this.levelMusic = null;
@@ -130,6 +132,7 @@ export class Game extends Scene {
         this.gameTimer = new GameTimer(this);
         this.playerRespawn = new PlayerRespawn(this);
         this.playerRespawn.setGameTimer(this.gameTimer);
+        this.audioManager = new AudioManager(this);
 
         // Set up socket listeners after a slight delay to ensure proper initialization
         setTimeout(() => {
@@ -143,14 +146,9 @@ export class Game extends Scene {
     }
 
     preload() {
-        // Load music
-        if (!this.sound.get("levelMusic")) {
-            this.load.audio("levelMusic", "../assets/music/dnb_og.wav");
-        }
-        
-        // Load win sound
-        if (!this.sound.get("win")) {
-            this.load.audio("win", "../assets/music/win.wav");
+        // Let the audio manager handle audio preloading
+        if (this.audioManager) {
+            this.audioManager.preloadAudio();
         }
     }
 
@@ -320,20 +318,19 @@ export class Game extends Scene {
             this.cameraManager.scrollSpeed = settings.cameraSpeed;
         }
 
-        // Apply music settings - stop current music if playing
-        if (this.levelMusic && this.levelMusic.isPlaying) {
-            this.levelMusic.stop();
+        // Play music through the audio manager
+        if (this.audioManager) {
+            // Don't force-play music if we're a joined player (to avoid duplication)
+            const isJoinedPlayer = this.socket && this.socket.connected && 
+                                   this.lobbyId && Object.keys(this.otherPlayers || {}).length > 0;
+
+            if (!isJoinedPlayer) {
+                this.levelMusic = this.audioManager.playMusic(settings.music, true, this.audioManager.musicVolume, true, false);
+                // Update references to music
+                this.gameTimer.setLevelMusic(this.levelMusic);
+                this.gameUI.setLevelMusic(this.levelMusic);
+            }
         }
-
-        // Load and play level-specific music
-        this.levelMusic = this.sound.add(settings.music, { loop: true, volume: 0.5 });
-        
-        // Actually play the music
-        this.levelMusic.play();
-
-        // Update references to music
-        this.gameTimer.setLevelMusic(this.levelMusic);
-        this.gameUI.setLevelMusic(this.levelMusic);
     }
 
     attemptSync() {
@@ -454,27 +451,24 @@ export class Game extends Scene {
             });
         }
 
-        // Stop music with fade out if it exists
-        if (this.levelMusic) {
-            this.tweens.add({
-                targets: this.levelMusic,
-                volume: 0,
-                duration: 1000,
-                onComplete: () => {
-                    this.levelMusic.stop();
+        // Stop music with fade out if using audio manager
+        if (this.audioManager && this.levelMusic) {
+            // Fade out and stop music
+            this.audioManager.stopMusic(1000);
+            
+            // Switch to Game Over scene after a short delay
+            this.time.delayedCall(1200, () => {
+                // Clean up resources
+                this.cleanup();
 
-                    // Clean up resources
-                    this.cleanup();
-
-                    // Navigate to Game Over scene
-                    this.scene.start("GameOver", {
-                        levelId: this.levelId,
-                        playerName: this.playerName,
-                        socket: this.socket,
-                        lobbyId: this.lobbyId,
-                        reason: reason,
-                    });
-                },
+                // Navigate to Game Over scene
+                this.scene.start("GameOver", {
+                    levelId: this.levelId,
+                    playerName: this.playerName,
+                    socket: this.socket,
+                    lobbyId: this.lobbyId,
+                    reason: reason,
+                });
             });
         } else {
             // No music to fade, switch immediately
@@ -630,17 +624,16 @@ export class Game extends Scene {
                         });
                     }
                     // Stop Music
-                    if (this.levelMusic) {
-                        this.tweens.add({
-                            targets: this.levelMusic,
-                            volume: 0,
-                            duration: 1000,
-                            onComplete: () => this.levelMusic.stop(),
-                        });
+                    if (this.audioManager) {
+                        this.audioManager.stopMusic(1000);
                     }
 
                     // Play win sound
-                    this.sound.play("win");
+                    if (this.audioManager) {
+                        this.audioManager.playSfx("win");
+                    } else {
+                        this.sound.play("win");
+                    }
 
                     // Switch to FinishLevel scene after a delay
                     this.time.delayedCall(2000, () => {
@@ -739,11 +732,11 @@ export class Game extends Scene {
             this.timerEvent = null;
         }
 
-        if (this.levelMusic) {
-            this.levelMusic.stop();
-            this.levelMusic.destroy();
-            this.levelMusic = null;
+        // Clean up audio
+        if (this.audioManager) {
+            this.audioManager.shutdown();
         }
+        this.levelMusic = null;
 
         if (this.syncTimer) {
             this.syncTimer.remove();
