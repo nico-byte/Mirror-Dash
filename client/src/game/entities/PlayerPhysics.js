@@ -35,7 +35,7 @@ export class PlayerPhysics {
 
         try {
             const speed = 500;
-            const jumpStrength = 800;
+            const jumpStrength = 100;
 
             this.sprite.body.setAccelerationX(0); // Reset acceleration
             let moved = false;
