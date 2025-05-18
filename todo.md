@@ -30,11 +30,11 @@
 | [x]    | Connect player with beam                                  | Milka    |                       |
 | [ ]    | Banner creation                                           | Matthias |                       |
 | [ ]    | Ufo Power Up                                              |          |                       |
-| [ ]    | Fix Level Selector                                        |          |                       |
+| [x]    | Fix Level Selector                                        | Milka    |                       |
 | [ ]    | Brush Up Game Over Menu                                   |          |                       |
 | [ ]    | Add Leaderboard Logic                                     |          |                       |
-| [ ]    | Player Animations                                         |          |                       |
-| [ ]    | Fix Quick Play                                            |          |                       |
+| [x]    | Player Animations                                         | Josef    |                       |
+| [x]    | Fix Quick Play                                            | Milka    |                       |
 | [ ]    | Ufo Name Change                                           |          |                       |
 | [ ]    | Add partial star review                                   |          |                       |
 | [ ]    | Shared Game Over                                          |          |                       |
