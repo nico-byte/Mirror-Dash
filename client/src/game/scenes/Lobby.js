@@ -283,18 +283,18 @@ export class Lobby extends Scene {
         this.lobbyPlayerListContainer = this.add.container(0, 0);
         this.lobbyUI.add(this.lobbyPlayerListContainer);
 
-        this.lobbyStartGameButton = makeButton(500, "Start Game", 0x00aa00, 0x00cc00, () => {
+        this.lobbyStartGameButton = makeButton(490, "Start Game", 0x00aa00, 0x00cc00, () => {
             if (this.socket?.connected && this.currentLobbyId) {
                 this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
             }
         }).setVisible(false);
 
-        this.lobbyLeaveLobbyButton = makeButton(570, "Leave Lobby", 0xaa0000, 0xcc0000, () =>
+        this.lobbyLeaveLobbyButton = makeButton(560, "Leave Lobby", 0xaa0000, 0xcc0000, () =>
             this.leaveLobby()
         ).setVisible(false);
 
         this.connectionStatusText = this.add
-            .text(512, 612, "Connecting to server...", {
+            .text(512, 600, "Connecting to server...", {
                 fontFamily: "Orbitron, Arial",
                 fontSize: 14,
                 color: "#ffff00",
