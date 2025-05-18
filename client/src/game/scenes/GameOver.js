@@ -3,12 +3,16 @@ import { Scene } from "phaser";
 export class GameOver extends Scene {
     constructor() {
         super("GameOver");
+        this.isTransitioning = false;
     }
 
     init(data) {
         this.levelId = data?.levelId || "level1";
         this.playerName = data?.playerName;
         this.socket = data?.socket;
+        this.lobbyId = data?.lobbyId;
+        this.reason = data?.reason;
+        this.isTransitioning = false;
     }
 
     create() {
@@ -99,30 +103,145 @@ export class GameOver extends Scene {
                 }
             )
             .setOrigin(0.5);
+
+        // Set up socket listeners
+        this.setupSocketListeners();
+    }
+
+    setupSocketListeners() {
+        if (this.socket) {
+            // Listen for forced level change events
+            this.socket.on("forceLevelChanged", data => {
+                if (data && data.lobbyId === this.lobbyId && !this.isTransitioning) {
+                    this.isTransitioning = true;
+
+                    // Create notification text
+                    const notification = this.add
+                        .text(
+                            this.scale.width / 2,
+                            this.scale.height / 3,
+                            `${data.initiatorName} is changing level to ${this.getLevelName(data.levelId)}...`,
+                            {
+                                fontFamily: "Arial",
+                                fontSize: 28,
+                                color: "#ffffff",
+                                backgroundColor: "#000000",
+                                padding: { x: 20, y: 10 },
+                            }
+                        )
+                        .setOrigin(0.5)
+                        .setDepth(999);
+
+                    // Follow the other player after a short delay
+                    this.time.delayedCall(1500, () => {
+                        this.scene.start("Game", {
+                            socket: this.socket,
+                            playerName: this.playerName,
+                            levelId: data.levelId,
+                            lobbyId: this.lobbyId,
+                        });
+                    });
+                }
+            });
+        }
+    }
+
+    getLevelName(levelId) {
+        switch (levelId) {
+            case "level1":
+                return "Level 1";
+            case "level2":
+                return "Level 2";
+            default:
+                return levelId;
+        }
     }
 
     retryLevel() {
+        // Prevent multiple clicks
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
+        // Show loading message
+        const loadingText = this.add
+            .text(this.scale.width / 2, this.scale.height / 2, "Restarting level...", {
+                fontFamily: "Arial Black",
+                fontSize: 24,
+                color: "#ffffff",
+                stroke: "#000000",
+                strokeThickness: 4,
+                backgroundColor: "#000000",
+                padding: { x: 20, y: 10 },
+            })
+            .setOrigin(0.5)
+            .setDepth(1000);
+
         // Notify the server that we're retrying the level
         if (this.socket && this.socket.connected && this.lobbyId) {
-            this.socket.emit("changeLevel", {
+            this.socket.emit("forceLevelChange", {
                 lobbyId: this.lobbyId,
+                levelId: this.levelId,
+                initiatorId: this.socket.id,
+                initiatorName: this.playerName || "Player",
+            });
+
+            // Short delay before starting the level
+            this.time.delayedCall(1000, () => {
+                this.scene.start("Game", {
+                    socket: this.socket,
+                    playerName: this.playerName,
+                    levelId: this.levelId,
+                    lobbyId: this.lobbyId,
+                });
+            });
+        } else {
+            // If not in a lobby, just start the game
+            this.scene.start("Game", {
+                playerName: this.playerName,
                 levelId: this.levelId,
             });
         }
-
-        this.scene.start("Game", {
-            playerName: this.playerName,
-        });
     }
 
     goToLevelSelector() {
+        // Prevent multiple clicks
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
+        // Clean up socket listener
+        if (this.socket) {
+            this.socket.off("forceLevelChanged");
+        }
+
         this.scene.start("LevelSelector", {
             socket: this.socket,
             playerName: this.playerName,
+            lobbyId: this.lobbyId,
         });
     }
 
     goToMainMenu() {
+        // Prevent multiple clicks
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
+        // Clean up socket listener
+        if (this.socket) {
+            this.socket.off("forceLevelChanged");
+        }
+
+        // If in a lobby, leave it before going to main menu
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            this.socket.emit("leaveLobby", { lobbyId: this.lobbyId });
+        }
+
         this.scene.start("MainMenu");
+    }
+
+    shutdown() {
+        // Clean up event listeners to prevent memory leaks
+        if (this.socket) {
+            this.socket.off("forceLevelChanged");
+        }
     }
 }
