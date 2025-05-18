@@ -184,8 +184,6 @@ export class GameTimer {
                     isPenalty: true,
                 });
             }
-
-            console.log(`Penalty applied: -${seconds} seconds`);
         }
     }
 
@@ -194,7 +192,7 @@ export class GameTimer {
             const otherPlayerIds = Object.keys(this.scene.otherPlayers);
             const otherPlayer = this.scene.otherPlayers[otherPlayerIds[0]];
             if (!otherPlayer) return;
-        
+
             // Calculate positions for top view
             const startX = this.scene.player.x;
             const startY = this.scene.player.y;
@@ -219,8 +217,6 @@ export class GameTimer {
                     isPenalty: true,
                 });
             }
-
-            console.log(`Penalty applied: -${penalty} seconds`);
         }
     }
 

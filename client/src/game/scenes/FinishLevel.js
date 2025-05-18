@@ -272,11 +272,17 @@ export class FinishLevel extends Scene {
 
                 // Small delay before proceeding
                 this.time.delayedCall(1000, () => {
+                    // Destroy loading text before transition
+                    if (loadingText) loadingText.destroy();
                     this.proceedToLevel(this.nextLevelId);
                 });
             } else {
                 // If no socket connection, just proceed
-                this.proceedToLevel(this.nextLevelId);
+                this.time.delayedCall(500, () => {
+                    // Destroy loading text before transition
+                    if (loadingText) loadingText.destroy();
+                    this.proceedToLevel(this.nextLevelId);
+                });
             }
         }
     }
