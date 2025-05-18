@@ -9,6 +9,7 @@ export class LevelManager {
         this.pendingPlatforms = [];
         this.pendingJumpPads = [];
         this.pendingSpikes = [];
+        this.pendingPortals = [];
         this.pendingFinish = null;
         this.initialized = false;
     }
@@ -20,6 +21,7 @@ export class LevelManager {
         this.pendingPlatforms = [];
         this.pendingJumpPads = [];
         this.pendingSpikes = [];
+        this.pendingPortals = [];
         this.pendingFinish = null;
         this.initialized = false;
     }
@@ -71,6 +73,10 @@ export class LevelManager {
             if (!this.scene.finishObject) {
                 this.scene.finishObject = this.scene.physics.add.staticGroup();
             }
+            
+            if (!this.scene.portals) {
+                this.scene.portals = this.scene.physics.add.staticGroup();
+            }
 
             // Process any pending objects
             this.processPendingObjects();
@@ -115,6 +121,14 @@ export class LevelManager {
                 this.createSpikesWithMirror(spike.x, spike.y, spike.texture, spike.scaleX, spike.scaleY);
             });
             this.pendingSpikes = [];
+        }
+        
+        // Process pending portals
+        if (this.pendingPortals && this.pendingPortals.length > 0) {
+            this.pendingPortals.forEach(portal => {
+                this.createPortalWithMirror(portal.x, portal.y, portal.texture, portal.scaleX, portal.scaleY);
+            });
+            this.pendingPortals = [];
         }
 
         // Process pending finish line
@@ -249,6 +263,34 @@ export class LevelManager {
             });
         }
 
+        // Create portals
+        if (levelData.portals) {
+            levelData.portals.forEach(portal => {
+                try {
+                    if (this.isSceneReady()) {
+                        this.createPortalWithMirror(
+                            portal.x,
+                            portal.y,
+                            portal.texture || "portal",
+                            portal.scaleX || 1,
+                            portal.scaleY || 1
+                        );
+                    } else {
+                        this.pendingPortals = this.pendingPortals || [];
+                        this.pendingPortals.push({
+                            x: portal.x,
+                            y: portal.y,
+                            texture: portal.texture || "portal",
+                            scaleX: portal.scaleX || 1,
+                            scaleY: portal.scaleY || 1,
+                        });
+                    }
+                } catch (error) {
+                    // Silent error handling
+                }
+            });
+        }
+
         // Create finish line
         if (levelData.finish && this.isSceneReady()) {
             try {
@@ -269,22 +311,6 @@ export class LevelManager {
                     };
                 }
             }
-        }
-
-        // Create portals in the level
-        if (levelData.portal) {
-            levelData.portal.forEach(portalConfig => {
-                try {
-                    this.createPortalWithMirror(
-                        portalConfig.x,
-                        portalConfig.y,
-                        portalConfig.texture || "portal",
-                        portalConfig.scaleX || 1,
-                        portalConfig.scaleY || 1
-                    );
-                } catch (error) {
-                }
-            });
         }
 
         // Set world and camera bounds
@@ -720,26 +746,59 @@ export class LevelManager {
         const midPoint = screenHeight / 2;
 
         try {
-            if (!this.scene.portalGroup) {
-                this.scene.portalGroup = this.scene.physics.add.staticGroup();
+            if (!this.scene.portals) {
+                this.scene.portals = this.scene.physics.add.staticGroup();
             }
 
-            const portal = this.scene.portalGroup.create(x, y, texture);
+            const portal = this.scene.portals.create(x, y, texture);
             portal.setScale(scaleX, scaleY);
+            
+            // Make sure the physics body is properly sized
+            const portalWidth = portal.width * 0.8;  // Use 80% of the width for better collision
+            const portalHeight = portal.height * 0.8; // Use 80% of the height for better collision
+            portal.body.setSize(portalWidth, portalHeight, true);
             portal.refreshBody();
+            
+            // Add a small animation to make the portal more visible
+            if (this.scene.tweens) {
+                this.scene.tweens.add({
+                    targets: portal,
+                    scaleX: scaleX * 1.1,
+                    scaleY: scaleY * 1.1,
+                    duration: 1000,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+            }
 
             // Create mirrored version for bottom view
             const mirrorPortal = this.scene.add
                 .image(x, screenHeight - y + midPoint, texture)
                 .setScale(scaleX, scaleY)
                 .setFlipY(true);
+                
+            // Also animate the mirror portal
+            if (this.scene.tweens) {
+                this.scene.tweens.add({
+                    targets: mirrorPortal,
+                    scaleX: scaleX * 1.1,
+                    scaleY: scaleY * 1.1,
+                    duration: 1000,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+            }
 
             // Set camera visibility
             if (this.scene.topCamera) this.scene.topCamera.ignore(mirrorPortal);
             if (this.scene.bottomCamera) this.scene.bottomCamera.ignore(portal);
 
+            console.log("Portal created at", x, y, "with texture", texture);
             return portal;
         } catch (error) {
+            console.error("Error creating portal:", error);
             return null;
         }
     }

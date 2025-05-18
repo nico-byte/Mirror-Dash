@@ -6,7 +6,7 @@ export const Level1 = {
     description: "The first level with platforms and jump pads",
 
     // Player spawn position
-    spawnPoint: { x: 90, y: 500 },
+    spawnPoint: { x: 90, y: 700 },
 
     // World boundaries
     worldBounds: {

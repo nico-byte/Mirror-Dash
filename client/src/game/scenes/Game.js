@@ -52,6 +52,7 @@ export class Game extends Scene {
         this.movingPlatforms = null;
         this.spikeGroup = null;
         this.finishObject = null;
+        this.portals = null; // Add portals property
 
         // Component managers
         this.progressManager = null;
@@ -219,6 +220,7 @@ export class Game extends Scene {
         this.spikeGroup = this.physics.add.staticGroup();
         this.finishObject = this.physics.add.staticGroup();
         this.movingPlatforms = this.physics.add.group();
+        this.portals = this.physics.add.staticGroup(); // Initialize portals group
 
         // Set up camera manager
         this.cameraManager = new CameraManager(this, this.autoScrollCamera, this.scrollSpeed);
@@ -246,7 +248,8 @@ export class Game extends Scene {
             this.jumpPads,
             this.finishObject,
             this.movingPlatforms,
-            this.spikeGroup
+            this.spikeGroup,
+            this.portals // Add portals to collision setup
         );
 
         // Setup input
