@@ -32,7 +32,7 @@ export class Game extends Scene {
         this.connected = false;
         this.lobbyId = null;
         this.debugMode = false;
-        this.levelId = "level4"; // Default level
+        this.levelId = "level1"; // Default level
         this.levelLoaded = false;
         this.isTransitioning = false;
 
