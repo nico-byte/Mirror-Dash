@@ -202,11 +202,6 @@ export class Game extends Scene {
     }
 
     create() {
-        // Start the music
-        this.levelMusic = this.sound.add("levelMusic", { loop: true, volume: 0.5 });
-        this.gameTimer.setLevelMusic(this.levelMusic);
-        this.gameUI.setLevelMusic(this.levelMusic);
-
         // Create player animations
         this.createAnimations();
 
