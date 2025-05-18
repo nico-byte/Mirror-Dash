@@ -293,6 +293,14 @@ export class Lobby extends Scene {
         }
     }
 
+    promptName() {
+        const newName = prompt("Enter your name:", this.playerName);
+        if (newName && newName.trim() !== "") {
+            this.playerName = newName.trim();
+            this.lobbyListPlayerNameText.setText(this.playerName);
+        }
+    }
+
     createNewLobby() {
         if (!this.socket || !this.socket.connected) {
             console.error("Cannot create lobby - socket not connected");

@@ -477,9 +477,6 @@ export class LevelManager {
         }
     }
 
-    /**
-     * Create spikes with their mirrored version - with improved error handling
-     */
     createSpikesWithMirror(x, y, texture = "spike", scaleX = 1, scaleY = 1) {
         if (!this.isSceneReady()) {
             console.warn("Scene not fully initialized! Queuing spikes for later creation.");
@@ -498,8 +495,9 @@ export class LevelManager {
         const midPoint = screenHeight / 2;
 
         try {
-            // Ensure spike group exists
+            // Ensure spike group exists with additional safety check
             if (!this.scene.spikeGroup) {
+                // This is the key fix - create a static physics group if it doesn't exist
                 this.scene.spikeGroup = this.scene.physics.add.staticGroup();
             }
 
@@ -533,7 +531,7 @@ export class LevelManager {
 
             return spike;
         } catch (error) {
-            // console.error("Error creating spikes:", error, "at position:", x, y);
+            console.error("Error creating spikes:", error, "at position:", x, y);
             return null;
         }
     }

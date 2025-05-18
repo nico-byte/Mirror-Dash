@@ -17,7 +17,13 @@ export class GameCollisions {
         }
 
         // Set up physics overlap with finish line if it exists
-        if (player && player.sprite && finishObject) {
+        if (
+            player &&
+            player.sprite &&
+            finishObject &&
+            finishObject.getChildren &&
+            finishObject.getChildren().length > 0
+        ) {
             this.scene.physics.add.overlap(player.sprite, finishObject, this.scene.handleFinish, null, this.scene);
         }
 
@@ -32,8 +38,8 @@ export class GameCollisions {
             );
         }
 
-        // Add collision with spikes
-        if (player && player.sprite && spikes) {
+        // Add collision with spikes - with additional check
+        if (player && player.sprite && spikes && spikes.getChildren && spikes.getChildren().length > 0) {
             this.scene.physics.add.overlap(player.sprite, spikes, this.handleSpikeCollision, null, this);
         }
 
@@ -101,6 +107,41 @@ export class GameCollisions {
             }
         } catch (error) {
             // console.error("Error in handleJumpPad", error);
+        }
+    }
+
+    handleSpikeCollision(playerSprite, spike) {
+        // Prevent multiple collisions in quick succession
+        if (playerSprite.invulnerable) return;
+
+        console.log("Player hit spike!");
+
+        // Make player briefly invulnerable to prevent multiple hits
+        playerSprite.invulnerable = true;
+
+        // Visual feedback
+        this.scene.tweens.add({
+            targets: playerSprite,
+            alpha: 0.5,
+            duration: 100,
+            yoyo: true,
+            repeat: 5,
+            onComplete: () => {
+                playerSprite.invulnerable = false;
+            },
+        });
+
+        // Apply penalty through game timer
+        if (this.scene.gameTimer) {
+            this.scene.gameTimer.applyPenalty(10); // 10 second penalty
+        }
+
+        // Respawn player at the top if enabled in instant death mode
+        if (this.scene.instantDeathMode) {
+            this.scene.handleGameOver("spike");
+        } else {
+            // Bounce the player away from the spike
+            playerSprite.body.velocity.y = -300;
         }
     }
 

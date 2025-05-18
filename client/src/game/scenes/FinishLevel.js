@@ -255,20 +255,42 @@ export class FinishLevel extends Scene {
 
     // Helper to proceed to next level
     proceedToNextLevel() {
-        // Use start with a special protection flag to prevent errors
-        try {
+        // Before switching scenes, emit the level change to the server
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            this.socket.emit("forceLevelChange", {
+                lobbyId: this.lobbyId,
+                levelId: this.nextLevelId,
+                initiatorId: this.socket.id,
+                initiatorName: this.playerName,
+            });
+
+            // Small delay to give server time to broadcast the change
+            this.time.delayedCall(500, () => {
+                // Use start with a special protection flag to prevent errors
+                try {
+                    this.scene.start("Game", {
+                        socket: this.socket,
+                        playerName: this.playerName,
+                        levelId: this.nextLevelId,
+                        lobbyId: this.lobbyId,
+                        isLevelTransition: true,
+                    });
+                } catch (err) {
+                    console.error("Error starting Game scene:", err);
+                    // Last resort - reload the page
+                    alert("Error loading level. The game will now restart.");
+                    window.location.reload();
+                }
+            });
+        } else {
+            // If no socket connection, just proceed directly
             this.scene.start("Game", {
                 socket: this.socket,
                 playerName: this.playerName,
                 levelId: this.nextLevelId,
                 lobbyId: this.lobbyId,
-                isLevelTransition: true, // Signal that this is a level transition
+                isLevelTransition: true,
             });
-        } catch (err) {
-            console.error("Error starting Game scene:", err);
-            // Last resort - reload the page
-            alert("Error loading level. The game will now restart.");
-            window.location.reload();
         }
     }
 

@@ -143,7 +143,7 @@ export const Level1 = {
     createPlatforms: scene => {
         scene.platformGroup = scene.add.group();
 
-        for (const cfg of Level1.platforms) {
+        for (const cfg of Level2.platforms) {
             const platform =
                 cfg.isStatic !== false
                     ? scene.physics.add.staticImage(cfg.x, cfg.y, cfg.texture)
@@ -189,7 +189,7 @@ export const Level1 = {
     setupMovingPlatforms: scene => {
         for (const platform of scene.platformGroup.getChildren()) {
             if (platform.body?.immovable === false) {
-                const data = Level1.platforms.find(p => p.x === platform.x && p.y === platform.y);
+                const data = Level2.platforms.find(p => p.x === platform.x && p.y === platform.y);
                 if (!data || !data.motion) continue;
 
                 const tween = {

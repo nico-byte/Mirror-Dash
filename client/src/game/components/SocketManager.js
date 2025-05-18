@@ -158,8 +158,31 @@ export class SocketManager {
 
                 // After a short delay, transition to game over scene
                 this.scene.time.delayedCall(1500, () => {
-                    if (this.scene.handleGameOver) {
-                        this.scene.handleGameOver("other_player");
+                    // Stop music with fade out if it exists
+                    if (this.scene.levelMusic) {
+                        this.scene.tweens.add({
+                            targets: this.scene.levelMusic,
+                            volume: 0,
+                            duration: 1000,
+                            onComplete: () => {
+                                this.scene.levelMusic.stop();
+                                this.scene.scene.start("GameOver", {
+                                    levelId: this.scene.levelId,
+                                    playerName: this.scene.playerName,
+                                    socket: this.scene.socket,
+                                    lobbyId: this.scene.lobbyId,
+                                    reason: "other_player",
+                                });
+                            },
+                        });
+                    } else {
+                        this.scene.scene.start("GameOver", {
+                            levelId: this.scene.levelId,
+                            playerName: this.scene.playerName,
+                            socket: this.scene.socket,
+                            lobbyId: this.scene.lobbyId,
+                            reason: "other_player",
+                        });
                     }
                 });
             }

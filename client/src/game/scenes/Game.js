@@ -56,42 +56,42 @@ export class Game extends Scene {
 
     preload() {
         this.load.audio("levelMusic", "../assets/music/dnb_og.wav");
-        
+
         // Load player animation sprite sheet
-        this.load.spritesheet('player_animations', 
-            '../assets/Player_Platforms/player_animations.png', 
-            { frameWidth: 32, frameHeight: 32 }
-        );
+        this.load.spritesheet("player_animations", "../assets/Player_Platforms/player_animations.png", {
+            frameWidth: 32,
+            frameHeight: 32,
+        });
     }
-    
+
     createAnimations() {
         // Create player animations from the sprite sheet
-        
+
         // Idle animation (second frame in the sprite sheet)
         this.anims.create({
-            key: 'idle',
-            frames: [ { key: 'player_animations', frame: 1 } ],
+            key: "idle",
+            frames: [{ key: "player_animations", frame: 1 }],
             frameRate: 10,
-            repeat: -1
+            repeat: -1,
         });
-        
+
         // Run animation (using first and fourth frames)
         this.anims.create({
-            key: 'run',
+            key: "run",
             frames: [
-                { key: 'player_animations', frame: 0 },
-                { key: 'player_animations', frame: 3 }
+                { key: "player_animations", frame: 0 },
+                { key: "player_animations", frame: 3 },
             ],
-            frameRate: 10,  // Slightly faster for smoother running animation
-            repeat: -1
+            frameRate: 10, // Slightly faster for smoother running animation
+            repeat: -1,
         });
-        
+
         // Jump animation (can use another frame if needed)
         this.anims.create({
-            key: 'jump',
-            frames: [ { key: 'player_animations', frame: 2 } ],
+            key: "jump",
+            frames: [{ key: "player_animations", frame: 2 }],
             frameRate: 10,
-            repeat: 0
+            repeat: 0,
         });
     }
 
@@ -167,9 +167,12 @@ export class Game extends Scene {
             graphics.destroy();
         }
 
-        // Initialize physics groups immediately
+        // Initialize ALL physics groups immediately
         this.platforms = this.physics.add.staticGroup();
         this.jumpPads = this.physics.add.staticGroup();
+        this.spikeGroup = this.physics.add.staticGroup(); // Add this line
+        this.finishObject = this.physics.add.staticGroup(); // Add this line
+        this.movingPlatforms = this.physics.add.group();
 
         // Set up camera manager
         this.cameraManager = new CameraManager(this, this.autoScrollCamera, this.scrollSpeed);
