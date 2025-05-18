@@ -14,7 +14,12 @@ export class Lobby extends Scene {
         this.connectionError = false;
     }
 
+    /**
+     * Improved init method for the Lobby scene
+     * This ensures proper initialization of all UI components
+     */
     init(data) {
+        // Reset all state variables
         this.socket = null;
         this.lobbies = {};
         this.selectedLobbyId = null;
@@ -23,22 +28,28 @@ export class Lobby extends Scene {
         this.inLobby = false;
         this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
         this.connectionError = false;
+
+        // Clear any previous UI references to prevent stale objects
+        this.lobbyListContainer = null;
+        this.lobbyPlayerListContainer = null;
+        this.lobbyUI = null;
+
         console.log("Lobby scene initialized with data:", data);
 
         // Get socket from data if it exists
         if (data && data.socket) {
             this.socket = data.socket;
-            console.log("Using existing socket connection");
+            console.log("Using existing socket connection:", this.socket.id);
         } else {
-            // Connect to socket.io server using the environment variable or fallback to localhost
+            // Connect to socket.io server using the environment variable or fallback
             const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
             console.log("Connecting to socket server:", serverUrl);
 
             try {
                 this.socket = io(serverUrl);
-                console.log("Socket created:", this.socket.id);
+                console.log("Socket created");
             } catch (e) {
-                // console.error("Error connecting to socket server:", e);
+                console.error("Error connecting to socket server:", e);
                 this.connectionError = true;
             }
         }
@@ -54,6 +65,12 @@ export class Lobby extends Scene {
         // Reset state for new lobby scene
         this.inLobby = false;
         this.currentLobbyId = null;
+
+        // Get lobby ID if passed from another scene
+        if (data && data.lobbyId) {
+            this.currentLobbyId = data.lobbyId;
+            this.inLobby = true;
+        }
 
         this.setupSocketListeners();
     }
@@ -376,6 +393,83 @@ export class Lobby extends Scene {
         );
     }
 
+    promptName() {
+        const newName = prompt("Enter your name:", this.playerName);
+        if (newName && newName.trim() !== "") {
+            this.playerName = newName.trim();
+            this.lobbyListPlayerNameText.setText(this.playerName);
+        }
+    }
+
+    createNewLobby() {
+        if (!this.socket || !this.socket.connected) {
+            alert("Not connected to server. Please try again.");
+            return;
+        }
+
+        const lobbyName = prompt("Enter lobby name:", this.defaultLobbyName);
+        if (lobbyName && lobbyName.trim() !== "") {
+            console.log("Creating lobby with name:", lobbyName.trim());
+            this.socket.emit(
+                "createLobby",
+                {
+                    lobbyName: lobbyName.trim(),
+                    playerName: this.playerName,
+                },
+                response => {
+                    if (response && response.success) {
+                        console.log("Lobby created successfully:", response.lobbyId);
+                        this.currentLobbyId = response.lobbyId;
+                        this.inLobby = true;
+
+                        // Request lobby state immediately after creating
+                        this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
+
+                        // Small delay to ensure we get lobby data before showing UI
+                        this.time.delayedCall(200, () => {
+                            this.showLobbyUI();
+                        });
+                    } else {
+                        alert("Failed to create lobby. Please try again.");
+                    }
+                }
+            );
+        }
+    }
+
+    joinLobby(lobbyId) {
+        if (!this.socket || !this.socket.connected) {
+            // console.error("Cannot join lobby - socket not connected");
+            alert("Not connected to server. Please try again.");
+            return;
+        }
+
+        console.log("Joining lobby:", lobbyId);
+        this.socket.emit(
+            "joinLobby",
+            {
+                lobbyId,
+                playerName: this.playerName,
+            },
+            response => {
+                if (response && response.success) {
+                    console.log("Successfully joined lobby:", response.lobbyId);
+                    this.currentLobbyId = response.lobbyId;
+                    this.inLobby = true;
+                    this.showLobbyUI();
+
+                    // Request lobby state to ensure UI is updated
+                    this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
+                } else {
+                    // console.error("Failed to join lobby:", response);
+                    alert("Failed to join lobby. It may no longer exist.");
+                    // Refresh lobbies list
+                    this.socket.emit("getLobbyList");
+                }
+            }
+        );
+    }
+
     leaveLobby() {
         if (!this.socket || !this.socket.connected) {
             // console.error("Cannot leave lobby - socket not connected");
@@ -404,6 +498,9 @@ export class Lobby extends Scene {
     }
 
     showLobbyUI() {
+        console.log("Showing lobby UI for lobby:", this.currentLobbyId);
+
+        // Hide lobbies list elements
         if (this.lobbyListContainer) {
             this.lobbyListContainer.setVisible(false);
         }
@@ -418,16 +515,43 @@ export class Lobby extends Scene {
         this.lobbyListRefreshButton.setVisible(false);
         this.lobbyListbackButton.setVisible(false);
 
+        // Ensure lobby background is visible
+        this.lobbyBackground.setVisible(true);
+
+        // Ensure that lobby texts are visible and have content
+        if (this.currentLobbyId) {
+            // Get current lobby data
+            const lobby = this.lobbies[this.currentLobbyId] || { name: "Loading...", id: this.currentLobbyId };
+
+            // Update and show lobby name and ID
+            this.lobbyNameText.setText(`Lobby: ${lobby.name || "Loading..."}`).setVisible(true);
+            this.lobbyIdText.setText(`ID: ${this.currentLobbyId}`).setVisible(true);
+        } else {
+            this.lobbyNameText.setText("Lobby: Loading...").setVisible(true);
+            this.lobbyIdText.setText("ID: Loading...").setVisible(true);
+        }
+
+        // Ensure player text header is visible
+        this.lobbyPlayerText.setVisible(true);
+
+        // Show lobby UI container
         if (this.lobbyUI) {
             this.lobbyUI.setVisible(true);
         }
 
-        this.lobbyBackground.setVisible(true);
-        this.lobbyNameText.setVisible(true);
-        this.lobbyIdText.setVisible(true);
-        this.lobbyPlayerText.setVisible(true);
+        // Make sure player list container is visible
+        if (this.lobbyPlayerListContainer) {
+            this.lobbyPlayerListContainer.setVisible(true);
+        }
+
+        // Show the action buttons
         this.lobbyStartGameButton.setVisible(true);
         this.lobbyLeaveLobbyButton.setVisible(true);
+
+        // Request lobby state to ensure UI is updated with latest data
+        if (this.socket && this.socket.connected && this.currentLobbyId) {
+            this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
+        }
     }
 
     hideLobbyUI() {
@@ -579,88 +703,101 @@ export class Lobby extends Scene {
         });
     }
 
+    /**
+     * updateLobbyState method - completely revised with focus on player display
+     * This method makes sure player names appear in the lobby
+     */
     updateLobbyState(lobby) {
         if (!lobby) {
+            console.warn("No lobby data provided to updateLobbyState");
             return;
         }
 
-        // Check if the scene is still valid before proceeding
-        if (!this.scene || !this.scene.sys || !this.scene.sys.isActive()) {
-            return;
-        }
+        console.log("Updating lobby state:", lobby);
+        console.log("Players in lobby:", Object.keys(lobby.players || {}));
 
-        console.log("Updating lobby state, players:", Object.keys(lobby.players || {}));
-
-        // Update lobby name and ID display
+        // 1. Update lobby name and ID display
         if (this.lobbyNameText) {
-            this.lobbyNameText.setText(`Lobby: ${lobby.name}`);
+            this.lobbyNameText.setText(`Lobby: ${lobby.name || "Unknown"}`);
         }
 
         if (this.lobbyIdText) {
-            this.lobbyIdText.setText(`ID: ${lobby.id}`);
+            this.lobbyIdText.setText(`ID: ${lobby.id || "Unknown"}`);
         }
 
-        // Clear player list
-        if (this.lobbyPlayerListContainer) {
-            // Safely clear the container
-            try {
-                this.lobbyPlayerListContainer.removeAll();
-            } catch (error) {
-                // Attempt to recreate the container if it's broken
-                this.lobbyPlayerListContainer = this.add.container(0, 0);
-                if (this.lobbyUI) {
-                    this.lobbyUI.add(this.lobbyPlayerListContainer);
-                }
+        // 2. IMPORTANT: Create a new container if it doesn't exist
+        if (!this.lobbyPlayerListContainer) {
+            console.log("Creating new player list container");
+            this.lobbyPlayerListContainer = this.add.container(0, 0);
+            // Add it to the lobby UI
+            if (this.lobbyUI) {
+                this.lobbyUI.add(this.lobbyPlayerListContainer);
             }
-        } else {
-            // Create a new container
+        }
+
+        // 3. Clear existing player entries
+        try {
+            console.log("Clearing player list container");
+            this.lobbyPlayerListContainer.removeAll(true);
+        } catch (error) {
+            console.warn("Error clearing player list:", error);
+            // Recreate container if there was an error
             this.lobbyPlayerListContainer = this.add.container(0, 0);
             if (this.lobbyUI) {
                 this.lobbyUI.add(this.lobbyPlayerListContainer);
             }
-            return;
         }
 
-        // Determine if current player is host
+        // 4. Make sure the player container is visible
+        this.lobbyPlayerListContainer.setVisible(true);
+
+        // 5. Determine if current player is host
         const isHost = lobby.host === this.socket?.id;
+        console.log("Is current player host?", isHost);
 
-        // Safely update the start button visibility
-        if (this.lobbyStartGameButton) {
-            try {
-                this.lobbyStartGameButton.setVisible(isHost);
-            } catch (error) {
-                // Silent error handling - button might be destroyed
-            }
-        }
-
-        // Draw each player with better styling
+        // 6. Draw each player with explicit step-by-step positioning
         const playerIds = Object.keys(lobby.players || {});
-        let yPos = -20;
+        console.log("Player IDs to render:", playerIds);
 
-        playerIds.forEach((playerId, index) => {
-            const player = lobby.players[playerId];
-            if (!player) {
-                return;
-            }
+        if (playerIds.length === 0) {
+            console.log("No players in lobby!");
 
-            // Make sure we still have access to the scene
-            if (!this.scene || !this.scene.sys || !this.scene.sys.isActive()) {
-                return;
-            }
+            // Add a placeholder text when no players are found
+            const noPlayersText = this.add
+                .text(0, 0, "No players in lobby", {
+                    fontFamily: "Arial",
+                    fontSize: 18,
+                    color: "#ff0000",
+                })
+                .setOrigin(0.5);
 
-            const isPlayerHost = playerId === lobby.host;
-            const isCurrentPlayer = playerId === this.socket?.id;
+            this.lobbyPlayerListContainer.add(noPlayersText);
+        } else {
+            let yPos = -20; // Starting Y position for first player
 
-            try {
-                // Background for player entry
+            playerIds.forEach((playerId, index) => {
+                const player = lobby.players[playerId];
+                if (!player) {
+                    console.warn("Invalid player data for ID:", playerId);
+                    return;
+                }
+
+                console.log("Rendering player:", player.name, "at position", yPos);
+
+                const isPlayerHost = playerId === lobby.host;
+                const isCurrentPlayer = playerId === this.socket?.id;
+
+                // Player background
                 const playerBg = this.add.rectangle(0, yPos, 400, 50, isCurrentPlayer ? 0x334433 : 0x333344, 0.7);
 
                 // Add a border for current player
+                let playerBorder = null;
                 if (isCurrentPlayer) {
-                    const playerBorder = this.add.rectangle(0, yPos, 404, 54, 0x55ff55, 0.5);
+                    playerBorder = this.add.rectangle(0, yPos, 404, 54, 0x55ff55, 0.5);
                     this.lobbyPlayerListContainer.add(playerBorder);
                 }
 
+                // Create player name text with crown for host
                 const prefix = isPlayerHost ? "👑 " : "";
                 const playerName = player.name || `Player_${playerId.substring(0, 4)}`;
 
@@ -674,39 +811,17 @@ export class Lobby extends Scene {
                     })
                     .setOrigin(0.5);
 
+                // Add elements to container
                 this.lobbyPlayerListContainer.add([playerBg, text]);
-                yPos += 60; // More spacing between players
-            } catch (error) {
-                // Silent error handling
-            }
-        });
 
-        // Update start button state based on player count
-        const canStart = playerIds.length >= 2 && isHost;
+                // Increase position for next player
+                yPos += 60;
+            });
 
-        // Only make it interactive if canStart is true, with proper error handling
-        if (this.lobbyStartGameButton) {
-            try {
-                if (canStart) {
-                    if (this.lobbyStartGameButton.setInteractive) {
-                        this.lobbyStartGameButton.setInteractive();
-                    }
-                } else {
-                    // Remove interactivity if we can't start
-                    if (this.lobbyStartGameButton.disableInteractive) {
-                        this.lobbyStartGameButton.disableInteractive();
-                    }
-                }
-            } catch (error) {
-                // Silent error handling
-            }
-        }
-
-        // Add status message if waiting for more players
-        if (playerIds.length < 2) {
-            try {
+            // 7. Add waiting message if needed
+            if (playerIds.length < 2) {
                 const waitingText = this.add
-                    .text(0, 30, "Waiting for more players...", {
+                    .text(0, yPos + 40, "Waiting for more players...", {
                         fontFamily: "Arial",
                         fontSize: 18,
                         color: "#ffff00",
@@ -716,11 +831,30 @@ export class Lobby extends Scene {
                     })
                     .setOrigin(0.5);
 
-                if (this.lobbyPlayerListContainer && this.lobbyPlayerListContainer.add) {
-                    this.lobbyPlayerListContainer.add(waitingText);
+                this.lobbyPlayerListContainer.add(waitingText);
+            }
+        }
+
+        // 8. Update Start Game button state
+        const canStart = playerIds.length >= 2 && isHost;
+        if (this.lobbyStartGameButton) {
+            try {
+                // Update button container
+                const buttonContainer = this.lobbyStartGameButton;
+                const buttonRect = buttonContainer.list && buttonContainer.list[0];
+
+                if (buttonRect) {
+                    // Visual feedback for button state
+                    if (canStart) {
+                        buttonRect.setFillStyle(0x00aa00, 0.8);
+                        buttonContainer.setInteractive();
+                    } else {
+                        buttonRect.setFillStyle(0x555555, 0.6);
+                        buttonContainer.disableInteractive();
+                    }
                 }
             } catch (error) {
-                // Silent error handling
+                console.warn("Error updating start button:", error);
             }
         }
     }

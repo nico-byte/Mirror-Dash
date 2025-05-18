@@ -167,71 +167,92 @@ export class PlayerVisuals {
     }
 
     updateAnimation(direction) {
-        if (this.sprite) {
-            // Set sprite direction
-            this.sprite.setFlipX(direction === "left");
+        // Make sure the sprite exists before trying to update animation
+        if (!this.sprite) return;
 
-            // Play the appropriate animation based on player state
+        // Set sprite direction if sprite exists
+        this.sprite.setFlipX(direction === "left");
+
+        // Safely check if animations exist before trying to play them
+        if (!this.scene || !this.scene.anims) return;
+
+        try {
             const player = this.player;
 
-            // Make sure animations exist before playing them
-            if (
-                !this.scene.anims.exists("idle") ||
-                !this.scene.anims.exists("run") ||
-                !this.scene.anims.exists("jump")
-            ) {
+            // First check if the sprite has an anims property
+            if (!this.sprite.anims) {
+                console.warn("Sprite missing anims property");
                 return;
             }
 
-            try {
-                if (player.isMainPlayer && player.sprite && player.sprite.body) {
-                    // For main player, handle animations based on physics state
-                    if (!player.sprite.body.touching.down) {
+            // Find available animations in the scene
+            const hasIdleAnim = this.scene.anims.exists("idle");
+            const hasRunAnim = this.scene.anims.exists("run");
+            const hasJumpAnim = this.scene.anims.exists("jump");
+
+            // If none of the animations exist, exit early
+            if (!hasIdleAnim && !hasRunAnim && !hasJumpAnim) {
+                console.warn("No animations available in the scene");
+                return;
+            }
+
+            if (player.isMainPlayer && player.sprite && player.sprite.body) {
+                // For main player, handle animations based on physics state
+                const isTouchingGround = player.sprite.body.touching.down;
+                const isMovingHorizontally = Math.abs(player.sprite.body.velocity.x) > 10;
+
+                try {
+                    if (!isTouchingGround && hasJumpAnim) {
                         // Player is in the air - play jump animation
                         this.sprite.anims.play("jump", true);
                         player.animation = "jump"; // Update the player's animation state
-                    } else if (Math.abs(player.sprite.body.velocity.x) > 10) {
+                    } else if (isMovingHorizontally && hasRunAnim) {
                         // Player is moving horizontally - play run animation
                         this.sprite.anims.play("run", true);
                         player.animation = "run"; // Update the player's animation state
-                    } else {
+                    } else if (hasIdleAnim) {
                         // Player is idle
                         this.sprite.anims.play("idle", true);
                         player.animation = "idle"; // Update the player's animation state
                     }
-                } else {
-                    // For network players, use animation state received from the network
-                    // or fall back to idle if no animation is specified
-                    if (this.scene.anims.exists(player.animation || "idle")) {
-                        this.sprite.anims.play(player.animation || "idle", true);
-                    } else {
+                } catch (error) {
+                    console.warn("Animation error (main player):", error.message);
+                }
+            } else {
+                // For network players, use animation state received from the network
+                try {
+                    const animName = player.animation || "idle";
+                    if (this.scene.anims.exists(animName)) {
+                        this.sprite.anims.play(animName, true);
+                    } else if (hasIdleAnim) {
+                        // Fallback to idle if the specified animation doesn't exist
                         this.sprite.anims.play("idle", true);
                     }
+                } catch (error) {
+                    console.warn("Animation error (network player):", error.message);
                 }
-            } catch (error) {
-                // Fallback in case animation system is not ready yet
-                console.warn("Animation error in PlayerVisuals:", error);
             }
+        } catch (error) {
+            console.warn("General animation error:", error.message);
         }
 
+        // Update mirrored sprite if it exists
         if (this.mirrorSprite) {
             // Set mirror sprite direction
             this.mirrorSprite.setFlipX(direction === "left");
 
             // Match mirror sprite animation to main sprite with error handling
-            if (this.sprite && this.sprite.anims && this.sprite.anims.currentAnim) {
-                try {
+            try {
+                if (this.sprite?.anims?.currentAnim?.key && this.mirrorSprite.anims) {
                     const animKey = this.sprite.anims.currentAnim.key;
                     if (this.scene.anims.exists(animKey)) {
                         this.mirrorSprite.anims.play(animKey, true);
-                    } else {
-                        if (this.scene.anims.exists("idle")) {
-                            this.mirrorSprite.anims.play("idle", true);
-                        }
+                    } else if (this.scene.anims.exists("idle")) {
+                        this.mirrorSprite.anims.play("idle", true);
                     }
-                } catch (error) {
-                    // Silent error handling
                 }
+            } catch (error) {
+                // Silent error handling
             }
         }
     }

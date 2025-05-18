@@ -28,7 +28,7 @@ export class Player {
         // Setup physics if this is a playable character
         if (isMainPlayer && scene.physics) {
             this.physics = new PlayerPhysics(scene, this.sprite);
-            
+
             // Store reference to the player in the sprite for collision handling
             this.sprite.playerRef = this;
         }
@@ -62,7 +62,7 @@ export class Player {
         // Setup physics if this is a playable character
         if (isMainPlayer && scene.physics) {
             this.physics = new PlayerPhysics(scene, this.sprite);
-            
+
             // Store reference to the player in the sprite for collision handling
             this.sprite.playerRef = this;
         }
@@ -116,7 +116,7 @@ export class Player {
         const prevDirection = this.direction;
         this.animation = result.animation;
         this.direction = result.direction;
-        
+
         // Immediately update the animation visually
         this.visuals.updateAnimation(this.direction);
 
@@ -128,7 +128,7 @@ export class Player {
         if (this.isMainPlayer) return; // Don't tween the main player
 
         if (typeof x !== "number" || typeof y !== "number") {
-            // console.error("Invalid position for player move:", x, y);
+            console.warn("Invalid position for player move:", x, y);
             return;
         }
 
@@ -138,24 +138,34 @@ export class Player {
         this.animation = animation;
         this.direction = direction;
         this.lastUpdate = Date.now();
-        
-        // Update animations based on the network-received animation state
-        if (this.sprite && this.sprite.anims) {
-            this.sprite.anims.play(animation, true);
+
+        // Safe update of sprite position
+        if (this.sprite) {
+            this.sprite.x = x;
+            this.sprite.y = y;
         }
-        
-        // Update direction
+
+        // Update animations based on the network-received animation state
+        // This is moved to visuals.updateAnimation to ensure proper error handling
         this.visuals.updateAnimation(direction);
 
-        // Use tweens for smooth movement of other players
+        // Use tweens for smooth movement of other players if available
         if (this.sprite && this.scene && this.scene.tweens) {
-            this.scene.tweens.add({
-                targets: this.sprite,
-                x,
-                y,
-                duration: 100,
-                ease: "Linear",
-            });
+            try {
+                this.scene.tweens.add({
+                    targets: this.sprite,
+                    x,
+                    y,
+                    duration: 100,
+                    ease: "Linear",
+                });
+            } catch (error) {
+                // Fall back to direct position update if tween fails
+                if (this.sprite) {
+                    this.sprite.x = x;
+                    this.sprite.y = y;
+                }
+            }
         }
     }
 

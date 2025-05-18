@@ -21,8 +21,8 @@ export class GameOver extends Scene {
         const levelName = this.levelId === "level1" ? "Level 1" : this.levelId === "level2" ? "Level 2" : this.levelId;
 
         this.add
-            .text(512, 460, levelName, {
-                fontFamily: "Arial",
+            .text(512, 400, levelName, {
+                fontFamily: "Orbitron",
                 fontSize: 32,
                 color: "#ffff00",
                 stroke: "#000000",
@@ -33,7 +33,7 @@ export class GameOver extends Scene {
 
         // Retry button
         const retryButton = this.add
-            .rectangle(512, 540, 240, 60, 0x0066aa, 0.8)
+            .rectangle(512, 500, 240, 60, 0x0066aa, 0.8)
             .setStrokeStyle(3, 0xffffff)
             .setInteractive({ useHandCursor: true })
             .on("pointerover", () => retryButton.setFillStyle(0x0088cc, 0.8))
@@ -41,8 +41,8 @@ export class GameOver extends Scene {
             .on("pointerdown", () => this.retryLevel());
 
         this.add
-            .text(512, 540, "Retry Level", {
-                fontFamily: "Arial Black",
+            .text(512, 500, "Retry Level", {
+                fontFamily: "Orbitron",
                 fontSize: 22,
                 color: "#ffffff",
             })
@@ -50,7 +50,7 @@ export class GameOver extends Scene {
 
         // Level selection button
         const levelSelectButton = this.add
-            .rectangle(512, 620, 240, 60, 0xaa6600, 0.8)
+            .rectangle(512, 580, 240, 60, 0xaa6600, 0.8)
             .setStrokeStyle(3, 0xffffff)
             .setInteractive({ useHandCursor: true })
             .on("pointerover", () => levelSelectButton.setFillStyle(0xcc8800, 0.8))
@@ -58,8 +58,8 @@ export class GameOver extends Scene {
             .on("pointerdown", () => this.goToLevelSelector());
 
         this.add
-            .text(512, 620, "Level Selection", {
-                fontFamily: "Arial Black",
+            .text(512, 580, "Level Selection", {
+                fontFamily: "Orbitron",
                 fontSize: 22,
                 color: "#ffffff",
             })
@@ -67,7 +67,7 @@ export class GameOver extends Scene {
 
         // Main menu button
         const mainMenuButton = this.add
-            .rectangle(512, 700, 240, 60, 0x666666, 0.8)
+            .rectangle(512, 660, 240, 60, 0x666666, 0.8)
             .setStrokeStyle(3, 0xffffff)
             .setInteractive({ useHandCursor: true })
             .on("pointerover", () => mainMenuButton.setFillStyle(0x888888, 0.8))
@@ -75,11 +75,29 @@ export class GameOver extends Scene {
             .on("pointerdown", () => this.goToMainMenu());
 
         this.add
-            .text(512, 700, "Main Menu", {
-                fontFamily: "Arial Black",
+            .text(512, 660, "Main Menu", {
+                fontFamily: "Orbitron",
                 fontSize: 22,
                 color: "#ffffff",
             })
+            .setOrigin(0.5);
+
+        // Add credits panel
+        const creditsPanel = this.add.rectangle(512, 730, 800, 60, 0x000000, 0.6).setStrokeStyle(1, 0x444444);
+
+        // Add credits text
+        this.add
+            .text(
+                512,
+                730,
+                "Credits: Sound: Josef | Pixelart/Map: Matthias | Coders: Nico, Mika, Robin (Josef, Matthias)",
+                {
+                    fontFamily: "Arial",
+                    fontSize: 16,
+                    color: "#aaaaaa",
+                    align: "center",
+                }
+            )
             .setOrigin(0.5);
     }
 
@@ -93,7 +111,7 @@ export class GameOver extends Scene {
         }
 
         this.scene.start("Game", {
-            playerName: this.playerName
+            playerName: this.playerName,
         });
     }
 

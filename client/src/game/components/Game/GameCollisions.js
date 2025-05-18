@@ -118,34 +118,55 @@ export class GameCollisions {
         // Prevent multiple collisions in quick succession
         if (playerSprite.invulnerable) return;
 
-        console.log("Player hit spike!");
+        console.log("Player hit spike - instant game over!");
 
         // Make player briefly invulnerable to prevent multiple hits
         playerSprite.invulnerable = true;
 
-        // Visual feedback
+        // Visual feedback before game over
         this.scene.tweens.add({
             targets: playerSprite,
             alpha: 0.5,
             duration: 100,
             yoyo: true,
-            repeat: 5,
+            repeat: 2,
             onComplete: () => {
-                playerSprite.invulnerable = false;
+                // Trigger game over after the visual effect
+                if (this.scene.handleGameOver) {
+                    this.scene.handleGameOver("spike");
+                }
             },
         });
 
-        // Apply penalty through game timer
-        if (this.scene.gameTimer) {
-            this.scene.gameTimer.applyPenalty(10); // 10 second penalty
+        // Play a death sound if available
+        if (this.scene.sound && this.scene.sound.add) {
+            try {
+                const deathSound = this.scene.sound.add("death", { volume: 0.5 });
+                deathSound.play();
+            } catch (error) {
+                // Sound not available, continue silently
+            }
         }
 
-        // Respawn player at the top if enabled in instant death mode
-        if (this.scene.instantDeathMode) {
-            this.scene.handleGameOver("spike");
-        } else {
-            // Bounce the player away from the spike
-            playerSprite.body.velocity.y = -300;
+        // Create death particles for better visual feedback
+        if (this.scene.add && this.scene.add.particles) {
+            try {
+                const particles = this.scene.add.particles(playerSprite.x, playerSprite.y, "particle", {
+                    speed: { min: 50, max: 200 },
+                    scale: { start: 0.5, end: 0 },
+                    quantity: 20,
+                    lifespan: 800,
+                    blendMode: "ADD",
+                    tint: 0xff0000,
+                });
+
+                // Auto-destroy the particles
+                this.scene.time.delayedCall(1000, () => {
+                    particles.destroy();
+                });
+            } catch (error) {
+                // Particles not available, continue silently
+            }
         }
     }
 

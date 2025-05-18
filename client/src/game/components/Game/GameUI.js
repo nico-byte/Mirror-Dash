@@ -12,11 +12,28 @@ export class GameUI {
     }
 
     createUI(playerName, levelId, debugMode) {
-        // Add back button to return to main menu - only in top section
-        const backButton = this.scene.add
-            .rectangle(100, 50, 150, 40, 0x222222, 0.7)
-            .setInteractive()
-            .setScrollFactor(0) // Fixed to camera
+        // Create a thinner semi-transparent header panel for UI elements
+        const headerPanel = this.scene.add
+            .rectangle(this.scene.scale.width / 2, 30, this.scene.scale.width, 60, 0x000000, 0.6)
+            .setScrollFactor(0)
+            .setDepth(99);
+
+        // Add subtle border to the panel
+        const headerBorder = this.scene.add
+            .rectangle(this.scene.scale.width / 2, 30, this.scene.scale.width, 60)
+            .setStrokeStyle(1, 0x4488ff)
+            .setScrollFactor(0)
+            .setDepth(99);
+
+        // Replace Back button with Home icon
+        const homeButton = this.scene.add
+            .rectangle(100, 30, 40, 40, 0x3366cc, 0.8)
+            .setStrokeStyle(1, 0xffffff)
+            .setScrollFactor(0)
+            .setDepth(100)
+            .setInteractive({ useHandCursor: true })
+            .on("pointerover", () => homeButton.setFillStyle(0x4477dd, 0.9))
+            .on("pointerout", () => homeButton.setFillStyle(0x3366cc, 0.8))
             .on("pointerdown", () => {
                 if (this.scene.socket && this.scene.socket.connected && this.scene.lobbyId) {
                     this.scene.socket.emit("leaveLobby", { lobbyId: this.scene.lobbyId });
@@ -29,14 +46,15 @@ export class GameUI {
                 });
             });
 
-        const backText = this.scene.add
-            .text(100, 50, "Back to Lobby", {
+        const homeIcon = this.scene.add
+            .text(100, 30, "🏠", {
                 fontFamily: "Arial",
-                fontSize: 14,
+                fontSize: 18,
                 color: "#ffffff",
             })
             .setOrigin(0.5)
-            .setScrollFactor(0); // Fixed to camera
+            .setScrollFactor(0)
+            .setDepth(100);
 
         // Add level name display
         let levelName = "Unknown Level";
@@ -45,19 +63,16 @@ export class GameUI {
         else levelName = levelId;
 
         const levelNameText = this.scene.add
-            .text(this.scene.scale.width / 2, 50, levelName, {
-                fontFamily: "Arial Black",
-                fontSize: 18,
+            .text(this.scene.scale.width / 2, 30, levelName, {
+                fontFamily: "Orbitron",
+                fontSize: 20,
                 color: "#ffffff",
-                shadow: { offsetX: 2, offsetY: 2, color: "#000000", blur: 2, stroke: true, fill: true },
+                stroke: "#000000",
+                strokeThickness: 2,
             })
             .setOrigin(0.5)
-            .setScrollFactor(0);
-
-        // Make back button only visible in top camera
-        if (this.scene.bottomCamera) {
-            this.scene.bottomCamera.ignore([backButton, backText, levelNameText]);
-        }
+            .setScrollFactor(0)
+            .setDepth(100);
 
         // Add debug text only if debug mode is enabled
         if (debugMode) {
@@ -67,31 +82,100 @@ export class GameUI {
                     fill: "#ffffff",
                     backgroundColor: "#000000",
                 })
-                .setScrollFactor(0) // Fixed to camera
+                .setScrollFactor(0)
                 .setDepth(100);
         }
 
-        // Add timer display
+        // Remove Timer label and center the time in the box
+        const timerPanel = this.scene.add
+            .rectangle(this.scene.scale.width - 90, 30, 120, 40, 0x222244, 0.8)
+            .setStrokeStyle(1, 0xffffff)
+            .setScrollFactor(0)
+            .setDepth(100);
+
         this.timerText = this.scene.add
-            .text(this.scene.scale.width - 100, 20, "03:00", {
-                fontSize: "24px",
-                fill: "#ffffff",
-                backgroundColor: "#000000",
-                padding: { x: 10, y: 5 },
+            .text(this.scene.scale.width - 90, 30, "03:00", {
+                fontFamily: "Orbitron",
+                fontSize: 18,
+                color: "#ffffff",
             })
             .setOrigin(0.5)
             .setScrollFactor(0)
             .setDepth(100);
 
-        // Make the timer only visible in the top camera
+        // Update top camera elements
+        const topCameraElements = [
+            headerPanel,
+            headerBorder,
+            homeButton,
+            homeIcon,
+            levelNameText,
+            timerPanel,
+            this.timerText,
+        ];
+
+        // Make elements only visible in top camera
         if (this.scene.bottomCamera) {
-            this.scene.bottomCamera.ignore(this.timerText);
+            topCameraElements.forEach(element => {
+                this.scene.bottomCamera.ignore(element);
+            });
         }
 
         return {
             timerText: this.timerText,
             debugText: this.debugText,
         };
+    }
+
+    // Replace the updateTimer method for better visual feedback
+    updateTimer(timeLeft) {
+        if (typeof timeLeft !== "number" || !this.timerText) return;
+
+        const clampedTime = Math.max(0, timeLeft);
+        const minutes = Math.floor(clampedTime / 60);
+        const seconds = clampedTime % 60;
+        const formatted = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+
+        // Update the text
+        this.timerText.setText(formatted);
+
+        // Visual feedback based on time left
+        if (clampedTime < 30) {
+            // Less than 30 seconds - red, pulsing
+            this.timerText.setColor("#ff3333");
+
+            // Create a pulsing effect for urgency
+            if (!this.timerPulseTween) {
+                this.timerPulseTween = this.scene.tweens.add({
+                    targets: this.timerText,
+                    scale: { from: 1, to: 1.2 },
+                    duration: 500,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: "Sine.easeInOut",
+                });
+            }
+        } else if (clampedTime < 60) {
+            // Less than 1 minute - yellow
+            this.timerText.setColor("#ffcc00");
+
+            // Stop pulsing if previously active
+            if (this.timerPulseTween) {
+                this.timerPulseTween.stop();
+                this.timerPulseTween = null;
+                this.timerText.setScale(1);
+            }
+        } else {
+            // More than 1 minute - white
+            this.timerText.setColor("#ffffff");
+
+            // Stop pulsing if previously active
+            if (this.timerPulseTween) {
+                this.timerPulseTween.stop();
+                this.timerPulseTween = null;
+                this.timerText.setScale(1);
+            }
+        }
     }
 
     updateTimer(timeLeft) {
