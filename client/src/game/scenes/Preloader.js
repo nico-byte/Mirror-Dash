@@ -65,9 +65,6 @@ export class Preloader extends Scene {
         // Load logo for main menu
         this.load.image("logo", "/assets/logo_4.png");
 
-        this.load.image("particle", "/assets/particle.png");
-
-        this.load.audio("finish", "/assets/sounds/finish.mp3");
         this.load.audio("levelMusic", "/assets/music/dnb_og.wav");
 
         // load background game over texture

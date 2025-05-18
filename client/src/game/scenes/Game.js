@@ -147,6 +147,11 @@ export class Game extends Scene {
         if (!this.sound.get("levelMusic")) {
             this.load.audio("levelMusic", "../assets/music/dnb_og.wav");
         }
+        
+        // Load win sound
+        if (!this.sound.get("win")) {
+            this.load.audio("win", "../assets/music/win.wav");
+        }
     }
 
     // Replace the createAnimations method in Game.js
@@ -628,7 +633,6 @@ export class Game extends Scene {
                             stars: result.stars,
                         });
                     }
-
                     // Stop Music
                     if (this.levelMusic) {
                         this.tweens.add({
@@ -638,6 +642,9 @@ export class Game extends Scene {
                             onComplete: () => this.levelMusic.stop(),
                         });
                     }
+
+                    // Play win sound
+                    this.sound.play("win");
 
                     // Switch to FinishLevel scene after a delay
                     this.time.delayedCall(2000, () => {
