@@ -11,6 +11,10 @@ export class GameUI {
         this.timerText = null;
     }
 
+    setLevelMusic(levelMusic) {
+        this.levelMusic = levelMusic;
+    }
+
     createUI(playerName, levelId, debugMode) {
         // Create a thinner semi-transparent header panel for UI elements
         const headerPanel = this.scene.add
@@ -38,12 +42,28 @@ export class GameUI {
                 if (this.scene.socket && this.scene.socket.connected && this.scene.lobbyId) {
                     this.scene.socket.emit("leaveLobby", { lobbyId: this.scene.lobbyId });
                 }
+                if (this.levelMusic) {
+                    this.scene.tweens.add({
+                        targets: this.levelMusic,
+                        volume: 0,
+                        duration: 1000,
+                        onComplete: () => {
+                            this.levelMusic.stop();
 
-                // Go back to lobby
-                this.scene.scene.start("Lobby", {
-                    socket: this.scene.socket,
-                    playerName: playerName,
-                });
+                            // Now switch to GameOver scene after fade completes
+                            this.scene.scene.start("Lobby", {
+                                socket: this.scene.socket,
+                                playerName: playerName,
+                            });
+                        },
+                    });
+                } else {
+                    // No music to fade, switch immediately
+                    this.scene.scene.start("Lobby", {
+                        socket: this.scene.socket,
+                        playerName: playerName,
+                    });
+                }
             });
 
         const homeIcon = this.scene.add
