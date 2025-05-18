@@ -3,7 +3,7 @@ export class GameCollisions {
         this.scene = scene;
     }
 
-    setupCollisions(player, platforms, jumpPads, finishObject, movingPlatforms) {
+    setupCollisions(player, platforms, jumpPads, finishObject, movingPlatforms, spikes) {
         if (!this.scene.physics) return;
 
         // Add collision between player and platforms
@@ -31,6 +31,12 @@ export class GameCollisions {
                 this
             );
         }
+
+        // Add collision with spikes
+        if (player && player.sprite && spikes) {
+            this.scene.physics.add.overlap(player.sprite, spikes, this.handleSpikeCollision, null, this);
+        }
+
         this.movingPlatforms = movingPlatforms;
     }
 
@@ -68,7 +74,7 @@ export class GameCollisions {
 
             console.log("Handling JumpPad collision", { playerBottom, padTop, isAbove, isFalling });
 
-            if (isAbove && isFalling) {
+            if (isAbove) {
                 // Setze eine Abklingzeit, um mehrfaches Auslösen zu verhindern
                 if (!jumpPad.cooldown) {
                     playerSprite.body.setVelocityY(-5300); // Stärkerer Sprung
@@ -110,5 +116,18 @@ export class GameCollisions {
                 playerSprite.body.velocity.y = platform.body.velocity.y;
             }
         }
+    }
+
+    handleSpikeCollision(playerSprite, spike) {
+        console.log("Player hit a spike!", { playerSprite, spike });
+
+        // Logic to handle player death or damage
+        playerSprite.setTint(0xff0000); // Visual feedback (red tint)
+        this.scene.time.delayedCall(1000, () => {
+            playerSprite.clearTint();
+        });
+
+        // Optionally, respawn the player or end the game
+        this.scene.playerRespawn.respawnPlayer();
     }
 }

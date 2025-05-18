@@ -176,6 +176,23 @@ export class LevelManager {
             });
         }
 
+        // Create spikes - either directly or queue for later
+        if (levelData.spikes) {
+            levelData.spikes.forEach(spike => {
+                if (this.isSceneReady()) {
+                    this.createSpikesWithMirror(
+                        spike.x,
+                        spike.y,
+                        spike.texture || "spike",
+                        spike.scaleX || 1,
+                        spike.scaleY || 1
+                    );
+                } else {
+                    console.warn(`Spike at ${spike.x}, ${spike.y} could not be created as the scene is not ready.`);
+                }
+            });
+        }
+
         // Create finish line
         if (levelData.finish && this.isSceneReady()) {
             this.createFinishWithMirror(
@@ -505,5 +522,41 @@ export class LevelManager {
 
         const levelData = this.levels[this.currentLevel];
         return levelData.movingPlatforms || [];
+    }
+
+    /**
+     * Create spikes with their mirrored version
+     */
+    createSpikesWithMirror(x, y, texture = "spikes", scaleX = 1, scaleY = 1) {
+        if (!this.isSceneReady()) {
+            console.warn("Scene not fully initialized! Queuing spikes for later creation.");
+            this.pendingSpikes = this.pendingSpikes || [];
+            this.pendingSpikes.push({ x, y, texture, scaleX, scaleY });
+            return null;
+        }
+
+        const screenHeight = this.scene.scale.height;
+        const midPoint = screenHeight / 2;
+
+        try {
+            if (!this.scene.spikeGroup) {
+                console.warn("Spike group is not initialized, creating it now");
+                this.scene.spikeGroup = this.scene.physics.add.staticGroup();
+            }
+
+            const spike = this.scene.spikeGroup.create(x, y, texture);
+            spike.setScale(scaleX, scaleY);
+            spike.refreshBody();
+
+            // Create mirrored spike
+            const mirrorSpike = this.scene.add.image(x, screenHeight - y + midPoint, texture)
+                .setScale(scaleX, scaleY)
+                .setFlipY(true);
+
+            return spike;
+        } catch (error) {
+            console.error("Error creating spikes:", error, "at position:", x, y);
+            return null;
+        }
     }
 }

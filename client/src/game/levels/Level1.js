@@ -54,6 +54,23 @@ export const Level1 = {
         { x: 2650, y: 485, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
     ],
 
+    // Spike configurations
+    spikes: [
+        { x: 2368, y: 480, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2368, y: 448, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2368, y: 416, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2368, y: 384, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2400, y: 480, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2400, y: 448, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2400, y: 416, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2400, y: 384, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2400, y: 352, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2432, y: 480, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2432, y: 448, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2432, y: 416, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2432, y: 384, texture: "spike", scaleX: 1, scaleY: 1 },
+    ],
+
     // Finish line configuration
     finish: {
         x: 4700,
