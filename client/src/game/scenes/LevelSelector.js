@@ -74,6 +74,18 @@ export class LevelSelector extends Scene {
                 description: "Height shifts, moving platforms, and floating spike hazards",
                 unlocked: this.progressManager.isLevelCompleted("level2"),
             },
+            {
+                id: "level4",
+                name: "Level 4",
+                description: "Survive the Spikes – Master the Moving Platforms",
+                unlocked: this.progressManager.isLevelCompleted("level3"),
+            },
+            {
+                id: "level5",
+                name: "Level 5",
+                description: "The ultimate challenge - precise jumps, moving traps and spike formations",
+                unlocked: this.progressManager.isLevelCompleted("level4"),
+            },
         ];
 
         // Create level selection panel

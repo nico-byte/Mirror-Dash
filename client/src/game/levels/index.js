@@ -8,10 +8,10 @@ import { Level1 } from "./Level1.js";
 import { Level2 } from "./Level2.js";
 import { Level3 } from "./Level3.js";
 import { Level4 } from "./Level4.js";
-//import { Level5 } from "./Level5.js";
+import { Level5 } from "./Level5.js";
 
 // Export individual levels
-export { Level1, Level2, Level3, Level4 };
+export { Level1, Level2, Level3, Level4, Level5 };
 
 // Export the LevelManager class
 export { LevelManager };
@@ -22,7 +22,7 @@ export const Levels = {
     Level2,
     Level3,
     Level4,
-    //Level5,
+    Level5,
 };
 
 /**
@@ -38,7 +38,7 @@ export function createLevelManager(scene) {
     levelManager.registerLevel("level2", Level2);
     levelManager.registerLevel("level3", Level3);
     levelManager.registerLevel("level4", Level4);
-    //levelManager.registerLevel("level5", Level5);
+    levelManager.registerLevel("level5", Level5);
 
     return levelManager;
 }

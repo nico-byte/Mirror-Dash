@@ -6,7 +6,7 @@ export const Level2 = {
     description: "Advanced platforming challenges",
 
     // Player spawn position
-    spawnPoint: { x: 100, y: 500 },
+    spawnPoint: { x: 100, y: 460 },
 
     worldBounds: {
         width: 6000,

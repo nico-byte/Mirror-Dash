@@ -3,7 +3,7 @@
  */
 export const Level4 = {
     name: "Level 4",
-    description: "Height shifts, moving platforms, and floating spike hazards",
+    description: "Survive the Spikes – Master the Moving Platforms",
 
     // Player spawn position
     spawnPoint: { x: 100, y: 460 },
@@ -15,7 +15,7 @@ export const Level4 = {
 
     settings: {
         music: "levelMusic", // Default music key
-        cameraSpeed: 50, // Camera scroll speed
+        cameraSpeed: 40, // Camera scroll speed
         autoScroll: true, // Whether camera auto-scrolls
     },
 
