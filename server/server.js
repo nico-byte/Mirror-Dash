@@ -13,7 +13,7 @@ const io = new Server(httpServer, {
 const MAX_PLAYERS_PER_LOBBY = 2;
 const DEBUG_MODE = process.env.DEBUG === "true"; // Set to true to enable debug logs
 
-const leaderboard = {}
+const leaderboard = {};
 
 // Helper function for logging in debug mode
 function debugLog(...args) {
@@ -38,6 +38,9 @@ const createLobby = (socket, lobbyName, playerName) => {
         players: {},
         createdAt: Date.now(),
         currentLevel: "level1", // Default starting level
+        timerStarted: false,
+        timeLeft: 180, // Initial time in seconds
+        lastTimerUpdate: Date.now(),
     };
 
     // Add the creating player to the lobby
@@ -308,18 +311,44 @@ io.on("connection", socket => {
             if (player) {
                 if (!leaderboard[player.name]) {
                     leaderboard[player.name] = { wins: 0, lastWin: null };
+                }
+                leaderboard[player.name].wins += 1;
+                leaderboard[player.name].lastWin = Date.now();
+                console.log(`Player ${playerId} finished in lobby ${lobbyId}`);
+                // Broadcast to all other players in the lobby
+                socket.to(lobbyId).emit("playerFinished", {
+                    playerId: socket.id,
+                    lobbyId,
+                    leaderboard: getSortedLeaderboard(),
+                });
             }
-            leaderbpard[player.name].wins += 1;
-            leaderboard[player.name].lastWin = Date.now();
-            console.log(`Player ${playerId} finished in lobby ${lobbyId}`);
-            // Broadcast to all other players in the lobby
-            socket.to(lobbyId).emit("playerFinished", {
-                playerId: socket.id,
-                lobbyId,
-                leaderboard: getSortedLeaderboard(),
-            })};
 
             io.emit("leaderboardUpdate", getSortedLeaderboard());
+        }
+    });
+
+    // Request timer synchronization
+    socket.on("requestTimerSync", ({ lobbyId }) => {
+        const lobby = lobbies[lobbyId];
+        if (lobby) {
+            // Send current timer value to the requesting client
+            socket.emit("timerSync", { timeLeft: lobby.timeLeft });
+        }
+    });
+
+    // Update timer
+    socket.on("updateTimer", ({ lobbyId, timeLeft, isPenalty }) => {
+        const lobby = lobbies[lobbyId];
+        if (lobby) {
+            // Update lobby timer
+            lobby.timeLeft = timeLeft;
+            lobby.lastTimerUpdate = Date.now();
+
+            // Broadcast to all other players in the lobby
+            socket.to(lobbyId).emit("timerSync", {
+                timeLeft: timeLeft,
+                isPenalty: isPenalty || false,
+            });
         }
     });
 

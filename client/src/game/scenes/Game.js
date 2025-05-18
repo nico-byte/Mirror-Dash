@@ -55,7 +55,7 @@ export class Game extends Scene {
     }
 
     preload() {
-        this.load.audio('levelMusic', '../assets/music/dnb_og.wav');
+        this.load.audio("levelMusic", "../assets/music/dnb_og.wav");
     }
 
     init(data) {
@@ -109,7 +109,7 @@ export class Game extends Scene {
     create() {
         console.log("Game scene created. Lobby ID:", this.lobbyId);
 
-        this.levelMusic = this.sound.add('levelMusic', { loop: true, volume: 0.5 });
+        this.levelMusic = this.sound.add("levelMusic", { loop: true, volume: 0.5 });
         this.levelMusic.play();
         this.gameTimer.setLevelMusic(this.levelMusic);
 
@@ -145,7 +145,13 @@ export class Game extends Scene {
         this.playerConnection.initialize();
 
         // Setup collisions
-        this.collisionManager.setupCollisions(this.player, this.platforms, this.jumpPads, this.finishObject, this.movingPlatforms);
+        this.collisionManager.setupCollisions(
+            this.player,
+            this.platforms,
+            this.jumpPads,
+            this.finishObject,
+            this.movingPlatforms
+        );
 
         // Setup input
         const inputs = this.gameInput.setupInputs();
@@ -266,6 +272,11 @@ export class Game extends Scene {
     handleFinish(playerSprite, finishObject) {
         console.log("Player reached finish!");
 
+        // Don't process if player is already marked as finished
+        if (this.playersFinished[this.socket.id]) {
+            return;
+        }
+
         // Mark this player as finished
         this.playersFinished[this.socket.id] = true;
 
@@ -275,13 +286,137 @@ export class Game extends Scene {
                 lobbyId: this.lobbyId,
                 playerId: this.socket.id,
             });
-
-            // Display "Waiting for other player" message
-            this.displayWaitingMessage();
         }
+
+        // Create a finish effect (particle burst)
+        if (this.player && this.player.sprite) {
+            this.createFinishEffect(this.player.sprite.x, this.player.sprite.y);
+        }
+
+        // "Destroy" the player visually (make them invisible)
+        // We don't fully destroy to maintain the camera, but hide them
+        if (this.player && this.player.sprite) {
+            // First save the position for camera tracking
+            const lastX = this.player.sprite.x;
+            const lastY = this.player.sprite.y;
+
+            // Disable physics and input
+            this.player.sprite.body.enable = false;
+
+            // Fade out the player sprite
+            this.tweens.add({
+                targets: this.player.sprite,
+                alpha: 0,
+                scale: 1.5,
+                duration: 500,
+                ease: "Power2",
+                onComplete: () => {
+                    // Make invisible but don't destroy to keep camera reference
+                    this.player.sprite.setVisible(false);
+
+                    // Create a ghost marker at the finish point for camera to follow
+                    this.finishMarker = this.physics.add.sprite(lastX, lastY, "sprite");
+                    this.finishMarker.setAlpha(0);
+                    this.finishMarker.body.allowGravity = false;
+
+                    if (this.topCamera) {
+                        this.topCamera.startFollow(this.finishMarker);
+                    }
+                },
+            });
+
+            // Also hide the player name text
+            if (this.player.text) {
+                this.tweens.add({
+                    targets: this.player.text,
+                    alpha: 0,
+                    duration: 500,
+                });
+            }
+        }
+
+        // Display "Waiting for other player" message
+        this.displayWaitingMessage();
 
         // Check if all players have finished
         this.checkAllPlayersFinished();
+    }
+
+    createFinishEffect(x, y) {
+        // Create particle emitter for the finish effect
+        const particles = this.add.particles(x, y, "particle", {
+            speed: { min: 100, max: 200 },
+            scale: { start: 0.6, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 1000,
+            blendMode: "ADD",
+            emitting: false,
+        });
+
+        // Create a burst of particles
+        particles.explode(50);
+
+        // Add a celebration sound
+        if (this.sound.add) {
+            const celebrationSound = this.sound.add("finish", { volume: 0.5 });
+            celebrationSound.play();
+        }
+
+        // Create a flash effect
+        const flash = this.add.rectangle(0, 0, this.scale.width, this.scale.height / 2, 0xffffff);
+        flash.setAlpha(0.8);
+        flash.setDepth(100);
+        flash.setOrigin(0);
+        flash.setScrollFactor(0);
+
+        // Make bottom camera ignore the flash
+        if (this.bottomCamera) {
+            this.bottomCamera.ignore(flash);
+        }
+
+        // Flash and fade out
+        this.tweens.add({
+            targets: flash,
+            alpha: 0,
+            duration: 500,
+            ease: "Power2",
+            onComplete: () => flash.destroy(),
+        });
+
+        // Add a celebration text animation
+        const celebrationText = this.add
+            .text(this.scale.width / 2, this.scale.height / 4, "FINISH!", {
+                fontFamily: "Arial Black",
+                fontSize: "48px",
+                color: "#ffff00",
+                stroke: "#000000",
+                strokeThickness: 6,
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(101);
+
+        // Make bottom camera ignore the celebration text
+        if (this.bottomCamera) {
+            this.bottomCamera.ignore(celebrationText);
+        }
+
+        // Animate the celebration text
+        this.tweens.add({
+            targets: celebrationText,
+            scale: 1.5,
+            duration: 500,
+            yoyo: true,
+            onComplete: () => {
+                this.tweens.add({
+                    targets: celebrationText,
+                    alpha: 0,
+                    duration: 500,
+                    delay: 1000,
+                    onComplete: () => celebrationText.destroy(),
+                });
+            },
+        });
     }
 
     displayWaitingMessage() {
@@ -290,23 +425,53 @@ export class Game extends Scene {
             this.waitingText.destroy();
         }
 
+        if (this.waitingContainer) {
+            this.waitingContainer.destroy();
+        }
+
+        // Create waiting container for all elements
+        this.waitingContainer = this.add.container(this.scale.width / 2, 100);
+        this.waitingContainer.setDepth(100);
+        this.waitingContainer.setScrollFactor(0);
+
+        // Background panel for message
+        const panel = this.add.rectangle(0, 0, 500, 120, 0x000000, 0.7).setStrokeStyle(4, 0x00ff00);
+
         // Create waiting message
-        this.waitingText = this.add
-            .text(this.scale.width / 2, 100, "You reached the finish line!\nWaiting for other player...", {
+        const waitingText = this.add
+            .text(0, -20, "You reached the finish line!", {
                 fontFamily: "Arial Black",
                 fontSize: "24px",
                 color: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 4,
                 align: "center",
             })
-            .setOrigin(0.5)
-            .setScrollFactor(0)
-            .setDepth(100);
+            .setOrigin(0.5);
+
+        const subText = this.add
+            .text(0, 20, "Waiting for the other player...", {
+                fontFamily: "Arial",
+                fontSize: "20px",
+                color: "#ffff00",
+                align: "center",
+            })
+            .setOrigin(0.5);
+
+        // Add dots animation for waiting
+        let dots = "";
+        const updateDots = () => {
+            dots = dots.length >= 3 ? "" : dots + ".";
+            subText.setText("Waiting for the other player" + dots);
+        };
+
+        // Update dots every 500ms
+        this.waitingInterval = setInterval(updateDots, 500);
+
+        // Add all elements to container
+        this.waitingContainer.add([panel, waitingText, subText]);
 
         // Make it visible only in top camera
         if (this.bottomCamera) {
-            this.bottomCamera.ignore(this.waitingText);
+            this.bottomCamera.ignore(this.waitingContainer);
         }
     }
 
@@ -318,43 +483,89 @@ export class Game extends Scene {
 
         // Only complete the level if all players have finished
         if (finishedPlayers >= totalPlayers) {
-            // Stop timer
-            if (this.timerEvent) {
-                this.timerEvent.remove(false);
+            // Clear waiting animation interval if it exists
+            if (this.waitingInterval) {
+                clearInterval(this.waitingInterval);
+                this.waitingInterval = null;
             }
 
-            // Record level completion in progress manager
-            const result = this.progressManager.completeLevel(this.levelId, this.gameTimer.getTimeLeft());
+            // Create a "Level Complete" overlay
+            const overlay = this.add
+                .rectangle(0, 0, this.scale.width, this.scale.height / 2, 0x000000)
+                .setAlpha(0)
+                .setDepth(200)
+                .setOrigin(0)
+                .setScrollFactor(0);
 
-            // Sync progress with server if connected
-            if (this.socket && this.socket.connected) {
-                this.socket.emit("levelCompleted", {
-                    playerName: this.playerName,
-                    levelId: this.levelId,
-                    timeLeft: this.gameTimer.getTimeLeft(),
-                    stars: result.stars,
-                });
+            if (this.bottomCamera) {
+                this.bottomCamera.ignore(overlay);
             }
 
-            // Stop Music
-            if (this.levelMusic) {
-                this.tweens.add({
-                    targets: this.levelMusic,
-                    volume: 0,
-                    duration: 1000,
-                    onComplete: () => this.levelMusic.stop()
-                });
+            const completeText = this.add
+                .text(this.scale.width / 2, this.scale.height / 4, "ALL PLAYERS FINISHED!", {
+                    fontFamily: "Arial Black",
+                    fontSize: "32px",
+                    color: "#ffffff",
+                    stroke: "#000000",
+                    strokeThickness: 6,
+                    align: "center",
+                })
+                .setOrigin(0.5)
+                .setDepth(201)
+                .setScrollFactor(0)
+                .setAlpha(0);
+
+            if (this.bottomCamera) {
+                this.bottomCamera.ignore(completeText);
             }
 
-            // Switch to FinishLevel scene
-            this.scene.start("FinishLevel", {
-                timeLeft: this.gameTimer.getTimeLeft(),
-                stars: result.stars,
-                levelId: this.levelId,
-                playerName: this.playerName,
-                socket: this.socket,
-                lobbyId: this.lobbyId,
-                nextLevelId: result.nextLevelId,
+            // Fade in the overlay
+            this.tweens.add({
+                targets: [overlay, completeText],
+                alpha: overlay.alpha < 0.1 ? 0.7 : 0, // Toggle alpha
+                duration: 1000,
+                onComplete: () => {
+                    // Stop timer
+                    if (this.timerEvent) {
+                        this.timerEvent.remove(false);
+                    }
+
+                    // Record level completion in progress manager
+                    const result = this.progressManager.completeLevel(this.levelId, this.gameTimer.getTimeLeft());
+
+                    // Sync progress with server if connected
+                    if (this.socket && this.socket.connected) {
+                        this.socket.emit("levelCompleted", {
+                            playerName: this.playerName,
+                            levelId: this.levelId,
+                            timeLeft: this.gameTimer.getTimeLeft(),
+                            stars: result.stars,
+                        });
+                    }
+
+                    // Stop Music
+                    if (this.levelMusic) {
+                        this.tweens.add({
+                            targets: this.levelMusic,
+                            volume: 0,
+                            duration: 1000,
+                            onComplete: () => this.levelMusic.stop(),
+                        });
+                    }
+
+                    // Switch to FinishLevel scene after a delay
+                    this.time.delayedCall(2000, () => {
+                        this.scene.start("FinishLevel", {
+                            timeLeft: this.gameTimer.getTimeLeft(),
+                            stars: result.stars,
+                            levelId: this.levelId,
+                            playerName: this.playerName,
+                            socket: this.socket,
+                            lobbyId: this.lobbyId,
+                            nextLevelId: result.nextLevelId,
+                        });
+                    });
+                },
             });
         }
     }
@@ -435,6 +646,12 @@ export class Game extends Scene {
             this.syncTimer = null;
         }
 
+        // Clear waiting animation interval
+        if (this.waitingInterval) {
+            clearInterval(this.waitingInterval);
+            this.waitingInterval = null;
+        }
+
         // Clean up game timer
         if (this.gameTimer) {
             this.gameTimer.shutdown();
@@ -456,6 +673,12 @@ export class Game extends Scene {
         if (this.playerConnection) {
             this.playerConnection.shutdown();
             this.playerConnection = null;
+        }
+
+        // Clean up finish marker if it exists
+        if (this.finishMarker) {
+            this.finishMarker.destroy();
+            this.finishMarker = null;
         }
     }
 }

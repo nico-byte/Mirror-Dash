@@ -4,6 +4,7 @@ export class GameTimer {
         this.timeLeft = 180; // in seconds
         this.timerEvent = null;
         this.gameUI = null;
+        this.syncing = false; // Flag to prevent sync loops
     }
 
     setGameUI(gameUI) {
@@ -31,7 +32,45 @@ export class GameTimer {
             loop: true,
         });
 
+        // Set up timer sync listener if not already set
+        this.setupTimerSync();
+
         return this.timerEvent;
+    }
+
+    setupTimerSync() {
+        // Only set up listener if we have a socket and it hasn't been set up already
+        if (this.scene.socket && !this.syncListenerActive) {
+            this.syncListenerActive = true;
+
+            // Listen for timer sync events from the server
+            this.scene.socket.on("timerSync", data => {
+                if (!this.syncing && data && typeof data.timeLeft === "number") {
+                    this.syncing = true;
+
+                    // Only update if the difference is significant (more than 2 seconds)
+                    // This prevents minor adjustments that could feel jerky
+                    if (Math.abs(this.timeLeft - data.timeLeft) > 2) {
+                        console.log(`Syncing timer: local=${this.timeLeft}, server=${data.timeLeft}`);
+                        this.timeLeft = data.timeLeft;
+
+                        // Update UI immediately
+                        if (this.gameUI) {
+                            this.gameUI.updateTimer(this.timeLeft);
+                        }
+                    }
+
+                    this.syncing = false;
+                }
+            });
+
+            // Request initial timer sync
+            if (this.scene.lobbyId) {
+                this.scene.socket.emit("requestTimerSync", {
+                    lobbyId: this.scene.lobbyId,
+                });
+            }
+        }
     }
 
     updateTimer() {
@@ -41,6 +80,22 @@ export class GameTimer {
             // Update UI if available
             if (this.gameUI) {
                 this.gameUI.updateTimer(this.timeLeft);
+            }
+
+            // Sync timer with other players periodically (every 5 seconds)
+            if (
+                !this.syncing &&
+                this.scene.socket &&
+                this.scene.socket.connected &&
+                this.scene.lobbyId &&
+                this.timeLeft % 5 === 0
+            ) {
+                this.syncing = true;
+                this.scene.socket.emit("updateTimer", {
+                    lobbyId: this.scene.lobbyId,
+                    timeLeft: this.timeLeft,
+                });
+                this.syncing = false;
             }
 
             if (this.timeLeft <= 0) {
@@ -70,7 +125,7 @@ export class GameTimer {
                         playerName: this.scene.playerName,
                         socket: this.scene.socket,
                     });
-                }
+                },
             });
         } else {
             // No music to fade, switch immediately
@@ -92,6 +147,15 @@ export class GameTimer {
                 this.gameUI.updateTimer(this.timeLeft);
             }
 
+            // Sync the penalty with other players
+            if (this.scene.socket && this.scene.socket.connected && this.scene.lobbyId) {
+                this.scene.socket.emit("updateTimer", {
+                    lobbyId: this.scene.lobbyId,
+                    timeLeft: this.timeLeft,
+                    isPenalty: true,
+                });
+            }
+
             console.log(`Penalty applied: -${seconds} seconds`);
         }
     }
@@ -105,5 +169,12 @@ export class GameTimer {
             this.timerEvent.remove(false);
             this.timerEvent = null;
         }
+
+        // Remove socket listeners to prevent memory leaks
+        if (this.scene.socket) {
+            this.scene.socket.off("timerSync");
+        }
+
+        this.syncListenerActive = false;
     }
 }
