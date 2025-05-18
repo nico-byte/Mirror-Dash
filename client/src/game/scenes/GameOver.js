@@ -93,10 +93,7 @@ export class GameOver extends Scene {
         }
 
         this.scene.start("Game", {
-            socket: this.socket,
-            playerName: this.playerName,
-            levelId: this.levelId,
-            lobbyId: this.lobbyId,
+            playerName: this.playerName
         });
     }
 

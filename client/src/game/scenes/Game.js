@@ -56,6 +56,43 @@ export class Game extends Scene {
 
     preload() {
         this.load.audio("levelMusic", "../assets/music/dnb_og.wav");
+        
+        // Load player animation sprite sheet
+        this.load.spritesheet('player_animations', 
+            '../assets/Player_Platforms/player_animations.png', 
+            { frameWidth: 32, frameHeight: 32 }
+        );
+    }
+    
+    createAnimations() {
+        // Create player animations from the sprite sheet
+        
+        // Idle animation (second frame in the sprite sheet)
+        this.anims.create({
+            key: 'idle',
+            frames: [ { key: 'player_animations', frame: 1 } ],
+            frameRate: 10,
+            repeat: -1
+        });
+        
+        // Run animation (using first and fourth frames)
+        this.anims.create({
+            key: 'run',
+            frames: [
+                { key: 'player_animations', frame: 0 },
+                { key: 'player_animations', frame: 3 }
+            ],
+            frameRate: 10,  // Slightly faster for smoother running animation
+            repeat: -1
+        });
+        
+        // Jump animation (can use another frame if needed)
+        this.anims.create({
+            key: 'jump',
+            frames: [ { key: 'player_animations', frame: 2 } ],
+            frameRate: 10,
+            repeat: 0
+        });
     }
 
     init(data) {
@@ -118,6 +155,9 @@ export class Game extends Scene {
         this.levelMusic = this.sound.add("levelMusic", { loop: true, volume: 0.5 });
         this.levelMusic.play();
         this.gameTimer.setLevelMusic(this.levelMusic);
+
+        // Create player animations
+        this.createAnimations();
 
         if (!this.textures.exists("particle")) {
             const graphics = this.add.graphics();

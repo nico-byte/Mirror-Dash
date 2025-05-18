@@ -9,7 +9,11 @@ export class PlayerPhysics {
         if (!this.scene.physics || !this.sprite) return;
 
         this.scene.physics.add.existing(this.sprite);
-        this.sprite.body.setCircle(20); // Slightly smaller than full sprite
+        
+        // Adjust collision box to better match the character sprite
+        // Making a slightly narrower hitbox for better platform interactions
+        this.sprite.body.setSize(20, 28, true); 
+        this.sprite.body.setOffset(6, 4);
 
         // Configure physics properties
         this.sprite.body.setBounce(0);
@@ -18,7 +22,6 @@ export class PlayerPhysics {
         this.sprite.body.setFriction(1, 0);
         this.sprite.body.setMaxVelocity(600, 1000);
         this.sprite.body.setGravityY(1000);
-        this.sprite.body.setSize(32, 64, true); // Adjust for circle hitbox
     }
 
     applyMovement(cursors, wasd, animation, direction) {

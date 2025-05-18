@@ -11,34 +11,6 @@ export class MainMenu extends Scene {
         this.logo = this.add.image(512, 125, "logo");
         this.logo.setScale(0.5);
 
-        this.add.text(512, 260, "Main Menu", {
-            fontFamily: "Orbitron",
-            fontSize: "48px",
-            color: "#ffffff",
-            stroke: "#000000",
-            strokeThickness: 8,
-        }).setOrigin(0.5);
-
-        this.add.text(512, 330, "Your Name:", {
-            fontFamily: "Orbitron, Arial",
-            fontSize: "20px",
-            color: "#ffffff",
-        }).setOrigin(0.5);
-
-        const nameBox = this.add.rectangle(512, 370, 320, 45, 0xffffff, 0.1)
-            .setStrokeStyle(2, 0xffffff)
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true });
-        nameBox.on("pointerdown", () => this.promptName());
-
-        const playerNameText = this.add.text(512, 370, this.playerName, {
-            fontFamily: "Orbitron, Arial",
-            fontSize: "20px",
-            color: "#ffffff",
-        }).setOrigin(0.5)
-          .setInteractive({ useHandCursor: true });
-        playerNameText.on("pointerdown", () => this.promptName());
-
         // Shared button creator
         const makeButton = (y, label, baseColor, hoverColor, onClick) => {
             const rect = this.add.rectangle(512, y, 320, 60, baseColor)
@@ -59,6 +31,16 @@ export class MainMenu extends Scene {
             rect.on("pointerdown", onClick);
             text.on("pointerdown", onClick);
         };
+
+        this.add.text(512, 260, "Main Menu", {
+            fontFamily: "Orbitron",
+            fontSize: "48px",
+            color: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 8,
+        }).setOrigin(0.5);
+
+        makeButton(330, "Your Name: " + this.playerName, 0x000000, 0xffffff, () => this.promptName());
 
         makeButton(460, "Multiplayer Lobbies", 0x3366cc, 0x5588ee, () => {
             this.scene.start("Lobby", { playerName: this.playerName });

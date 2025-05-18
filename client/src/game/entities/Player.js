@@ -28,6 +28,9 @@ export class Player {
         // Setup physics if this is a playable character
         if (isMainPlayer && scene.physics) {
             this.physics = new PlayerPhysics(scene, this.sprite);
+            
+            // Store reference to the player in the sprite for collision handling
+            this.sprite.playerRef = this;
         }
 
         console.log("Player created:", name, x, y, isMainPlayer);
@@ -55,7 +58,7 @@ export class Player {
                 // Remember if player was on a moving platform for the next frame
                 this.sprite.wasOnMovingPlatform = this.sprite.isOnMovingPlatform;
             } catch (error) {
-                console.error("Error updating player position from physics body:", error);
+                // console.error("Error updating player position from physics body:", error);
             }
         } else if (this.sprite) {
             // For non-main players, update sprite position from player position
@@ -79,6 +82,9 @@ export class Player {
         const prevDirection = this.direction;
         this.animation = result.animation;
         this.direction = result.direction;
+        
+        // Immediately update the animation visually
+        this.visuals.updateAnimation(this.direction);
 
         // Return true if anything changed - important for network updates
         return moved || prevAnimation !== this.animation || prevDirection !== this.direction;
@@ -88,7 +94,7 @@ export class Player {
         if (this.isMainPlayer) return; // Don't tween the main player
 
         if (typeof x !== "number" || typeof y !== "number") {
-            console.error("Invalid position for player move:", x, y);
+            // console.error("Invalid position for player move:", x, y);
             return;
         }
 
@@ -98,8 +104,13 @@ export class Player {
         this.animation = animation;
         this.direction = direction;
         this.lastUpdate = Date.now();
-
-        // Update animation
+        
+        // Update animations based on the network-received animation state
+        if (this.sprite && this.sprite.anims) {
+            this.sprite.anims.play(animation, true);
+        }
+        
+        // Update direction
         this.visuals.updateAnimation(direction);
 
         // Use tweens for smooth movement of other players
