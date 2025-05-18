@@ -190,7 +190,7 @@ export class PlayerVisuals {
 
         if (this.player.isInUfoMode) {
             // --- UFO Mode Visuals ---
-            const ufoTextureKey = 'ufo';
+            const ufoTextureKey = "ufo";
             // Consistent with createSprites and Player.js toggleUfoMode for texture,
             // but Player.js toggleUfoMode uses 0.5 scale, while createSprites uses 1.5.
             // We'll use 1.5 here as it seems to be the dominant visual scale for UFO in PlayerVisuals.
@@ -200,12 +200,13 @@ export class PlayerVisuals {
             if (this.sprite.texture.key !== ufoTextureKey) {
                 this.sprite.setTexture(ufoTextureKey);
             }
-            if (this.sprite.scaleX !== ufoScale) { // Check scaleX assuming uniform scaling
+            if (this.sprite.scaleX !== ufoScale) {
+                // Check scaleX assuming uniform scaling
                 this.sprite.setScale(ufoScale);
             }
             // Stop player animations if playing
             if (this.sprite.anims && this.sprite.anims.isPlaying) {
-                const playerAnimKeys = ['idle', 'run', 'jump'];
+                const playerAnimKeys = ["idle", "run", "jump"];
                 if (playerAnimKeys.includes(this.sprite.anims.currentAnim?.key)) {
                     this.sprite.anims.stop();
                 }
@@ -220,14 +221,13 @@ export class PlayerVisuals {
                     this.mirrorSprite.setScale(ufoScale);
                 }
                 if (this.mirrorSprite.anims && this.mirrorSprite.anims.isPlaying) {
-                    const playerAnimKeys = ['idle', 'run', 'jump'];
+                    const playerAnimKeys = ["idle", "run", "jump"];
                     if (playerAnimKeys.includes(this.mirrorSprite.anims.currentAnim?.key)) {
                         this.mirrorSprite.anims.stop();
                     }
                 }
             }
             return; // End of UFO mode logic
-
         } else {
             // --- Regular Player Mode Visuals ---
             const playerTextureKey = "player_animations";
@@ -236,8 +236,10 @@ export class PlayerVisuals {
 
             // Main sprite: texture and scale
             // Ensure correct texture if switching from UFO or if texture is wrong
-            if (this.sprite.texture.key === 'ufo' ||
-                (this.sprite.texture.key !== playerTextureKey && this.sprite.texture.key !== fallbackTextureKey)) {
+            if (
+                this.sprite.texture.key === "ufo" ||
+                (this.sprite.texture.key !== playerTextureKey && this.sprite.texture.key !== fallbackTextureKey)
+            ) {
                 if (this.scene.textures.exists(playerTextureKey)) {
                     this.sprite.setTexture(playerTextureKey);
                 } else if (this.scene.textures.exists(fallbackTextureKey)) {
@@ -245,8 +247,10 @@ export class PlayerVisuals {
                 }
             }
             // Ensure correct scale for player texture
-            if (this.sprite.scaleX !== playerScale &&
-                (this.sprite.texture.key === playerTextureKey || this.sprite.texture.key === fallbackTextureKey)) {
+            if (
+                this.sprite.scaleX !== playerScale &&
+                (this.sprite.texture.key === playerTextureKey || this.sprite.texture.key === fallbackTextureKey)
+            ) {
                 this.sprite.setScale(playerScale);
             }
 
@@ -257,7 +261,8 @@ export class PlayerVisuals {
                     if (this.sprite.anims.currentAnim?.key !== currentAnimKey || !this.sprite.anims.isPlaying) {
                         this.sprite.anims.play(currentAnimKey, true);
                     }
-                } else if (this.scene.anims.exists("idle")) { // Fallback to idle
+                } else if (this.scene.anims.exists("idle")) {
+                    // Fallback to idle
                     if (this.sprite.anims.currentAnim?.key !== "idle" || !this.sprite.anims.isPlaying) {
                         this.sprite.anims.play("idle", true);
                     }
@@ -269,26 +274,36 @@ export class PlayerVisuals {
 
             // Mirror sprite: texture, scale, and animation
             if (this.mirrorSprite) {
-                if (this.mirrorSprite.texture.key === 'ufo' ||
-                    (this.mirrorSprite.texture.key !== playerTextureKey && this.mirrorSprite.texture.key !== fallbackTextureKey)) {
+                if (
+                    this.mirrorSprite.texture.key === "ufo" ||
+                    (this.mirrorSprite.texture.key !== playerTextureKey &&
+                        this.mirrorSprite.texture.key !== fallbackTextureKey)
+                ) {
                     if (this.scene.textures.exists(playerTextureKey)) {
                         this.mirrorSprite.setTexture(playerTextureKey);
                     } else if (this.scene.textures.exists(fallbackTextureKey)) {
                         this.mirrorSprite.setTexture(fallbackTextureKey);
                     }
                 }
-                if (this.mirrorSprite.scaleX !== playerScale &&
-                    (this.mirrorSprite.texture.key === playerTextureKey || this.mirrorSprite.texture.key === fallbackTextureKey)) {
+                if (
+                    this.mirrorSprite.scaleX !== playerScale &&
+                    (this.mirrorSprite.texture.key === playerTextureKey ||
+                        this.mirrorSprite.texture.key === fallbackTextureKey)
+                ) {
                     this.mirrorSprite.setScale(playerScale);
                 }
 
                 if (this.mirrorSprite.texture.key === playerTextureKey && this.mirrorSprite.anims) {
                     const currentAnimKey = this.player.animation;
                     if (currentAnimKey && this.scene.anims.exists(currentAnimKey)) {
-                        if (this.mirrorSprite.anims.currentAnim?.key !== currentAnimKey || !this.mirrorSprite.anims.isPlaying) {
+                        if (
+                            this.mirrorSprite.anims.currentAnim?.key !== currentAnimKey ||
+                            !this.mirrorSprite.anims.isPlaying
+                        ) {
                             this.mirrorSprite.anims.play(currentAnimKey, true);
                         }
-                    } else if (this.scene.anims.exists("idle")) { // Fallback to idle
+                    } else if (this.scene.anims.exists("idle")) {
+                        // Fallback to idle
                         if (this.mirrorSprite.anims.currentAnim?.key !== "idle" || !this.mirrorSprite.anims.isPlaying) {
                             this.mirrorSprite.anims.play("idle", true);
                         }
@@ -297,6 +312,28 @@ export class PlayerVisuals {
                     this.mirrorSprite.anims.stop();
                 }
             }
+        }
+    }
+
+    destroy() {
+        // Destroy the main sprite and text
+        if (this.sprite) {
+            this.sprite.destroy();
+            this.sprite = null;
+        }
+        if (this.text) {
+            this.text.destroy();
+            this.text = null;
+        }
+
+        // Destroy the mirrored sprite and text
+        if (this.mirrorSprite) {
+            this.mirrorSprite.destroy();
+            this.mirrorSprite = null;
+        }
+        if (this.mirrorText) {
+            this.mirrorText.destroy();
+            this.mirrorText = null;
         }
     }
 }
