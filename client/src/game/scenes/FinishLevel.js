@@ -28,6 +28,30 @@ export class FinishLevel extends Scene {
 
         if (this.playerName) {
             this.progressManager.loadProgress(this.playerName);
+            // Record win in leaderboard when level is completed
+            this.updateLeaderboard();
+        }
+    }
+
+    // Update leaderboard with a win for the current player
+    updateLeaderboard() {
+        if (this.socket && this.socket.connected && this.playerName) {
+            // Send level completion data to server
+            // This includes:
+            // - playerName: Who completed the level
+            // - stars: How many stars earned (used for totalStars calculation)
+            // - levelId: Which level was completed (used to track max level)
+            // - timeLeft: Remaining time (used for best time calculations)
+            this.socket.emit("updateLeaderboard", {
+                playerName: this.playerName,
+                stars: this.stars,
+                levelId: this.levelId,
+                timeLeft: this.timeLeft
+            });
+            
+            // Log completion
+            const levelNum = this.levelId.replace("level", "");
+            console.log(`Recorded Level ${levelNum} completion for ${this.playerName} with ${this.stars} stars and ${this.timeLeft}s remaining`);
         }
     }
 
