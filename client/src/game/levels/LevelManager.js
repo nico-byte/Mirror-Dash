@@ -73,7 +73,7 @@ export class LevelManager {
             if (!this.scene.finishObject) {
                 this.scene.finishObject = this.scene.physics.add.staticGroup();
             }
-            
+
             if (!this.scene.portals) {
                 this.scene.portals = this.scene.physics.add.staticGroup();
             }
@@ -122,7 +122,7 @@ export class LevelManager {
             });
             this.pendingSpikes = [];
         }
-        
+
         // Process pending portals
         if (this.pendingPortals && this.pendingPortals.length > 0) {
             this.pendingPortals.forEach(portal => {
@@ -150,7 +150,15 @@ export class LevelManager {
      */
     loadLevel(key) {
         if (!this.levels[key]) {
-            return { spawnPoint: { x: 230, y: 500 }, worldBounds: { width: 5000, height: 800 } };
+            return {
+                spawnPoint: { x: 230, y: 500 },
+                worldBounds: { width: 5000, height: 800 },
+                settings: {
+                    music: "levelMusic",
+                    cameraSpeed: 50,
+                    autoScroll: true,
+                },
+            };
         }
 
         // Ensure LevelManager is initialized
@@ -360,9 +368,17 @@ export class LevelManager {
             }
         }
 
+        const settings = levelData.settings || {};
+        const levelSettings = {
+            music: settings.music || "levelMusic",
+            cameraSpeed: settings.cameraSpeed !== undefined ? settings.cameraSpeed : 50,
+            autoScroll: settings.autoScroll !== undefined ? settings.autoScroll : true,
+        };
+
         return {
             spawnPoint: levelData.spawnPoint || { x: 230, y: 500 },
             worldBounds: levelData.worldBounds || { width: 5000, height: 800 },
+            settings: levelSettings,
         };
     }
 
@@ -762,7 +778,7 @@ export class LevelManager {
     getMovingPlatforms() {
         return this.movingPlatforms || [];
     }
-    
+
     createPortalWithMirror(x, y, texture = "portal", scaleX = 1, scaleY = 1) {
         if (!this.isSceneReady()) {
             this.pendingPortals = this.pendingPortals || [];
@@ -780,13 +796,13 @@ export class LevelManager {
 
             const portal = this.scene.portals.create(x, y, texture);
             portal.setScale(scaleX, scaleY);
-            
+
             // Make sure the physics body is properly sized
-            const portalWidth = portal.width * 0.8;  // Use 80% of the width for better collision
+            const portalWidth = portal.width * 0.8; // Use 80% of the width for better collision
             const portalHeight = portal.height * 0.8; // Use 80% of the height for better collision
             portal.body.setSize(portalWidth, portalHeight, true);
             portal.refreshBody();
-            
+
             // Add a small animation to make the portal more visible
             if (this.scene.tweens) {
                 this.scene.tweens.add({
@@ -796,7 +812,7 @@ export class LevelManager {
                     duration: 1000,
                     yoyo: true,
                     repeat: -1,
-                    ease: 'Sine.easeInOut'
+                    ease: "Sine.easeInOut",
                 });
             }
 
@@ -805,7 +821,7 @@ export class LevelManager {
                 .image(x, screenHeight - y + midPoint, texture)
                 .setScale(scaleX, scaleY)
                 .setFlipY(true);
-                
+
             // Also animate the mirror portal
             if (this.scene.tweens) {
                 this.scene.tweens.add({
@@ -815,7 +831,7 @@ export class LevelManager {
                     duration: 1000,
                     yoyo: true,
                     repeat: -1,
-                    ease: 'Sine.easeInOut'
+                    ease: "Sine.easeInOut",
                 });
             }
 

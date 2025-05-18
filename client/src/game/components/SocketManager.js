@@ -278,15 +278,16 @@ export class SocketManager {
         });
 
         this.scene.socket.on("forceLevelChanged", data => {
-            if (data && data.levelId && data.lobbyId) {
-                console.log(`Force level change to: ${data.levelId} by ${data.initiatorName}`);
+            if (data && data.lobbyId === this.scene.lobbyId && !this.scene.isTransitioning) {
+                // Another player has started a level change
+                this.scene.isTransitioning = true;
 
                 // Create notification text
                 const notification = this.scene.add
                     .text(
                         this.scene.scale.width / 2,
                         this.scene.scale.height / 3,
-                        `${data.initiatorName} is changing level...`,
+                        `${data.initiatorName} is changing level to ${data.levelId}...`,
                         {
                             fontFamily: "Arial",
                             fontSize: 28,
@@ -296,24 +297,24 @@ export class SocketManager {
                         }
                     )
                     .setOrigin(0.5)
-                    .setScrollFactor(0)
                     .setDepth(999);
 
-                // Small delay before changing scene to ensure notification is visible
-                this.scene.time.delayedCall(1000, () => {
-                    // Only change if we're not the initiator (they'll change on their own)
-                    if (this.scene.socket.id !== data.initiatorId) {
+                // Follow the other player's level change after a short delay
+                this.scene.time.delayedCall(1500, () => {
+                    // Destroy the notification before transition
+                    if (notification) notification.destroy();
+
+                    if (this.scene && this.scene.scene) {
                         this.scene.scene.start("Game", {
                             socket: this.scene.socket,
                             playerName: this.scene.playerName,
                             levelId: data.levelId,
-                            lobbyId: data.lobbyId,
+                            lobbyId: this.scene.lobbyId,
                         });
                     }
                 });
             }
         });
-
         // Handle lobby error event
         this.scene.socket.on("lobbyError", ({ message }) => {
             console.error("Lobby error:", message);

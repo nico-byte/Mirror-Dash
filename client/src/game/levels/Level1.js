@@ -14,6 +14,12 @@ export const Level1 = {
         height: 720,
     },
 
+    settings: {
+        music: "levelMusic", // Default music key
+        cameraSpeed: 50, // Camera scroll speed
+        autoScroll: true, // Whether camera auto-scrolls
+    },
+
     // Platform configurations
     platforms: [
         { x: 85, y: 500, texture: "platform_4x1", scaleY: 1.4 },

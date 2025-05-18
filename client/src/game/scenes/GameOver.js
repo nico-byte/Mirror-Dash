@@ -187,6 +187,8 @@ export class GameOver extends Scene {
 
             // Short delay before starting the level
             this.time.delayedCall(1000, () => {
+                // Destroy loading text before transition
+                if (loadingText) loadingText.destroy();
                 this.scene.start("Game", {
                     socket: this.socket,
                     playerName: this.playerName,
@@ -196,9 +198,13 @@ export class GameOver extends Scene {
             });
         } else {
             // If not in a lobby, just start the game
-            this.scene.start("Game", {
-                playerName: this.playerName,
-                levelId: this.levelId,
+            this.time.delayedCall(500, () => {
+                // Destroy loading text before transition
+                if (loadingText) loadingText.destroy();
+                this.scene.start("Game", {
+                    playerName: this.playerName,
+                    levelId: this.levelId,
+                });
             });
         }
     }

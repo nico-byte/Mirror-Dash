@@ -535,10 +535,10 @@ export class Lobby extends Scene {
 
             // Add a hint icon
             const hintIcon = this.add
-                .text(0, 0, "👆", {
+                .text(-20, -20, "👆", {
                     fontSize: 40,
                 })
-                .setOrigin(0.5);
+                .setOrigin(0);
 
             this.lobbyListContainer.add([noLobbiesText, hintIcon]);
             return;
@@ -799,10 +799,10 @@ export class Lobby extends Scene {
         if (this.debugText) {
             this.debugText.setText(
                 `Socket ID: ${this.socket?.id || "None"}\n` +
-                    `Connected: ${this.socket?.connected || false}\n` +
-                    `In Lobby: ${this.inLobby}\n` +
-                    `Lobby ID: ${this.currentLobbyId || "None"}\n` +
-                    `Available Lobbies: ${Object.keys(this.lobbies || {}).length}`
+                `Connected: ${this.socket?.connected || false}\n` +
+                `In Lobby: ${this.inLobby}\n` +
+                `Lobby ID: ${this.currentLobbyId || "None"}\n` +
+                `Available Lobbies: ${Object.keys(this.lobbies || {}).length}`
             );
         }
     }

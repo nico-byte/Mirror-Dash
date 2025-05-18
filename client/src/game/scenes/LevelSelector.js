@@ -73,7 +73,7 @@ export class LevelSelector extends Scene {
                 name: "Level 3",
                 description: "Height shifts, moving platforms, and floating spike hazards",
                 unlocked: this.progressManager.isLevelCompleted("level2"),
-            }
+            },
         ];
 
         // Create level selection panel
@@ -349,11 +349,17 @@ export class LevelSelector extends Scene {
 
             // Small delay before actually starting
             this.time.delayedCall(1000, () => {
+                // Destroy loading text before transition
+                if (loadingText) loadingText.destroy();
                 this.startGame(levelId);
             });
         } else {
             // If not in a lobby, just start the game
-            this.startGame(levelId);
+            this.time.delayedCall(500, () => {
+                // Destroy loading text before transition
+                if (loadingText) loadingText.destroy();
+                this.startGame(levelId);
+            });
         }
     }
 

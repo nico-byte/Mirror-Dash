@@ -13,12 +13,18 @@ export const Level4 = {
         height: 720,
     },
 
+    settings: {
+        music: "levelMusic", // Default music key
+        cameraSpeed: 50, // Camera scroll speed
+        autoScroll: true, // Whether camera auto-scrolls
+    },
+
     platforms: [
         { x: 100, y: 500, texture: "platform_3x1", scaleY: 1.4 },
-        { 
-            x: 450, 
-            y: 400, 
-            texture: "platform_4x1", 
+        {
+            x: 450,
+            y: 400,
+            texture: "platform_4x1",
             scaleY: 1.4,
             isStatic: false,
             motion: "vertical",
@@ -37,10 +43,10 @@ export const Level4 = {
             speed: 1800,
         },
 
-        { 
-            x: 1000, 
-            y: 500, 
-            texture: "platform_4x1", 
+        {
+            x: 1000,
+            y: 500,
+            texture: "platform_4x1",
             scaleY: 1.4,
             isStatic: false,
             motion: "vertical",
@@ -58,7 +64,6 @@ export const Level4 = {
             range: 150,
             speed: 1800,
         },
-
 
         { x: 1600, y: 600, texture: "platform_4x1", scaleY: 1.4 },
 
@@ -80,9 +85,7 @@ export const Level4 = {
      
     ],
 
-    jumpPads: [    
-        { x: 1670, y: 585, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
-    ],
+    jumpPads: [{ x: 1670, y: 585, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 }],
 
     spikes: [
         { x: 450, y: 370, texture: "spike", scaleX: 1, scaleY: 1 },
