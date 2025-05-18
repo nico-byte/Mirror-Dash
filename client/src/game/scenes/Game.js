@@ -268,10 +268,13 @@ export class Game extends Scene {
             };
         }
 
-        // Add U key for toggling UFO mode
+        // Add U key for toggling UFO mode - only available in physics debug mode
         this.uKey = this.input.keyboard.addKey('U');
         this.uKey.on('down', () => {
-            if (this.player && typeof this.player.toggleUfoMode === 'function') {
+            // Check if physics debug mode is enabled
+            const isPhysicsDebugMode = this.physics.world.drawDebug;
+            
+            if (isPhysicsDebugMode && this.player && typeof this.player.toggleUfoMode === 'function') {
                 this.player.toggleUfoMode();
             }
         });
