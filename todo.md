@@ -42,6 +42,9 @@
 | [x]    | LevelManager: Custom Level Sound and Camera Speed         | Milka    |                       |
 | [ ]    | Fix Sounds                                                |          |                       |
 | [ ]    | Feedback                                                  |          |                       |
+| [ ]    | Leaderboard JSON-DB                                       |          |                       |
+| [ ]    | Pokal rework                                              |          |                       |
+| [ ]    | Feedback                                                  |          |                       |
 
 ## Server
 
