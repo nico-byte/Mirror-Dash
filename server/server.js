@@ -219,7 +219,7 @@ const getSortedLeaderboard = () => {
             // Process level-specific stats if available
             if (stats.levels) {
                 Object.entries(stats.levels).forEach(([levelId, levelData]) => {
-                    totalStars += levelData.stars || 0;
+                    totalStars = levelData.stars || 0;
                     
                     // Extract level number from levelId (e.g., "level2" -> 2)
                     const levelNum = parseInt(levelId.replace("level", "")) || 0;
