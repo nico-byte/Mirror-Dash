@@ -46,12 +46,12 @@ export class FinishLevel extends Scene {
                 playerName: this.playerName,
                 stars: this.stars,
                 levelId: this.levelId,
-                timeLeft: this.timeLeft
+                timeLeft: Math.round(this.timeLeft)
             });
             
             // Log completion
             const levelNum = this.levelId.replace("level", "");
-            console.log(`Recorded Level ${levelNum} completion for ${this.playerName} with ${this.stars} stars and ${this.timeLeft}s remaining`);
+            console.log(`Recorded Level ${levelNum} completion for ${this.playerName} with ${this.stars} stars and ${Math.round(this.timeLeft)}s remaining`);
         }
     }
 
@@ -91,8 +91,8 @@ export class FinishLevel extends Scene {
             .setOrigin(0.5);
 
         // Remaining time
-        const minutes = Math.floor(this.timeLeft / 60);
-        const seconds = this.timeLeft % 60;
+        const minutes = Math.floor(Math.round(this.timeLeft) / 60);
+        const seconds = Math.round(this.timeLeft) % 60;
         const formattedTime = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
         this.add
