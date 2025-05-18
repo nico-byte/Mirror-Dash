@@ -710,7 +710,7 @@ export class LevelManager {
 
             try {
                 // Visual for finish line (top view)
-                finishVisual = this.scene.add.rectangle(x, y, width, height, 0xff0000).setAlpha(0.6);
+                finishVisual = this.scene.add.rectangle(x, y, width, height, 0xff0000).setAlpha(0);
                 this.scene.finishVisual = finishVisual;
 
                 // Mirror finish line for bottom view
