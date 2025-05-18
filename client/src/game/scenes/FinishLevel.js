@@ -84,9 +84,21 @@ export class FinishLevel extends Scene {
         const startX = width / 2 - ((3 - 1) * starSpacing) / 2;
 
         for (let i = 0; i < 3; i++) {
-            // Either filled or empty star based on performance
-            const starSymbol = i < this.stars ? "★" : "☆";
-            const starColor = i < this.stars ? "#ffd700" : "#888888";
+            let starSymbol;
+            let starColor;
+            if (i < Math.floor(this.stars)) {
+                // Full star
+                starSymbol = "★";
+                starColor = "#ffd700";
+            } else if (this.stars - i >= 0.5) {
+                // Half star (using a Unicode half star or a different symbol)
+                starSymbol = "⯨"; // Unicode for left half black star (U+2BE8), fallback if not supported
+                starColor = "#ffd700";
+            } else {
+                // Empty star
+                starSymbol = "☆";
+                starColor = "#888888";
+            }
 
             this.add
                 .text(startX + i * starSpacing, 340, starSymbol, {

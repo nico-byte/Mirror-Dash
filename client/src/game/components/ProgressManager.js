@@ -179,16 +179,25 @@ export class ProgressManager {
         if (!this.progress.levels[levelId].bestTime || timeLeft > this.progress.levels[levelId].bestTime) {
             this.progress.levels[levelId].bestTime = timeLeft;
 
-            // Calculate stars based on time left
-            let stars = 1; // At least 1 star for completion
-
-            if (timeLeft > 150) {
-                // More than 2:30 left
+            // Improved star calculation: supports partial stars
+            let stars = 0;
+            if (timeLeft >= 180) {
                 stars = 3;
-            } else if (timeLeft > 120) {
-                // More than 2:00 left
+            } else if (timeLeft >= 150) {
+                stars = 2.5;
+            } else if (timeLeft >= 120) {
                 stars = 2;
+            } else if (timeLeft >= 90) {
+                stars = 1.5;
+            } else if (timeLeft >= 60) {
+                stars = 1;
+            } else if (timeLeft >= 30) {
+                stars = 0.5;
+            } else {
+                stars = 0;
             }
+
+            console.log(`Level ${levelId} completed with time left: ${timeLeft}, stars awarded: ${stars}`);
 
             this.progress.levels[levelId].stars = stars;
         }
