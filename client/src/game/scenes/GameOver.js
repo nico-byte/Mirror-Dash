@@ -12,20 +12,10 @@ export class GameOver extends Scene {
     }
 
     create() {
-        this.cameras.main.setBackgroundColor(0xff0000);
+        this.cameras.main.setBackgroundColor(0x060322);
 
-        this.add.image(512, 384, "background").setAlpha(0.5);
-
-        this.add
-            .text(512, 384, "Game Over", {
-                fontFamily: "Arial Black",
-                fontSize: 64,
-                color: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 8,
-                align: "center",
-            })
-            .setOrigin(0.5);
+        // Set the background image
+        this.add.image(512, 384, "Game_Over").setOrigin(0.5).setAlpha(1);
 
         // Level name
         const levelName = this.levelId === "level1" ? "Level 1" : this.levelId === "level2" ? "Level 2" : this.levelId;

@@ -61,6 +61,9 @@ export class Preloader extends Scene {
         this.load.image("particle", "/assets/particle.png");
 
         this.load.audio("finish", "/assets/sounds/finish.mp3");
+
+        // load background game over texture
+        this.load.image("Game_Over", "/assets/Game_Over.png");
     }
 
     create() {
