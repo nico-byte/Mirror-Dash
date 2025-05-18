@@ -312,7 +312,7 @@ io.on("connection", socket => {
                 if (!leaderboard[player.name]) {
                     leaderboard[player.name] = { wins: 0, lastWin: null };
                 }
-                leaderbpard[player.name].wins += 1;
+                leaderboard[player.name].wins += 1;
                 leaderboard[player.name].lastWin = Date.now();
                 console.log(`Player ${playerId} finished in lobby ${lobbyId}`);
                 // Broadcast to all other players in the lobby

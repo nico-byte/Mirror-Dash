@@ -48,7 +48,7 @@ export class LevelManager {
             if (!this.scene.movingPlatforms) {
                 this.scene.movingPlatforms = this.scene.physics.add.group();
             }
-             // Process any pending platforms and jump pads
+            // Process any pending platforms and jump pads
             this.processPendingObjects();
 
             console.log("LevelManager initialized successfully");
@@ -146,7 +146,7 @@ export class LevelManager {
                     isStatic: platform.isStatic !== false,
                     motion: platform.motion || null,
                     range: platform.range || 80,
-                    speed: platform.speed || 2000
+                    speed: platform.speed || 2000,
                 });
                 console.log(`Queued platform at ${platform.x}, ${platform.y} for later creation`);
             }
@@ -163,7 +163,6 @@ export class LevelManager {
                         jumpPad.scaleX || 1,
                         jumpPad.scaleY || 1
                     );
-
                 } /*else {
                     // Queue for later creation
                     this.pendingJumpPads.push({
@@ -212,7 +211,17 @@ export class LevelManager {
     /**
      * Create a platform with its mirrored version
      */
-    createPlatformWithMirror(x, y, texture, scaleX = 1, scaleY = 1, isStatic = true, motion = null, range = 80, speed = 2000) {
+    createPlatformWithMirror(
+        x,
+        y,
+        texture,
+        scaleX = 1,
+        scaleY = 1,
+        isStatic = true,
+        motion = null,
+        range = 80,
+        speed = 2000
+    ) {
         if (!this.isSceneReady()) {
             console.warn("Scene not fully initialized! Queuing platform for later creation.");
             this.pendingPlatforms.push({ x, y, texture, scaleX, scaleY, isStatic, motion, range, speed });
@@ -245,7 +254,7 @@ export class LevelManager {
                 if (!this.scene.movingPlatforms) {
                     this.scene.movingPlatforms = this.scene.physics.add.group({
                         immovable: true,
-                        allowGravity: false
+                        allowGravity: false,
                     });
                 }
 
@@ -266,7 +275,7 @@ export class LevelManager {
                     range,
                     speed,
                     originX: x,
-                    originY: y
+                    originY: y,
                 };
 
                 this.scene.movingPlatforms.add(platform);
@@ -278,7 +287,7 @@ export class LevelManager {
                     range,
                     speed,
                     baseX: x,
-                    baseY: y
+                    baseY: y,
                 });
             }
 
@@ -299,14 +308,13 @@ export class LevelManager {
         }
     }
 
-
-       /**
+    /**
      * Call this from scene.update()
      */
     updateMovingPlatforms(time) {
         if (!this.movingPlatforms) return;
 
-        this.movingPlatforms.forEach(({platform, motion, range, speed, baseX, baseY}) => {
+        this.movingPlatforms.forEach(({ platform, motion, range, speed, baseX, baseY }) => {
             if (!platform || !platform.body) return;
 
             const t = time / (speed || 2000);
@@ -315,12 +323,12 @@ export class LevelManager {
             if (motion === "vertical") {
                 const newY = baseY + Math.sin(t) * amplitude;
                 platform.setY(newY);
-                platform.body.velocity.y = Math.cos(t) * amplitude * Math.PI / (speed / 1000);
+                platform.body.velocity.y = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
                 platform.body.velocity.x = 0; // Keine horizontale Bewegung
             } else if (motion === "horizontal") {
                 const newX = baseX + Math.sin(t) * amplitude;
                 platform.setX(newX);
-                platform.body.velocity.x = Math.cos(t) * amplitude * Math.PI / (speed / 1000);
+                platform.body.velocity.x = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
                 platform.body.velocity.y = 0; // Keine vertikale Bewegung
             }
 
@@ -352,7 +360,8 @@ export class LevelManager {
             jumpPad.refreshBody();
 
             // Optional: gespiegelt anzeigen
-            const mirrorJumpPad = this.scene.add.image(x, screenHeight - y + midPoint, texture)
+            const mirrorJumpPad = this.scene.add
+                .image(x, screenHeight - y + midPoint, texture)
                 .setScale(scaleX, scaleY)
                 .setFlipY(true);
 
@@ -409,7 +418,6 @@ export class LevelManager {
         });
     }
 
-
     /**
      * Create a finish line with its mirrored version
      */
@@ -426,16 +434,13 @@ export class LevelManager {
             // Create finish object (collision)
             this.scene.finishObject = this.scene.physics.add.staticGroup();
             this.scene.finishObjectRect = this.scene.finishObject
-                .create(x, y, null)
+                .create(x, y, "pokal")
                 .setSize(width, height)
                 .setDisplaySize(width, height)
                 .setOrigin(0.5)
                 .refreshBody();
-            this.scene.finishObjectRect.fillColor = 0xff0000;
 
             // Visual fill for finish line (top view)
-            this.scene.finishVisual = this.scene.add.rectangle(x, y, width, height, 0xff0000);
-            this.scene.finishVisual.setDepth(1);
 
             // Mirror finish line for bottom view
             this.scene.mirrorFinishVisual = this.scene.add.rectangle(
