@@ -291,6 +291,34 @@ export class LevelManager {
             });
         }
 
+        // Create walls
+        if (levelData.walls) {
+            levelData.portals.forEach(portal => {
+                try {
+                    if (this.isSceneReady()) {
+                        this.createPortalWithMirror(
+                            portal.x,
+                            portal.y,
+                            portal.texture || "wall",
+                            portal.scaleX || 1,
+                            portal.scaleY || 1
+                        );
+                    } else {
+                        this.pendingPortals = this.pendingPortals || [];
+                        this.pendingPortals.push({
+                            x: portal.x,
+                            y: portal.y,
+                            texture: portal.texture || "wall",
+                            scaleX: portal.scaleX || 1,
+                            scaleY: portal.scaleY || 1,
+                        });
+                    }
+                } catch (error) {
+                    // Silent error handling
+                }
+            });
+        }
+
         // Create finish line
         if (levelData.finish && this.isSceneReady()) {
             try {
@@ -799,6 +827,41 @@ export class LevelManager {
             return portal;
         } catch (error) {
             console.error("Error creating portal:", error);
+            return null;
+        }
+    }
+
+    createWallWithMirror(x, y, texture = "wall", scaleX = 1, scaleY = 1) {
+        if (!this.isSceneReady()) {
+            this.pendingWalls = this.pendingWalls || [];
+            this.pendingWalls.push({ x, y, texture, scaleX, scaleY });
+            return null;
+        }
+
+        const screenHeight = this.scene.scale.height;
+        const midPoint = screenHeight / 2;
+
+        try {
+            if (!this.scene.wallGroup) {
+                this.scene.wallGroup = this.scene.physics.add.staticGroup();
+            }
+
+            const wall = this.scene.wallGroup.create(x, y, texture);
+            wall.setScale(scaleX, scaleY);
+            wall.refreshBody();
+
+            // Create mirrored version for bottom view
+            const mirrorWall = this.scene.add
+                .image(x, screenHeight - y + midPoint, texture)
+                .setScale(scaleX, scaleY)
+                .setFlipY(true);
+
+            // Set camera visibility
+            if (this.scene.topCamera) this.scene.topCamera.ignore(mirrorWall);
+            if (this.scene.bottomCamera) this.scene.bottomCamera.ignore(wall);
+
+            return wall;
+        } catch (error) {
             return null;
         }
     }

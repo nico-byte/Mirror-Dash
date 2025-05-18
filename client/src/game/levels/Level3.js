@@ -39,8 +39,8 @@ export const Level3 = {
     ],
 
     jumpPads: [    
-        { x: 460, y: 480, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
-        { x: 1780, y: 480, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
+        { x: 460, y: 485, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
+        { x: 1780, y: 485, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
     ],
 
     spikes: [
@@ -57,16 +57,12 @@ export const Level3 = {
         { x: 2900, y: 468, texture: "spike", scaleX: 1, scaleY: 1 },
     ],
 
-    portal: [
-        { x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1}
-    ],
-
     portals: [
         { x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1}
     ],
 
     finish: {
-        x: 5800,
+        x: 5920,
         y: 400,
         width: 100,
         height: 100,

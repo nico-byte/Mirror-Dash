@@ -61,13 +61,23 @@ export const Level4 = {
 
 
         { x: 1600, y: 600, texture: "platform_4x1", scaleY: 1.4 },
+
+        {
+            x: 1780,
+            y: 470,
+            texture: "platform_3x1",
+            scaleY: 1.4,
+            isStatic: false,
+            motion: "horizontal",
+            range: 150,
+            speed: 1800,
+        },
         
-        { x: 2550, y: 460, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 2900, y: 500, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 3250, y: 460, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 3600, y: 460, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 3950, y: 460, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4300, y: 420, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 2200, y: 400, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 2500, y: 320, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 3200, y: 520, texture: "platform_4x1", scaleY: 1.4 },
+
+     
     ],
 
     jumpPads: [    
@@ -76,18 +86,47 @@ export const Level4 = {
 
     spikes: [
         { x: 450, y: 370, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 625, y: 425, texture: "spike", scaleX: 1, scaleY: 1 },
         { x: 750, y: 325, texture: "spike", scaleX: 1, scaleY: 1 },
         { x: 950, y: 400, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 980, y: 500, texture: "spike", scaleX: 1, scaleY: 1 }
+        { x: 980, y: 500, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 1250, y: 380, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 1450, y: 420, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2100, y: 390, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2582, y: 192, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2624, y: 192, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2656, y: 224, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2688, y: 224, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2720, y: 224, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2752, y: 256, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2752, y: 256, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2784, y: 256, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2816, y: 288, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2848, y: 288, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2880, y: 288, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2912, y: 320, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2944, y: 320, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2976, y: 352, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 3008, y: 352, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 3040, y: 352, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 3072, y: 384, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 3104, y: 384, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 3136, y: 384, texture: "spike", scaleX: 1, scaleY: 1 },  
+        { x: 3140, y: 392, texture: "spike", scaleX: 1, scaleY: 1 }  
         
     ],
 
-    portal: [
-        { x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1}
+    portals: [
+        { x: 2582, y: 256, texture: "portal", scaleX: 1, scaleY: 1},
+        { x: 3140, y: 456, texture: "portal", scaleX: 1, scaleY: 1}
+    ],
+
+    wall: [
+        { x: 4382, y: 356, texture: "wall", scaleX: 1, scaleY: 1}
     ],
 
     finish: {
-        x: 5800,
+        x: 5900,
         y: 400,
         width: 100,
         height: 100,
