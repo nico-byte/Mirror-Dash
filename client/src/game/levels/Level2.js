@@ -7,92 +7,73 @@ export const Level2 = {
     description: "The first level with platforms and jump pads",
 
     // Player spawn position
-    spawnPoint: { x: 90, y: 500 },
+    spawnPoint: { x: 100, y: 500 },
 
-    // World boundaries
     worldBounds: {
-        width: 5040,
+        width: 6000,
         height: 720,
     },
 
-    // Platform configurations
     platforms: [
-        { x: 85, y: 500, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 336, y: 570, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 606, y: 393, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 814, y: 565, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
-        { x: 996, y: 524, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 1211, y: 493, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 1434, y: 236, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 1610, y: 416, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 1764, y: 379, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
-
-        // Floating platform (vertical motion)
+        { x: 100, y: 500, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 400, y: 450, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 700, y: 400, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 1000, y: 350, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 1400, y: 300, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 1800, y: 300, texture: "platform_3x1", scaleY: 1.4 },
         {
-            x: 1921,
-            y: 345,
+            x: 2400,
+            y: 280,
             texture: "platform_3x1",
-            scaleY: 1.4,
-            isStatic: false,
-            motion: "vertical",
-            range: -100,
-            speed: 2000,
-        },
-
-        { x: 2069, y: 500, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
-        { x: 2433, y: 500, texture: "platform_4x1", scaleX: 3, scaleY: 1.4 },
-
-        // New section
-        { x: 2900, y: 270, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 3100, y: 420, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 3280, y: 370, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 3450, y: 330, texture: "platform_3x1", scaleY: 1.4 },
-
-        // Sideways platform (horizontal motion)
-        {
-            x: 3750,
-            y: 300,
-            texture: "platform_3x1",
+            scaleX: 1,
             scaleY: 1.4,
             isStatic: false,
             motion: "horizontal",
-            range: 100,
-            speed: 1600,
+            range: 150, // ±150px Bewegung
+            speed: 1800,
         },
+        { x: 3000, y: 260, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 3400, y: 300, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 3800, y: 320, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 4200, y: 340, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 4700, y: 400, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 5200, y: 450, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 5400, y: 500, texture: "platform_4x1", scaleY: 1.4 },
 
-        { x: 3900, y: 460, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4250, y: 530, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4550, y: 520, texture: "platform_3x1", scaleY: 1.4 },
     ],
 
-    // Jump pad configurations
     jumpPads: [
-        { x: 380, y: 555, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
-        { x: 1250, y: 480, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
-        { x: 2650, y: 485, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
+        { x: 380, y: 435, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
+        { x: 960, y: 335, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
+        { x: 2200, y: 265, texture: "jumpPad", scaleX: 0.5, scaleY: 0.5 },
     ],
 
-    // Spike configurations
     spikes: [
-        { x: 2368, y: 480, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2368, y: 448, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2368, y: 416, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2368, y: 384, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2400, y: 480, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2400, y: 448, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2400, y: 416, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2400, y: 384, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2400, y: 352, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2432, y: 480, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2432, y: 448, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2432, y: 416, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 2432, y: 384, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 1200, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 1232, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 1264, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 1296, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 1328, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2400, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2432, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2464, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2496, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 2528, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 3570, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 3602, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 3634, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 3666, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 4400, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 4432, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 4464, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5600 , y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5600 , y: 438, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5600 , y: 406, texture: "spike", scaleX: 1, scaleY: 1 },
     ],
 
-    // Finish line configuration
     finish: {
-        x: 4700,
-        y: 440,
+        x: 5800,
+        y: 400,
         width: 100,
         height: 100,
     },
@@ -110,8 +91,10 @@ export const Level2 = {
         const bg1 = scene.add.image(2880, 0, "bg4").setOrigin(0, 0);
         const bgExtra = scene.add.image(3600, 0, "bg4").setOrigin(0, 0).setFlipX(true);
         const bgExtra2 = scene.add.image(4320, 0, "bg4").setOrigin(0, 0);
+        const bgExtra3 = scene.add.image(5040, 0, "bg4").setOrigin(0, 0).setFlipX(true);
+        const bgExtra4 = scene.add.image(5760, 0, "bg4").setOrigin(0, 0);
 
-        scene.backgroundContainer.add([bg4, bg2, bg3, bg5, bg1, bgExtra, bgExtra2]);
+        scene.backgroundContainer.add([bg4, bg2, bg3, bg5, bg1, bgExtra, bgExtra2, bgExtra3, bgExtra4]);
 
         // Create mirrored background for bottom view
         scene.mirrorBackgroundContainer = scene.add.container(0, midPoint);
@@ -124,6 +107,8 @@ export const Level2 = {
         const mirrorBg1 = scene.add.image(2880, 0, "bg4").setOrigin(0, 0).setFlipY(true);
         const mirrorBgExtra = scene.add.image(3600, 0, "bg4").setOrigin(0, 0).setFlipX(true).setFlipY(true);
         const mirrorBgExtra2 = scene.add.image(4320, 0, "bg4").setOrigin(0, 0).setFlipY(true);
+        const mirrorBgExtra3 = scene.add.image(5040, 0, "bg4").setOrigin(0, 0).setFlipX(true).setFlipY(true);
+        const mirrorBgExtra4 = scene.add.image(5760, 0, "bg4").setOrigin(0, 0).setFlipY(true);
 
         scene.mirrorBackgroundContainer.add([
             mirrorBg4,
@@ -133,6 +118,8 @@ export const Level2 = {
             mirrorBg1,
             mirrorBgExtra,
             mirrorBgExtra2,
+            mirrorBgExtra3,
+            mirrorBgExtra4,
         ]);
 
         // Set camera visibility for backgrounds
