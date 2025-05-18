@@ -637,6 +637,8 @@ export class Game extends Scene {
     update(time, delta) {
         if (!this.player) return;
 
+        this.gameTimer.applyDistancePenalty();
+
         // Update main player
         this.player.update();
 

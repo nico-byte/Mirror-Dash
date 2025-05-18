@@ -189,6 +189,41 @@ export class GameTimer {
         }
     }
 
+    applyDistancePenalty() {
+        if (typeof this.timeLeft === "number") {
+            const otherPlayerIds = Object.keys(this.scene.otherPlayers);
+            const otherPlayer = this.scene.otherPlayers[otherPlayerIds[0]];
+            if (!otherPlayer) return;
+        
+            // Calculate positions for top view
+            const startX = this.scene.player.x;
+            const startY = this.scene.player.y;
+            const endX = otherPlayer.x;
+            const endY = otherPlayer.y;
+
+            // Calculate the distance between players
+            const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            const penalty = distance / 100000;
+            this.timeLeft = Math.max(0, this.timeLeft - penalty);
+
+            // Update UI immediately
+            if (this.gameUI) {
+                this.gameUI.updateTimer(Math.round(this.timeLeft));
+            }
+
+            // Sync the penalty with other players
+            if (this.scene.socket && this.scene.socket.connected && this.scene.lobbyId) {
+                this.scene.socket.emit("updateTimer", {
+                    lobbyId: this.scene.lobbyId,
+                    timeLeft: this.timeLeft,
+                    isPenalty: true,
+                });
+            }
+
+            console.log(`Penalty applied: -${penalty} seconds`);
+        }
+    }
+
     getTimeLeft() {
         return this.timeLeft;
     }
