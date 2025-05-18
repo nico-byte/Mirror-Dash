@@ -176,21 +176,21 @@ export class LevelManager {
         }
 
         // Create spikes - either directly or queue for later
-        if (levelData.spikes) {
-            levelData.spikes.forEach(spike => {
-                if (this.isSceneReady()) {
-                    this.createSpikesWithMirror(
-                        spike.x,
-                        spike.y,
-                        spike.texture || "spike",
-                        spike.scaleX || 1,
-                        spike.scaleY || 1
-                    );
-                } else {
-                    console.warn(`Spike at ${spike.x}, ${spike.y} could not be created as the scene is not ready.`);
-                }
-            });
-        }
+        // if (levelData.spikes) {
+        //     levelData.spikes.forEach(spike => {
+        //         if (this.isSceneReady()) {
+        //             this.createSpikesWithMirror(
+        //                 spike.x,
+        //                 spike.y,
+        //                 spike.texture || "spike",
+        //                 spike.scaleX || 1,
+        //                 spike.scaleY || 1
+        //             );
+        //         } else {
+        //             console.warn(`Spike at ${spike.x}, ${spike.y} could not be created as the scene is not ready.`);
+        //         }
+        //     });
+        // }
 
         // Create finish line
         if (levelData.finish && this.isSceneReady()) {
