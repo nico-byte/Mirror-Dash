@@ -61,6 +61,10 @@ export const Level3 = {
         { x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1}
     ],
 
+    portals: [
+        { x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1}
+    ],
+
     finish: {
         x: 5800,
         y: 400,

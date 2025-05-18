@@ -7,7 +7,7 @@ export class GameCollisions {
         this.scene = scene;
     }
 
-    setupCollisions(player, platforms, jumpPads, finishObject, movingPlatforms, spikes) {
+    setupCollisions(player, platforms, jumpPads, finishObject, movingPlatforms, spikes, portals) {
         if (!this.scene.physics) return;
 
         // Add collision between player and platforms
@@ -45,6 +45,11 @@ export class GameCollisions {
         // Add collision with spikes - with additional check
         if (player && player.sprite && spikes && spikes.getChildren && spikes.getChildren().length > 0) {
             this.scene.physics.add.overlap(player.sprite, spikes, this.handleSpikeCollision, null, this);
+        }
+
+        // Add collision with portals
+        if (player && player.sprite && portals && portals.getChildren && portals.getChildren().length > 0) {
+            this.scene.physics.add.overlap(player.sprite, portals, this.handlePortalCollision, null, this);
         }
 
         this.movingPlatforms = movingPlatforms;
@@ -283,6 +288,47 @@ export class GameCollisions {
         } else {
             // Player is not touching the platform (or not from above)
             playerSprite.isOnMovingPlatform = false;
+        }
+    }
+
+    handlePortalCollision(playerSprite, portal) {
+        // Check if there's a reference to the player on the sprite itself
+        const playerRef = playerSprite.playerRef;
+        
+        // Log for debugging
+        console.log("Portal collision detected", {
+            playerSpriteExists: !!playerSprite,
+            portalExists: !!portal,
+            playerRefExists: !!playerRef,
+            hasToggleUfoMode: playerRef && typeof playerRef.toggleUfoMode === 'function'
+        });
+        
+        // Check if we found the player reference
+        if (playerRef && typeof playerRef.toggleUfoMode === 'function') {
+            // Toggle UFO mode using the player reference
+            playerRef.toggleUfoMode();
+            console.log("Player collided with portal. UFO mode toggled.");
+            
+            // Add portal effect
+            if (this.scene.tweens) {
+                this.scene.tweens.add({
+                    targets: portal,
+                    scaleX: 1.2,
+                    scaleY: 1.2,
+                    duration: 100,
+                    yoyo: true,
+                    repeat: 1,
+                    ease: "Power1"
+                });
+            }
+            
+            // Disable portal temporarily to prevent immediate re-triggering
+            portal.body.enable = false;
+            this.scene.time.delayedCall(1500, () => {
+                if (portal && portal.body) portal.body.enable = true;
+            });
+        } else {
+            console.warn("Portal collision failed: Could not find player reference or toggleUfoMode method.");
         }
     }
 
