@@ -1,10 +1,9 @@
 /**
- * Level 1 configuration
- * This level is based on the original level from Game.js
+ * Level 2 configuration
  */
 export const Level2 = {
     name: "Level 2",
-    description: "The first level with platforms and jump pads",
+    description: "Advanced platforming challenges",
 
     // Player spawn position
     spawnPoint: { x: 100, y: 500 },
@@ -39,7 +38,6 @@ export const Level2 = {
         { x: 4700, y: 400, texture: "platform_4x1", scaleY: 1.4 },
         { x: 5200, y: 450, texture: "platform_3x1", scaleY: 1.4 },
         { x: 5400, y: 500, texture: "platform_4x1", scaleY: 1.4 },
-
     ],
 
     jumpPads: [
@@ -66,9 +64,9 @@ export const Level2 = {
         { x: 4400, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
         { x: 4432, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
         { x: 4464, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 5600 , y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 5600 , y: 438, texture: "spike", scaleX: 1, scaleY: 1 },
-        { x: 5600 , y: 406, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5600, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5600, y: 438, texture: "spike", scaleX: 1, scaleY: 1 },
+        { x: 5600, y: 406, texture: "spike", scaleX: 1, scaleY: 1 },
     ],
 
     finish: {

@@ -22,16 +22,40 @@ export class PlayerVisuals {
         const screenHeight = this.scene.scale.height;
         const midPoint = screenHeight / 2;
 
-        // Create the player sprite using the animation spritesheet
-        this.sprite = this.scene.physics.add.sprite(x, y, "player_animations");
-        
-        // Set a default animation
-        this.sprite.anims.play('idle');
-        
-        // Set scale (may need adjustment for the new sprite)
-        this.sprite.setScale(1.5);
+        // Check if the required texture exists
+        if (!this.scene.textures.exists("player_animations")) {
+            console.warn("Player animations texture not found, using fallback sprite");
+            // Use the fallback sprite texture if available
+            if (this.scene.textures.exists("sprite")) {
+                // Create the player sprite using the fallback texture
+                this.sprite = this.scene.physics.add.sprite(x, y, "sprite");
 
-        // Set different tint for main player vs other players (optional with new sprites)
+                // Set scale for the fallback sprite
+                this.sprite.setScale(1);
+            } else {
+                // If neither texture is available, create an empty sprite
+                console.error("No valid player texture found, creating placeholder");
+                this.sprite = this.scene.physics.add.sprite(x, y);
+                this.sprite.setSize(32, 32);
+            }
+        } else {
+            // Create the player sprite using the animation spritesheet
+            this.sprite = this.scene.physics.add.sprite(x, y, "player_animations");
+
+            // Try to set an animation, with error handling
+            try {
+                if (this.scene.anims.exists("idle")) {
+                    this.sprite.anims.play("idle");
+                }
+            } catch (error) {
+                console.warn("Failed to play animation:", error);
+            }
+
+            // Set scale
+            this.sprite.setScale(1.5);
+        }
+
+        // Set different tint for main player vs other players
         if (isMainPlayer) {
             // Main player can be kept as original colors
         } else {
@@ -55,10 +79,27 @@ export class PlayerVisuals {
             // Calculate mirrored Y position
             const mirrorY = screenHeight - y + midPoint;
 
-            // Create a more visible mirrored sprite for other players
-            this.mirrorSprite = this.scene.add.sprite(x, mirrorY, "player_animations");
-            this.mirrorSprite.anims.play('idle');
-            this.mirrorSprite.setScale(1.5);
+            // Create mirrored sprite with error handling
+            if (!this.scene.textures.exists("player_animations")) {
+                if (this.scene.textures.exists("sprite")) {
+                    this.mirrorSprite = this.scene.add.sprite(x, mirrorY, "sprite");
+                    this.mirrorSprite.setScale(1);
+                } else {
+                    this.mirrorSprite = this.scene.add.sprite(x, mirrorY);
+                    this.mirrorSprite.setSize(32, 32);
+                }
+            } else {
+                this.mirrorSprite = this.scene.add.sprite(x, mirrorY, "player_animations");
+                try {
+                    if (this.scene.anims.exists("idle")) {
+                        this.mirrorSprite.anims.play("idle");
+                    }
+                } catch (error) {
+                    console.warn("Failed to play mirror animation:", error);
+                }
+                this.mirrorSprite.setScale(1.5);
+            }
+
             this.mirrorSprite.setTint(0xffaa77); // Orange for mirrored view
             this.mirrorSprite.setFlipY(true);
 
@@ -129,50 +170,67 @@ export class PlayerVisuals {
         if (this.sprite) {
             // Set sprite direction
             this.sprite.setFlipX(direction === "left");
-            
+
             // Play the appropriate animation based on player state
             const player = this.player;
-            
-            if (player.isMainPlayer && player.sprite && player.sprite.body) {
-                // For main player, handle animations based on physics state
-                if (!player.sprite.body.touching.down) {
-                    // Player is in the air - play jump animation
-                    this.sprite.anims.play('jump', true);
-                    player.animation = 'jump'; // Update the player's animation state
-                } else if (Math.abs(player.sprite.body.velocity.x) > 10) {
-                    // Player is moving horizontally - play run animation
-                    this.sprite.anims.play('run', true);
-                    player.animation = 'run'; // Update the player's animation state
+
+            // Make sure animations exist before playing them
+            if (
+                !this.scene.anims.exists("idle") ||
+                !this.scene.anims.exists("run") ||
+                !this.scene.anims.exists("jump")
+            ) {
+                return;
+            }
+
+            try {
+                if (player.isMainPlayer && player.sprite && player.sprite.body) {
+                    // For main player, handle animations based on physics state
+                    if (!player.sprite.body.touching.down) {
+                        // Player is in the air - play jump animation
+                        this.sprite.anims.play("jump", true);
+                        player.animation = "jump"; // Update the player's animation state
+                    } else if (Math.abs(player.sprite.body.velocity.x) > 10) {
+                        // Player is moving horizontally - play run animation
+                        this.sprite.anims.play("run", true);
+                        player.animation = "run"; // Update the player's animation state
+                    } else {
+                        // Player is idle
+                        this.sprite.anims.play("idle", true);
+                        player.animation = "idle"; // Update the player's animation state
+                    }
                 } else {
-                    // Player is idle
-                    this.sprite.anims.play('idle', true);
-                    player.animation = 'idle'; // Update the player's animation state
+                    // For network players, use animation state received from the network
+                    // or fall back to idle if no animation is specified
+                    if (this.scene.anims.exists(player.animation || "idle")) {
+                        this.sprite.anims.play(player.animation || "idle", true);
+                    } else {
+                        this.sprite.anims.play("idle", true);
+                    }
                 }
-            } else {
-                // For network players, use animation state received from the network
-                // or fall back to idle if no animation is specified
-                try {
-                    this.sprite.anims.play(player.animation || 'idle', true);
-                } catch (error) {
-                    // Fallback in case animation system is not ready yet
-                    console.warn("Animation error:", error);
-                    this.sprite.anims.play('idle', true);
-                }
+            } catch (error) {
+                // Fallback in case animation system is not ready yet
+                console.warn("Animation error in PlayerVisuals:", error);
             }
         }
 
         if (this.mirrorSprite) {
             // Set mirror sprite direction
             this.mirrorSprite.setFlipX(direction === "left");
-            
-            // Match mirror sprite animation to main sprite
-            if (this.sprite && this.sprite.anims.currentAnim) {
+
+            // Match mirror sprite animation to main sprite with error handling
+            if (this.sprite && this.sprite.anims && this.sprite.anims.currentAnim) {
                 try {
-                    this.mirrorSprite.anims.play(this.sprite.anims.currentAnim.key, true);
+                    const animKey = this.sprite.anims.currentAnim.key;
+                    if (this.scene.anims.exists(animKey)) {
+                        this.mirrorSprite.anims.play(animKey, true);
+                    } else {
+                        if (this.scene.anims.exists("idle")) {
+                            this.mirrorSprite.anims.play("idle", true);
+                        }
+                    }
                 } catch (error) {
-                    // Fallback in case animation system is not ready yet
-                    console.warn("Mirror animation error:", error);
-                    this.mirrorSprite.anims.play('idle', true);
+                    // Silent error handling
                 }
             }
         }

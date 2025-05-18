@@ -581,7 +581,11 @@ export class Lobby extends Scene {
 
     updateLobbyState(lobby) {
         if (!lobby) {
-            // console.error("Invalid lobby state received:", lobby);
+            return;
+        }
+
+        // Check if the scene is still valid before proceeding
+        if (!this.scene || !this.scene.sys || !this.scene.sys.isActive()) {
             return;
         }
 
@@ -602,12 +606,13 @@ export class Lobby extends Scene {
             try {
                 this.lobbyPlayerListContainer.removeAll();
             } catch (error) {
-                console.warn("Error clearing player list container:", error);
                 // Attempt to recreate the container if it's broken
                 this.lobbyPlayerListContainer = this.add.container(0, 0);
+                if (this.lobbyUI) {
+                    this.lobbyUI.add(this.lobbyPlayerListContainer);
+                }
             }
         } else {
-            // console.error("Player list container is undefined");
             // Create a new container
             this.lobbyPlayerListContainer = this.add.container(0, 0);
             if (this.lobbyUI) {
@@ -616,18 +621,16 @@ export class Lobby extends Scene {
             return;
         }
 
-        // Check if the scene is still valid before proceeding
-        if (!this.scene || !this.sys) {
-            // console.error("Scene or scene.sys is undefined - aborting updateLobbyState");
-            return;
-        }
-
         // Determine if current player is host
         const isHost = lobby.host === this.socket?.id;
 
         // Safely update the start button visibility
         if (this.lobbyStartGameButton) {
-            this.lobbyStartGameButton.setVisible(isHost);
+            try {
+                this.lobbyStartGameButton.setVisible(isHost);
+            } catch (error) {
+                // Silent error handling - button might be destroyed
+            }
         }
 
         // Draw each player with better styling
@@ -637,13 +640,11 @@ export class Lobby extends Scene {
         playerIds.forEach((playerId, index) => {
             const player = lobby.players[playerId];
             if (!player) {
-                // console.error("Invalid player data:", playerId, player);
                 return;
             }
 
             // Make sure we still have access to the scene
-            if (!this.scene || !this.sys) {
-                // console.error("Scene or scene.sys became undefined during player rendering");
+            if (!this.scene || !this.scene.sys || !this.scene.sys.isActive()) {
                 return;
             }
 
@@ -676,26 +677,28 @@ export class Lobby extends Scene {
                 this.lobbyPlayerListContainer.add([playerBg, text]);
                 yPos += 60; // More spacing between players
             } catch (error) {
-                // console.error("Error rendering player in lobby:", error);
+                // Silent error handling
             }
         });
 
         // Update start button state based on player count
         const canStart = playerIds.length >= 2 && isHost;
 
-        // Only make it interactive if canStart is true
+        // Only make it interactive if canStart is true, with proper error handling
         if (this.lobbyStartGameButton) {
             try {
                 if (canStart) {
-                    this.lobbyStartGameButton.setInteractive();
+                    if (this.lobbyStartGameButton.setInteractive) {
+                        this.lobbyStartGameButton.setInteractive();
+                    }
                 } else {
                     // Remove interactivity if we can't start
-                    if (this.lobbyStartGameButton.input) {
+                    if (this.lobbyStartGameButton.disableInteractive) {
                         this.lobbyStartGameButton.disableInteractive();
                     }
                 }
             } catch (error) {
-                console.warn("Error updating start button interactivity:", error);
+                // Silent error handling
             }
         }
 
@@ -713,9 +716,11 @@ export class Lobby extends Scene {
                     })
                     .setOrigin(0.5);
 
-                this.lobbyPlayerListContainer.add(waitingText);
+                if (this.lobbyPlayerListContainer && this.lobbyPlayerListContainer.add) {
+                    this.lobbyPlayerListContainer.add(waitingText);
+                }
             } catch (error) {
-                console.warn("Error adding waiting text:", error);
+                // Silent error handling
             }
         }
     }

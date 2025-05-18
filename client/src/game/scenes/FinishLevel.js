@@ -5,6 +5,14 @@ export class FinishLevel extends Scene {
     constructor() {
         super("FinishLevel");
         this.progressManager = new ProgressManager();
+        this.timeLeft = 0;
+        this.stars = 0;
+        this.levelId = "level1";
+        this.playerName = null;
+        this.socket = null;
+        this.lobbyId = null;
+        this.nextLevelId = null;
+        this.isTransitioning = false;
     }
 
     init(data) {
@@ -14,7 +22,9 @@ export class FinishLevel extends Scene {
         this.levelId = data?.levelId ?? "level1";
         this.playerName = data?.playerName;
         this.socket = data?.socket;
+        this.lobbyId = data?.lobbyId;
         this.nextLevelId = data?.nextLevelId;
+        this.isTransitioning = false;
 
         if (this.playerName) {
             this.progressManager.loadProgress(this.playerName);
@@ -22,8 +32,8 @@ export class FinishLevel extends Scene {
     }
 
     create() {
-        // Force camera to a solid background color (red)
-        this.cameras.main.setBackgroundColor(0xff0000);
+        // Force camera to a solid background color
+        this.cameras.main.setBackgroundColor(0x00aa33);
 
         const { width, height } = this.scale;
 
@@ -87,11 +97,11 @@ export class FinishLevel extends Scene {
                 .setOrigin(0.5);
         }
 
-        // Create buttons for next actions
-
-        // Continue to next level (if available)
+        // Determine if next level is available
         const isNextLevelAvailable = !!this.nextLevelId && this.progressManager.isLevelUnlocked(this.nextLevelId);
 
+        // Create buttons for next actions
+        // Continue to next level (if available)
         if (isNextLevelAvailable) {
             const nextLevelButton = this.add
                 .rectangle(width / 2, 450, 280, 60, 0x00aa00, 0.8)
@@ -177,6 +187,43 @@ export class FinishLevel extends Scene {
                 color: "#ffffff",
             })
             .setOrigin(0.5);
+
+        // Set up listeners for level transition synchronization
+        this.setupSocketListeners();
+    }
+
+    setupSocketListeners() {
+        if (this.socket && this.lobbyId) {
+            // Listen for forced level change events from other players
+            this.socket.on("forceLevelChanged", data => {
+                if (data && data.lobbyId === this.lobbyId && !this.isTransitioning) {
+                    // Another player has started a level change
+                    this.isTransitioning = true;
+
+                    // Show a notification
+                    const notification = this.add
+                        .text(
+                            this.scale.width / 2,
+                            this.scale.height / 3,
+                            `${data.initiatorName} is changing level to ${data.levelId}...`,
+                            {
+                                fontFamily: "Arial",
+                                fontSize: 28,
+                                color: "#ffffff",
+                                backgroundColor: "#000000",
+                                padding: { x: 20, y: 10 },
+                            }
+                        )
+                        .setOrigin(0.5)
+                        .setDepth(999);
+
+                    // Follow the other player's level change
+                    this.time.delayedCall(1500, () => {
+                        this.proceedToLevel(data.levelId);
+                    });
+                }
+            });
+        }
     }
 
     startNextLevel() {
@@ -196,55 +243,39 @@ export class FinishLevel extends Scene {
                     backgroundColor: "#000000",
                     padding: { x: 20, y: 10 },
                 })
-                .setOrigin(0.5);
+                .setOrigin(0.5)
+                .setDepth(1000);
 
-            // First make sure we cleanup current scene resources
+            // Clean up resources
             this.cleanupCurrentScene();
 
-            // Notify the server about the level change with a callback to confirm
+            // Notify other players about the level change
             if (this.socket && this.socket.connected && this.lobbyId) {
-                // Set a timeout to prevent infinite hanging
-                const timeoutId = setTimeout(() => {
-                    console.log("Level change request timed out, proceeding anyway");
-                    this.proceedToNextLevel();
-                }, 5000);
+                this.socket.emit("forceLevelChange", {
+                    lobbyId: this.lobbyId,
+                    levelId: this.nextLevelId,
+                    initiatorId: this.socket.id,
+                    initiatorName: this.playerName,
+                });
 
-                // Send the level change request to server
-                try {
-                    this.socket.emit("forceLevelChange", {
-                        lobbyId: this.lobbyId,
-                        levelId: this.nextLevelId,
-                        initiator: this.socket.id,
-                        playerName: this.playerName,
-                    });
-
-                    // Short delay to give server time to broadcast
-                    setTimeout(() => {
-                        clearTimeout(timeoutId);
-                        this.proceedToNextLevel();
-                    }, 1500);
-                } catch (err) {
-                    console.error("Error during level change:", err);
-                    clearTimeout(timeoutId);
-                    this.proceedToNextLevel();
-                }
+                // Small delay before proceeding
+                this.time.delayedCall(1000, () => {
+                    this.proceedToLevel(this.nextLevelId);
+                });
             } else {
                 // If no socket connection, just proceed
-                setTimeout(() => this.proceedToNextLevel(), 1000);
+                this.proceedToLevel(this.nextLevelId);
             }
         }
     }
 
-    // Helper to cleanup current scene resources
     cleanupCurrentScene() {
-        // Unregister any event listeners
+        // Unregister event listeners
         if (this.socket) {
             this.socket.off("forceLevelChanged");
-            this.socket.off("gameOverBroadcast");
-            // Add any other socket events that need cleanup
         }
 
-        // Stop any active sounds, timers, etc.
+        // Stop any active sounds
         this.sound.stopAll();
 
         // Stop all tweens
@@ -254,65 +285,47 @@ export class FinishLevel extends Scene {
         this.time.removeAllEvents();
     }
 
-    // Helper to proceed to next level
-    proceedToNextLevel() {
-        // Before switching scenes, emit the level change to the server
-        if (this.socket && this.socket.connected && this.lobbyId) {
-            this.socket.emit("forceLevelChange", {
-                lobbyId: this.lobbyId,
-                levelId: this.nextLevelId,
-                initiatorId: this.socket.id,
-                initiatorName: this.playerName,
-            });
-
-            // Small delay to give server time to broadcast the change
-            this.time.delayedCall(500, () => {
-                // Use start with a special protection flag to prevent errors
-                try {
-                    this.scene.start("Game", {
-                        socket: this.socket,
-                        playerName: this.playerName,
-                        levelId: this.nextLevelId,
-                        lobbyId: this.lobbyId,
-                        isLevelTransition: true,
-                    });
-                } catch (err) {
-                    console.error("Error starting Game scene:", err);
-                    // Last resort - reload the page
-                    alert("Error loading level. The game will now restart.");
-                    window.location.reload();
-                }
-            });
-        } else {
-            // If no socket connection, just proceed directly
-            this.scene.start("Game", {
-                socket: this.socket,
-                playerName: this.playerName,
-                levelId: this.nextLevelId,
-                lobbyId: this.lobbyId,
-                isLevelTransition: true,
-            });
-        }
-    }
-
-    replayLevel() {
-        // Notify the server that we're replaying the current level
-        if (this.socket && this.socket.connected && this.lobbyId) {
-            this.socket.emit("changeLevel", {
-                lobbyId: this.lobbyId,
-                levelId: this.levelId,
-            });
-        }
-
+    proceedToLevel(levelId) {
+        // Start new level with transition flag to prevent errors
         this.scene.start("Game", {
             socket: this.socket,
             playerName: this.playerName,
-            levelId: this.levelId,
+            levelId: levelId,
             lobbyId: this.lobbyId,
+            isLevelTransition: true,
         });
     }
 
+    replayLevel() {
+        // Prevent multiple clicks
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
+        // Clean up resources
+        this.cleanupCurrentScene();
+
+        // Notify other players about replaying the current level
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            this.socket.emit("forceLevelChange", {
+                lobbyId: this.lobbyId,
+                levelId: this.levelId,
+                initiatorId: this.socket.id,
+                initiatorName: this.playerName,
+            });
+        }
+
+        // Proceed to the level
+        this.proceedToLevel(this.levelId);
+    }
+
     goToLevelSelect() {
+        // Prevent multiple clicks
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
+        // Clean up resources
+        this.cleanupCurrentScene();
+
         // If in a lobby, leave it before going to level select
         if (this.socket && this.socket.connected && this.lobbyId) {
             this.socket.emit("leaveLobby", { lobbyId: this.lobbyId });
@@ -325,6 +338,13 @@ export class FinishLevel extends Scene {
     }
 
     goToMainMenu() {
+        // Prevent multiple clicks
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
+        // Clean up resources
+        this.cleanupCurrentScene();
+
         // If in a lobby, leave it before going to main menu
         if (this.socket && this.socket.connected && this.lobbyId) {
             this.socket.emit("leaveLobby", { lobbyId: this.lobbyId });
@@ -334,9 +354,20 @@ export class FinishLevel extends Scene {
     }
 
     goToLeaderboard() {
+        // Prevent multiple clicks
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
+        // Clean up resources
+        this.cleanupCurrentScene();
+
         this.scene.start("Leaderboard", {
             socket: this.socket,
             playerName: this.playerName,
         });
+    }
+
+    shutdown() {
+        this.cleanupCurrentScene();
     }
 }

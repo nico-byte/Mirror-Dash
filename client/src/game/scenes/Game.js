@@ -14,6 +14,16 @@ import { PlayerConnection } from "../entities/PlayerConnection";
 export class Game extends Scene {
     constructor() {
         super("Game");
+
+        // Initialize all properties to default values
+        this.initializeProperties();
+    }
+
+    /**
+     * Initialize/reset all properties to default values
+     * This ensures a clean state for each new game instance
+     */
+    initializeProperties() {
         this.socket = null;
         this.player = null;
         this.otherPlayers = {};
@@ -23,7 +33,8 @@ export class Game extends Scene {
         this.lobbyId = null;
         this.debugMode = false;
         this.levelId = "level1"; // Default level
-        this.playerConnection = null;
+        this.levelLoaded = false;
+        this.isTransitioning = false;
 
         // Split screen properties
         this.splitLine = null;
@@ -31,136 +42,77 @@ export class Game extends Scene {
         this.bottomCamera = null;
 
         // Camera scrolling properties
-        this.autoScrollCamera = import.meta.env.VITE_AUTO_SCROLL_CAMERA === "true";
+        this.autoScrollCamera = false;
         this.scrollSpeed = 50;
-        this.instantDeathMode = import.meta.env.VITE_INSTANT_DEATH_MODE === "true";
+        this.instantDeathMode = false;
 
         // Level properties
         this.platforms = null;
         this.jumpPads = null;
+        this.movingPlatforms = null;
+        this.spikeGroup = null;
+        this.finishObject = null;
 
         // Component managers
-        this.progressManager = new ProgressManager();
+        this.progressManager = null;
         this.socketManager = null;
         this.gameUI = null;
         this.gameInput = null;
         this.collisionManager = null;
         this.gameTimer = null;
         this.playerRespawn = null;
-
-        // For synchronization
-        this.lastUpdateTime = 0;
-        this.updateInterval = 50; // Send position updates every 50ms
-        this.syncAttempts = 0;
-    }
-
-    init() {
-        this.socket = null;
-        this.player = null;
-        this.otherPlayers = {};
-        this.playersFinished = {};
-        this.playerName = "Player_" + Math.floor(Math.random() * 1000);
-        this.connected = false;
-        this.lobbyId = null;
-        this.debugMode = false;
-        this.levelId = "level1"; // Default level
         this.playerConnection = null;
+        this.levelManager = null;
+        this.cameraManager = null;
 
-        // Split screen properties
-        this.splitLine = null;
-        this.topCamera = null;
-        this.bottomCamera = null;
-
-        // Camera scrolling properties
-        this.autoScrollCamera = import.meta.env.VITE_AUTO_SCROLL_CAMERA === "true";
-        this.scrollSpeed = 50;
-        this.instantDeathMode = import.meta.env.VITE_INSTANT_DEATH_MODE === "true";
-
-        // Level properties
-        this.platforms = null;
-        this.jumpPads = null;
-
-        // Component managers
-        this.progressManager = new ProgressManager();
-        this.socketManager = null;
-        this.gameUI = null;
-        this.gameInput = null;
-        this.collisionManager = null;
-        this.gameTimer = null;
-        this.playerRespawn = null;
+        // Music and sounds
+        this.levelMusic = null;
 
         // For synchronization
         this.lastUpdateTime = 0;
         this.updateInterval = 50; // Send position updates every 50ms
         this.syncAttempts = 0;
-    }
-
-    preload() {
-        this.load.audio("levelMusic", "../assets/music/dnb_og.wav");
-
-        // Load player animation sprite sheet
-        this.load.spritesheet("player_animations", "../assets/Player_Platforms/player_animations.png", {
-            frameWidth: 32,
-            frameHeight: 32,
-        });
-    }
-
-    createAnimations() {
-        // Create player animations from the sprite sheet
-
-        // Idle animation (second frame in the sprite sheet)
-        this.anims.create({
-            key: "idle",
-            frames: [{ key: "player_animations", frame: 1 }],
-            frameRate: 10,
-            repeat: -1,
-        });
-
-        // Run animation (using first and fourth frames)
-        this.anims.create({
-            key: "run",
-            frames: [
-                { key: "player_animations", frame: 0 },
-                { key: "player_animations", frame: 3 },
-            ],
-            frameRate: 10, // Slightly faster for smoother running animation
-            repeat: -1,
-        });
-
-        // Jump animation (can use another frame if needed)
-        this.anims.create({
-            key: "jump",
-            frames: [{ key: "player_animations", frame: 2 }],
-            frameRate: 10,
-            repeat: 0,
-        });
+        this.syncTimer = null;
+        this.waitingInterval = null;
     }
 
     init(data) {
-        console.log("Game Scene initialized with data:", data);
+        // Reset all properties to ensure no state leakage between game instances
+        this.initializeProperties();
 
-        // Enable debug mode from environment variable
+        // Enable debug mode if set in environment variable
         this.debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
+
+        // Auto-scroll camera settings from environment
+        this.autoScrollCamera = import.meta.env.VITE_AUTO_SCROLL_CAMERA === "true";
+        this.scrollSpeed = parseFloat(import.meta.env.VITE_CAMERA_SCROLL_SPEED || "50");
+
+        // Instant death mode from environment
+        this.instantDeathMode = import.meta.env.VITE_INSTANT_DEATH_MODE === "true";
 
         // Set the level ID if provided
         if (data && data.levelId) {
             this.levelId = data.levelId;
-            console.log("Loading level:", this.levelId);
         }
 
         // Set player name if provided
         if (data && data.playerName) {
             this.playerName = data.playerName;
-            console.log("Player name:", this.playerName);
         }
 
-        // Track if this is a level transition to handle cleanup differently
-        this.isLevelTransition = data && data.isLevelTransition === true;
+        // Track if this is a level transition
+        this.isTransitioning = data && data.isTransitioning === true;
 
-        // Ensure clean start for all properties
-        this.otherPlayers = {};
-        this.playersFinished = {};
-        this.levelLoaded = false;
+        // Set lobby ID if provided
+        if (data && data.lobbyId) {
+            this.lobbyId = data.lobbyId;
+        }
+
+        // Set socket if provided
+        if (data && data.socket) {
+            this.socket = data.socket;
+            this.connected = this.socket.connected;
+        }
 
         // Initialize progress manager
         this.progressManager = new ProgressManager();
@@ -170,7 +122,7 @@ export class Game extends Scene {
         this.socketManager = new SocketManager(this);
         this.socketManager.setupLobby(data);
 
-        // Initialize components
+        // Initialize game components
         this.gameUI = new GameUI(this);
         this.gameInput = new GameInput(this);
         this.collisionManager = new GameCollisions(this);
@@ -184,15 +136,67 @@ export class Game extends Scene {
 
             // Request the current lobby state to initialize player data
             if (this.socket && this.socket.connected && this.lobbyId) {
-                console.log("Requesting initial lobby state for:", this.lobbyId);
                 this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
             }
         }, 500);
     }
 
-    create() {
-        console.log("Game scene created. Lobby ID:", this.lobbyId);
+    preload() {
+        // Load music
+        if (!this.sound.get("levelMusic")) {
+            this.load.audio("levelMusic", "../assets/music/dnb_og.wav");
+        }
+    }
 
+    // Replace the createAnimations method in Game.js
+
+    createAnimations() {
+        // Skip if animations are already defined
+        if (this.anims.exists("idle")) return;
+
+        // Make sure the texture exists before creating animations
+        if (!this.textures.exists("player_animations")) {
+            console.warn("Cannot create animations: player_animations texture not found");
+            return;
+        }
+
+        // Create the animations with proper error handling
+        try {
+            // Idle animation (second frame in the sprite sheet)
+            this.anims.create({
+                key: "idle",
+                frames: [{ key: "player_animations", frame: 1 }],
+                frameRate: 10,
+                repeat: -1,
+            });
+
+            // Run animation (using first and fourth frames)
+            this.anims.create({
+                key: "run",
+                frames: [
+                    { key: "player_animations", frame: 0 },
+                    { key: "player_animations", frame: 3 },
+                ],
+                frameRate: 10,
+                repeat: -1,
+            });
+
+            // Jump animation
+            this.anims.create({
+                key: "jump",
+                frames: [{ key: "player_animations", frame: 2 }],
+                frameRate: 10,
+                repeat: 0,
+            });
+
+            console.log("Player animations created successfully");
+        } catch (error) {
+            console.error("Failed to create animations:", error);
+        }
+    }
+
+    create() {
+        // Start the music
         this.levelMusic = this.sound.add("levelMusic", { loop: true, volume: 0.5 });
         this.levelMusic.play();
         this.gameTimer.setLevelMusic(this.levelMusic);
@@ -200,6 +204,7 @@ export class Game extends Scene {
         // Create player animations
         this.createAnimations();
 
+        // Create a simple particle texture if it doesn't exist
         if (!this.textures.exists("particle")) {
             const graphics = this.add.graphics();
             graphics.fillStyle(0xffffff);
@@ -208,11 +213,11 @@ export class Game extends Scene {
             graphics.destroy();
         }
 
-        // Initialize ALL physics groups immediately
+        // Initialize physics groups
         this.platforms = this.physics.add.staticGroup();
         this.jumpPads = this.physics.add.staticGroup();
-        this.spikeGroup = this.physics.add.staticGroup(); // Add this line
-        this.finishObject = this.physics.add.staticGroup(); // Add this line
+        this.spikeGroup = this.physics.add.staticGroup();
+        this.finishObject = this.physics.add.staticGroup();
         this.movingPlatforms = this.physics.add.group();
 
         // Set up camera manager
@@ -229,13 +234,10 @@ export class Game extends Scene {
 
         // Create main player at level spawn position
         this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
-        this.levelManager.setupJumpPadCollisions(this.player);
 
+        // Initialize player connection visuals
         this.playerConnection = new PlayerConnection(this);
         this.playerConnection.initialize();
-
-        // Initialisiere die Spike-Gruppe aus dem LevelManager
-        this.spikes = this.levelManager.scene.spikeGroup;
 
         // Setup collisions
         this.collisionManager.setupCollisions(
@@ -244,7 +246,7 @@ export class Game extends Scene {
             this.jumpPads,
             this.finishObject,
             this.movingPlatforms,
-            this.spikes
+            this.spikeGroup
         );
 
         // Setup input
@@ -252,22 +254,27 @@ export class Game extends Scene {
         this.cursors = inputs.cursors;
         this.wasd = inputs.wasd;
 
+        // Pass input references to player for movement
+        if (this.player) {
+            this.player.keyInput = {
+                left: this.cursors.left,
+                right: this.cursors.right,
+                up: this.cursors.up,
+                ...this.wasd,
+            };
+        }
+
         // Setup UI elements
         const ui = this.gameUI.createUI(this.playerName, this.levelId, this.debugMode);
         this.timerText = ui.timerText;
         this.debugText = ui.debugText;
-        this.multiplayerStatusText = ui.multiplayerStatusText;
 
         // Setup and start the timer
         this.gameTimer.setGameUI(this.gameUI);
         this.timerEvent = this.gameTimer.startTimer();
 
-        // Set up moving platforms if any
-        this.setupMovingPlatforms();
-
         // If we're in a lobby, make sure to update our initial position
         if (this.socket && this.socket.connected && this.lobbyId) {
-            console.log("Sending initial position to server");
             this.socket.emit("playerUpdate", {
                 lobbyId: this.lobbyId,
                 x: this.player.x,
@@ -305,7 +312,7 @@ export class Game extends Scene {
 
         // Try to get lobby state
         if (this.socket && this.socket.connected && this.lobbyId) {
-            console.log(`Sync attempt ${this.syncAttempts}: Requesting lobby state`);
+            // Request lobby state
             this.socket.emit("requestLobbyState", { lobbyId: this.lobbyId });
 
             // Also send our position to make sure others can see us
@@ -321,51 +328,12 @@ export class Game extends Scene {
 
         // If we've tried 5 times and still don't have other players, give up
         if (this.syncAttempts >= 5 && this.syncTimer) {
-            console.log("Giving up on sync attempts after 5 tries");
             this.syncTimer.remove();
             this.syncTimer = null;
         }
     }
 
-    setupMovingPlatforms() {
-        // Find platforms that need animations
-        const movingPlatforms = this.levelManager.getMovingPlatforms();
-
-        // Apply animations to moving platforms
-        if (movingPlatforms && movingPlatforms.length > 0) {
-            movingPlatforms.forEach(config => {
-                const { platform, mirrorPlatform, movement } = config;
-
-                if (platform && movement) {
-                    // Add animation to platform
-                    this.tweens.add({
-                        targets: platform,
-                        y: platform.y - movement.y, // Move up by specified amount
-                        duration: movement.duration || 2000,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: "Sine.easeInOut",
-                    });
-
-                    // Add inverse animation to mirror platform
-                    if (mirrorPlatform) {
-                        this.tweens.add({
-                            targets: mirrorPlatform,
-                            y: mirrorPlatform.y + movement.y, // Move down for mirror effect
-                            duration: movement.duration || 2000,
-                            yoyo: true,
-                            repeat: -1,
-                            ease: "Sine.easeInOut",
-                        });
-                    }
-                }
-            });
-        }
-    }
-
     handleFinish(playerSprite, finishObject) {
-        console.log("Player reached finish!");
-
         // Don't process if player is already marked as finished
         if (this.playersFinished[this.socket.id]) {
             return;
@@ -376,10 +344,8 @@ export class Game extends Scene {
 
         // Emit to server that this player has finished
         if (this.socket && this.socket.connected && this.lobbyId) {
-            console.log("Sending playerFinished event to server");
             this.socket.emit("playerFinished", {
                 lobbyId: this.lobbyId,
-                playerId: this.socket.id,
             });
         }
 
@@ -388,8 +354,7 @@ export class Game extends Scene {
             this.createFinishEffect(this.player.sprite.x, this.player.sprite.y);
         }
 
-        // "Destroy" the player visually (make them invisible)
-        // We don't fully destroy to maintain the camera, but hide them
+        // "Disable" the player visually (make them inactive)
         if (this.player && this.player.sprite) {
             // First save the position for camera tracking
             const lastX = this.player.sprite.x;
@@ -401,13 +366,14 @@ export class Game extends Scene {
             // Fade out the player sprite
             this.tweens.add({
                 targets: this.player.sprite,
-                alpha: 0,
+                alpha: 0.3,
                 scale: 1.5,
                 duration: 500,
                 ease: "Power2",
                 onComplete: () => {
-                    // Make invisible but don't destroy to keep camera reference
-                    this.player.sprite.setVisible(false);
+                    // Make sprite semi-transparent but don't destroy it
+                    this.player.sprite.setVisible(true);
+                    this.player.sprite.setAlpha(0.3);
 
                     // Create a ghost marker at the finish point for camera to follow
                     this.finishMarker = this.physics.add.sprite(lastX, lastY, "sprite");
@@ -420,11 +386,11 @@ export class Game extends Scene {
                 },
             });
 
-            // Also hide the player name text
+            // Also fade the player name text
             if (this.player.text) {
                 this.tweens.add({
                     targets: this.player.text,
-                    alpha: 0,
+                    alpha: 0.3,
                     duration: 500,
                 });
             }
@@ -438,7 +404,9 @@ export class Game extends Scene {
     }
 
     handleGameOver(reason = "default") {
-        console.log("Game over triggered:", reason);
+        // Prevent multiple game over calls
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
 
         // Notify server that this player has game over
         if (this.socket && this.socket.connected && this.lobbyId) {
@@ -457,6 +425,9 @@ export class Game extends Scene {
                 onComplete: () => {
                     this.levelMusic.stop();
 
+                    // Clean up resources
+                    this.cleanup();
+
                     // Navigate to Game Over scene
                     this.scene.start("GameOver", {
                         levelId: this.levelId,
@@ -469,6 +440,7 @@ export class Game extends Scene {
             });
         } else {
             // No music to fade, switch immediately
+            this.cleanup();
             this.scene.start("GameOver", {
                 levelId: this.levelId,
                 playerName: this.playerName,
@@ -492,12 +464,6 @@ export class Game extends Scene {
 
         // Create a burst of particles
         particles.explode(50);
-
-        // Add a celebration sound
-        // if (this.sound.add) {
-        //     const celebrationSound = this.sound.add("finish", { volume: 0.5 });
-        //     celebrationSound.play();
-        // }
 
         // Create a flash effect
         const flash = this.add.rectangle(0, 0, this.scale.width, this.scale.height / 2, 0xffffff);
@@ -636,14 +602,9 @@ export class Game extends Scene {
         const totalPlayers = Object.keys(this.otherPlayers || {}).length + 1; // +1 for the main player
         const finishedPlayers = Object.keys(this.playersFinished || {}).length;
 
-        console.log(`Players finished: ${finishedPlayers}/${totalPlayers}`);
-        console.log(`Finished players IDs: ${Object.keys(this.playersFinished || {}).join(", ")}`);
-
         // Only complete the level if all players have finished
         if (finishedPlayers >= totalPlayers) {
-            console.log("All players have finished! Transitioning to finish screen...");
-
-            // Clear waiting animation interval if it exists
+            // Clear waiting animation interval
             if (this.waitingInterval) {
                 clearInterval(this.waitingInterval);
                 this.waitingInterval = null;
@@ -715,6 +676,9 @@ export class Game extends Scene {
 
                     // Switch to FinishLevel scene after a delay
                     this.time.delayedCall(2000, () => {
+                        // Clean up resources first
+                        this.cleanup();
+
                         this.scene.start("FinishLevel", {
                             timeLeft: this.gameTimer.getTimeLeft(),
                             stars: result.stars,
@@ -727,8 +691,6 @@ export class Game extends Scene {
                     });
                 },
             });
-        } else {
-            console.log("Not all players have finished yet. Waiting...");
         }
     }
 
@@ -766,6 +728,7 @@ export class Game extends Scene {
             }
         });
 
+        // Update player connection visuals
         if (this.playerConnection) {
             this.playerConnection.update();
         }
@@ -781,22 +744,25 @@ export class Game extends Scene {
                     this.player.y
                 )})` +
                 `\nCamera: ${Math.round(this.topCamera?.scrollX || 0)}, ${Math.round(this.topCamera?.scrollY || 0)}` +
-                `\nAuto-scroll: ${this.autoScrollCamera ? "ON" : "OFF"}, Speed: ${this.scrollSpeed}` +
-                `\nOther Players: ${Object.keys(this.otherPlayers).length}` +
-                (otherPlayerInfo ? `\n${otherPlayerInfo}` : "") +
-                `\nLobby: ${this.lobbyId || "None"}` +
                 `\nLevel: ${this.levelId}` +
-                `\nSync Attempts: ${this.syncAttempts}`;
+                `\nLobby: ${this.lobbyId || "None"}` +
+                `\nPlayers: ${Object.keys(this.otherPlayers).length + 1}` +
+                (otherPlayerInfo ? `\n${otherPlayerInfo}` : "");
 
             this.gameUI.updateDebugText(debugInfo);
         }
 
+        // Update moving platforms
         if (this.levelManager?.updateMovingPlatforms) {
             this.levelManager.updateMovingPlatforms(time);
         }
     }
 
-    shutdown() {
+    /**
+     * Comprehensive cleanup of all resources
+     * Called before scene changes to prevent memory leaks
+     */
+    cleanup() {
         // Clear timers
         if (this.timerEvent) {
             this.timerEvent.remove(false);
@@ -832,15 +798,27 @@ export class Game extends Scene {
         });
         this.otherPlayers = {};
 
+        // Clean up player connection visuals
         if (this.playerConnection) {
             this.playerConnection.shutdown();
             this.playerConnection = null;
         }
 
-        // Clean up finish marker if it exists
+        // Clean up finish marker
         if (this.finishMarker) {
             this.finishMarker.destroy();
             this.finishMarker = null;
         }
+
+        // Remove all tweens
+        this.tweens.killAll();
+
+        // Cancel all timers
+        this.time.removeAllEvents();
+    }
+
+    // Alias for cleanup to maintain compatibility with existing code
+    shutdown() {
+        this.cleanup();
     }
 }

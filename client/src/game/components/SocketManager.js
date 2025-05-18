@@ -341,13 +341,11 @@ export class SocketManager {
 
     updateGameState(lobby) {
         if (!lobby || !lobby.players) {
-            // console.error("Invalid lobby state:", lobby);
             return;
         }
 
         // Only proceed if we're in the Game scene
         if (this.scene.scene.key !== "Game") {
-            console.log("Not in Game scene, skipping player updates");
             return;
         }
 
@@ -360,7 +358,6 @@ export class SocketManager {
         Object.keys(this.scene.otherPlayers).forEach(id => {
             if (!lobby.players[id] || id === this.scene.socket.id) {
                 if (this.scene.otherPlayers[id]) {
-                    console.log("Removing player", id);
                     this.scene.otherPlayers[id].destroy();
                     delete this.scene.otherPlayers[id];
                     delete this.lastReceivedUpdate[id];
@@ -376,45 +373,58 @@ export class SocketManager {
             }
 
             const playerInfo = lobby.players[playerId];
-            console.log("Processing player:", playerId, playerInfo);
 
             if (!this.scene.otherPlayers[playerId]) {
                 // New player joined - create them at their reported position
                 console.log("Creating new player:", playerInfo.name);
 
-                const posX = playerInfo.x || 230;
-                const posY = playerInfo.y || 550;
+                try {
+                    const posX = playerInfo.x || 230;
+                    const posY = playerInfo.y || 550;
 
-                this.scene.otherPlayers[playerId] = new Player(
-                    this.scene,
-                    posX,
-                    posY,
-                    playerInfo.name || `Player_${playerId.substring(0, 4)}`,
-                    false // Not the main player
-                );
+                    // Create player with error handling
+                    this.scene.otherPlayers[playerId] = new Player(
+                        this.scene,
+                        posX,
+                        posY,
+                        playerInfo.name || `Player_${playerId.substring(0, 4)}`,
+                        false // Not the main player
+                    );
 
-                // Add collision between other player and platforms
-                if (this.scene.otherPlayers[playerId].sprite && this.scene.platforms) {
-                    this.scene.physics.add.collider(this.scene.otherPlayers[playerId].sprite, this.scene.platforms);
+                    // Add collision between other player and platforms
+                    if (this.scene.otherPlayers[playerId].sprite && this.scene.platforms) {
+                        this.scene.physics.add.collider(this.scene.otherPlayers[playerId].sprite, this.scene.platforms);
 
-                    // Add overlap for jump pads
-                    if (this.scene.jumpPads) {
-                        this.scene.physics.add.overlap(
-                            this.scene.otherPlayers[playerId].sprite,
-                            this.scene.jumpPads,
-                            this.scene.handleJumpPad,
-                            null,
-                            this.scene
-                        );
+                        // Add overlap for jump pads
+                        if (this.scene.jumpPads) {
+                            this.scene.physics.add.overlap(
+                                this.scene.otherPlayers[playerId].sprite,
+                                this.scene.jumpPads,
+                                this.scene.handleJumpPad,
+                                null,
+                                this.scene
+                            );
+                        }
                     }
-                }
 
-                // Set initial animation state
-                if (playerInfo.animation) {
-                    this.scene.otherPlayers[playerId].animation = playerInfo.animation;
-                }
-                if (playerInfo.direction) {
-                    this.scene.otherPlayers[playerId].direction = playerInfo.direction;
+                    // Set initial animation state
+                    if (playerInfo.animation) {
+                        this.scene.otherPlayers[playerId].animation = playerInfo.animation;
+                    }
+                    if (playerInfo.direction) {
+                        this.scene.otherPlayers[playerId].direction = playerInfo.direction;
+                    }
+                } catch (error) {
+                    console.warn("Failed to create other player:", error);
+                    // Make sure we don't keep a partially created player
+                    if (this.scene.otherPlayers[playerId]) {
+                        try {
+                            this.scene.otherPlayers[playerId].destroy();
+                        } catch (e) {
+                            // Silent cleanup error
+                        }
+                        delete this.scene.otherPlayers[playerId];
+                    }
                 }
             } else {
                 // Update existing player with lobby data

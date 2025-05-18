@@ -1,6 +1,5 @@
 /**
  * Level 1 configuration
- * This level is based on the original level from Game.js
  */
 export const Level1 = {
     name: "Level 1",

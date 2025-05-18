@@ -56,18 +56,28 @@ export class Preloader extends Scene {
         // Load player sprite
         this.load.image("sprite", "/assets/Player_Platforms/sprite.png");
 
+        // Load player animation sprite sheet - CRITICAL FIX
+        this.load.spritesheet("player_animations", "/assets/Player_Platforms/player_animations.png", {
+            frameWidth: 32,
+            frameHeight: 32,
+        });
+
         // Load logo for main menu
         this.load.image("logo", "/assets/logo_4.png");
 
         this.load.image("particle", "/assets/particle.png");
 
         this.load.audio("finish", "/assets/sounds/finish.mp3");
+        this.load.audio("levelMusic", "/assets/music/dnb_og.wav");
 
         // load background game over texture
         this.load.image("Game_Over", "/assets/Game_Over.png");
     }
 
     create() {
+        // Create the animations here instead of in Game.js
+        this.createAnimations();
+
         // Get development options from environment variables
         const startDirectly = import.meta.env.VITE_START_DIRECTLY === "true";
         const skipMenu = import.meta.env.VITE_SKIP_MENU === "true";
@@ -75,14 +85,6 @@ export class Preloader extends Scene {
         const directConnect = import.meta.env.VITE_DIRECT_CONNECT;
         const defaultPlayerName =
             import.meta.env.VITE_DEFAULT_PLAYER_NAME || "Player_" + Math.floor(Math.random() * 1000);
-
-        console.log("Development options:", {
-            startDirectly,
-            skipMenu,
-            skipLobby,
-            directConnect,
-            defaultPlayerName,
-        });
 
         // If we're skipping directly to game with environment variables,
         // pre-establish the socket connection
@@ -98,7 +100,6 @@ export class Preloader extends Scene {
             // Set a timeout in case connection takes too long
             setTimeout(() => {
                 if (!this.socket.connected) {
-                    // console.error("Socket connection timed out, proceeding anyway");
                     this.navigateBasedOnEnvVars(startDirectly, skipMenu, skipLobby, directConnect, defaultPlayerName);
                 }
             }, 3000);
@@ -106,6 +107,39 @@ export class Preloader extends Scene {
             // No socket pre-connection needed, proceed normally
             this.navigateBasedOnEnvVars(startDirectly, skipMenu, skipLobby, directConnect, defaultPlayerName);
         }
+    }
+
+    // Create animations once in the Preloader to make them globally available
+    createAnimations() {
+        // Only create if they don't already exist
+        if (this.anims.exists("idle")) return;
+
+        // Idle animation
+        this.anims.create({
+            key: "idle",
+            frames: [{ key: "player_animations", frame: 1 }],
+            frameRate: 10,
+            repeat: -1,
+        });
+
+        // Run animation
+        this.anims.create({
+            key: "run",
+            frames: [
+                { key: "player_animations", frame: 0 },
+                { key: "player_animations", frame: 3 },
+            ],
+            frameRate: 10,
+            repeat: -1,
+        });
+
+        // Jump animation
+        this.anims.create({
+            key: "jump",
+            frames: [{ key: "player_animations", frame: 2 }],
+            frameRate: 10,
+            repeat: 0,
+        });
     }
 
     navigateBasedOnEnvVars(startDirectly, skipMenu, skipLobby, directConnect, defaultPlayerName) {
@@ -142,7 +176,7 @@ export class Preloader extends Scene {
                                         socket: this.socket,
                                     });
                                 } else {
-                                    // console.error("Failed to create lobby, starting game without one");
+                                    console.log("Failed to create lobby, starting game without one");
                                     this.scene.start("Game", {
                                         playerName: defaultPlayerName,
                                         socket: this.socket,

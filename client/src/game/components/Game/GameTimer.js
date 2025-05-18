@@ -24,8 +24,11 @@ export class GameTimer {
     }
 
     startTimer() {
-        // Reset timer to full duration
-        this.timeLeft = 180;
+        // RESET timer to full duration - this is the most important part
+        this.timeLeft = 180; // Reset to default level time (3 minutes)
+
+        // Reset syncing flag
+        this.syncing = false;
 
         // Remove any previous timer event if exists
         if (this.timerEvent) {
@@ -42,6 +45,19 @@ export class GameTimer {
 
         // Set up timer sync listener if not already set
         this.setupTimerSync();
+
+        // Force timer update on UI immediately
+        if (this.gameUI) {
+            this.gameUI.updateTimer(this.timeLeft);
+        }
+
+        // Broadcast initial timer reset to all players in the lobby
+        if (this.scene.socket && this.scene.socket.connected && this.scene.lobbyId) {
+            this.scene.socket.emit("resetTimer", {
+                lobbyId: this.scene.lobbyId,
+                timeLeft: this.timeLeft,
+            });
+        }
 
         return this.timerEvent;
     }
