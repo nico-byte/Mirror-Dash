@@ -53,13 +53,13 @@ const addPlayerToLobby = (socket, lobbyId, playerName) => {
     const lobby = lobbies[lobbyId];
 
     if (!lobby) {
-        console.error(`Lobby not found: ${lobbyId}`);
+        // console.error(`Lobby not found: ${lobbyId}`);
         socket.emit("lobbyError", { message: "Lobby not found." });
         return false;
     }
 
     if (Object.keys(lobby.players).length >= MAX_PLAYERS_PER_LOBBY) {
-        console.error(`Lobby is full: ${lobbyId}`);
+        // console.error(`Lobby is full: ${lobbyId}`);
         socket.emit("lobbyError", { message: "Lobby is full." });
         return false;
     }
@@ -229,7 +229,7 @@ io.on("connection", socket => {
                 callback({ success: true, lobbyId });
             }
         } catch (error) {
-            console.error("Error creating lobby:", error);
+            // console.error("Error creating lobby:", error);
             if (callback && typeof callback === "function") {
                 callback({ success: false, error: "Failed to create lobby" });
             }
@@ -256,7 +256,7 @@ io.on("connection", socket => {
                 });
             }
         } catch (error) {
-            console.error("Error joining lobby:", error);
+            // console.error("Error joining lobby:", error);
             if (callback && typeof callback === "function") {
                 callback({ success: false, error: "Failed to join lobby" });
             }
@@ -267,13 +267,13 @@ io.on("connection", socket => {
         if (lobbyId) {
             const lobby = lobbies[lobbyId];
             if (!lobby) {
-                console.error(`Player ${socket.id} tried to trigger game over in non-existent lobby: ${lobbyId}`);
+                // console.error(`Player ${socket.id} tried to trigger game over in non-existent lobby: ${lobbyId}`);
                 return;
             }
 
             const player = lobby.players[socket.id];
             if (!player) {
-                console.error(`Player ${socket.id} is not in lobby: ${lobbyId}`);
+                // console.error(`Player ${socket.id} is not in lobby: ${lobbyId}`);
                 return;
             }
 
@@ -295,7 +295,7 @@ io.on("connection", socket => {
         if (lobbyId && levelId) {
             const lobby = lobbies[lobbyId];
             if (!lobby) {
-                console.error(`Level change requested for non-existent lobby: ${lobbyId}`);
+                // console.error(`Level change requested for non-existent lobby: ${lobbyId}`);
                 socket.emit("lobbyError", { message: "Lobby not found." });
                 return;
             }
@@ -303,7 +303,7 @@ io.on("connection", socket => {
             // Get the requesting player
             const requester = lobby.players[requesterId];
             if (!requester) {
-                console.error(`Unknown player ${requesterId} requested level change`);
+                // console.error(`Unknown player ${requesterId} requested level change`);
                 return;
             }
 
@@ -332,13 +332,13 @@ io.on("connection", socket => {
         if (lobbyId) {
             const lobby = lobbies[lobbyId];
             if (!lobby) {
-                console.error(`Player trying to leave non-existent lobby: ${lobbyId}`);
+                // console.error(`Player trying to leave non-existent lobby: ${lobbyId}`);
                 return;
             }
 
             // Ensure the player can only leave themselves
             if (playerId !== socket.id) {
-                console.error(`Player ${socket.id} tried to force another player ${playerId} to leave`);
+                // console.error(`Player ${socket.id} tried to force another player ${playerId} to leave`);
                 return;
             }
 
@@ -377,7 +377,7 @@ io.on("connection", socket => {
             debugLog(`Sending lobby state for ${lobby.name} (${lobbyId}) to ${socket.id}`);
             socket.emit("lobbyState", lobby);
         } else {
-            console.error(`Requested lobby not found: ${lobbyId}`);
+            // console.error(`Requested lobby not found: ${lobbyId}`);
             socket.emit("lobbyError", { message: "Lobby not found." });
         }
     });
@@ -388,10 +388,10 @@ io.on("connection", socket => {
         if (lobby && lobby.host === socket.id) {
             startGame(lobbyId);
         } else if (!lobby) {
-            console.error(`Game start requested for non-existent lobby: ${lobbyId}`);
+            // console.error(`Game start requested for non-existent lobby: ${lobbyId}`);
             socket.emit("lobbyError", { message: "Lobby not found." });
         } else {
-            console.error(`Non-host player ${socket.id} tried to start game in lobby: ${lobbyId}`);
+            // console.error(`Non-host player ${socket.id} tried to start game in lobby: ${lobbyId}`);
             socket.emit("lobbyError", { message: "Only the host can start the game." });
         }
     });
@@ -400,13 +400,13 @@ io.on("connection", socket => {
         if (lobbyId) {
             const lobby = lobbies[lobbyId];
             if (!lobby) {
-                console.error(`Player ${socket.id} tried to finish in non-existent lobby: ${lobbyId}`);
+                // console.error(`Player ${socket.id} tried to finish in non-existent lobby: ${lobbyId}`);
                 return;
             }
 
             const player = lobby.players[socket.id];
             if (!player) {
-                console.error(`Player ${socket.id} is not in lobby: ${lobbyId}`);
+                // console.error(`Player ${socket.id} is not in lobby: ${lobbyId}`);
                 return;
             }
 
@@ -466,7 +466,7 @@ io.on("connection", socket => {
             // Validate the lobby exists
             const lobby = lobbies[lobbyId];
             if (!lobby) {
-                console.error(`Cannot change level - lobby ${lobbyId} not found`);
+                // console.error(`Cannot change level - lobby ${lobbyId} not found`);
                 socket.emit("lobbyError", { message: "Lobby not found for level change." });
                 return;
             }
@@ -528,7 +528,7 @@ io.on("connection", socket => {
                     lobbyId,
                 });
             } else {
-                console.error(`Cannot change level - lobby ${lobbyId} not found`);
+                // console.error(`Cannot change level - lobby ${lobbyId} not found`);
             }
         }
     });

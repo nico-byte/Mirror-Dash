@@ -6,6 +6,10 @@ export class MainMenu extends Scene {
         this.playerName = "Player_" + Math.floor(Math.random() * 1000);
     }
 
+    init() {
+        this.playerName = "Player_" + Math.floor(Math.random() * 1000);
+    }
+
     create() {
         this.add.rectangle(512, 384, 1024, 786, 0x060322)
         this.logo = this.add.image(512, 125, "logo");

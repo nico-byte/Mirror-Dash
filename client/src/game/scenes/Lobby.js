@@ -15,6 +15,14 @@ export class Lobby extends Scene {
     }
 
     init(data) {
+        this.socket = null;
+        this.lobbies = {};
+        this.selectedLobbyId = null;
+        this.playerName = "Player_" + Math.floor(Math.random() * 1000);
+        this.currentLobbyId = null;
+        this.inLobby = false;
+        this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
+        this.connectionError = false;
         console.log("Lobby scene initialized with data:", data);
 
         // Get socket from data if it exists
@@ -30,7 +38,7 @@ export class Lobby extends Scene {
                 this.socket = io(serverUrl);
                 console.log("Socket created:", this.socket.id);
             } catch (e) {
-                console.error("Error connecting to socket server:", e);
+                // console.error("Error connecting to socket server:", e);
                 this.connectionError = true;
             }
         }
@@ -52,7 +60,7 @@ export class Lobby extends Scene {
 
     setupSocketListeners() {
         if (!this.socket) {
-            console.error("Cannot setup listeners - socket is null");
+            // console.error("Cannot setup listeners - socket is null");
             return;
         }
 
@@ -102,7 +110,7 @@ export class Lobby extends Scene {
 
         // Listen for lobby errors
         this.socket.on("lobbyError", ({ message }) => {
-            console.error("Lobby error:", message);
+            // console.error("Lobby error:", message);
             alert(message);
         });
     }
@@ -207,7 +215,7 @@ export class Lobby extends Scene {
                 console.log("Requesting lobby list");
                 this.socket.emit("getLobbyList");
             } else {
-                console.error("Socket not connected, cannot request lobby list");
+                // console.error("Socket not connected, cannot request lobby list");
                 alert("Not connected to server. Please try again.");
             }
         });
@@ -303,7 +311,7 @@ export class Lobby extends Scene {
 
     createNewLobby() {
         if (!this.socket || !this.socket.connected) {
-            console.error("Cannot create lobby - socket not connected");
+            // console.error("Cannot create lobby - socket not connected");
             alert("Not connected to server. Please try again.");
             return;
         }
@@ -327,7 +335,7 @@ export class Lobby extends Scene {
                         // Request lobby state to ensure UI is updated
                         this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
                     } else {
-                        console.error("Failed to create lobby:", response);
+                        // console.error("Failed to create lobby:", response);
                         alert("Failed to create lobby. Please try again.");
                     }
                 }
@@ -337,7 +345,7 @@ export class Lobby extends Scene {
 
     joinLobby(lobbyId) {
         if (!this.socket || !this.socket.connected) {
-            console.error("Cannot join lobby - socket not connected");
+            // console.error("Cannot join lobby - socket not connected");
             alert("Not connected to server. Please try again.");
             return;
         }
@@ -359,7 +367,7 @@ export class Lobby extends Scene {
                     // Request lobby state to ensure UI is updated
                     this.socket.emit("requestLobbyState", { lobbyId: this.currentLobbyId });
                 } else {
-                    console.error("Failed to join lobby:", response);
+                    // console.error("Failed to join lobby:", response);
                     alert("Failed to join lobby. It may no longer exist.");
                     // Refresh lobbies list
                     this.socket.emit("getLobbyList");
@@ -370,7 +378,7 @@ export class Lobby extends Scene {
 
     leaveLobby() {
         if (!this.socket || !this.socket.connected) {
-            console.error("Cannot leave lobby - socket not connected");
+            // console.error("Cannot leave lobby - socket not connected");
             this.inLobby = false;
             this.currentLobbyId = null;
             this.hideLobbyUI();
@@ -452,7 +460,7 @@ export class Lobby extends Scene {
     updateLobbiesList() {
         // Clear existing list
         if (!this.lobbyListContainer) {
-            console.error("Lobby list container is undefined");
+            // console.error("Lobby list container is undefined");
             return;
         }
 
@@ -573,7 +581,7 @@ export class Lobby extends Scene {
 
     updateLobbyState(lobby) {
         if (!lobby) {
-            console.error("Invalid lobby state received:", lobby);
+            // console.error("Invalid lobby state received:", lobby);
             return;
         }
 
@@ -599,7 +607,7 @@ export class Lobby extends Scene {
                 this.lobbyPlayerListContainer = this.add.container(0, 0);
             }
         } else {
-            console.error("Player list container is undefined");
+            // console.error("Player list container is undefined");
             // Create a new container
             this.lobbyPlayerListContainer = this.add.container(0, 0);
             if (this.lobbyUI) {
@@ -610,7 +618,7 @@ export class Lobby extends Scene {
 
         // Check if the scene is still valid before proceeding
         if (!this.scene || !this.sys) {
-            console.error("Scene or scene.sys is undefined - aborting updateLobbyState");
+            // console.error("Scene or scene.sys is undefined - aborting updateLobbyState");
             return;
         }
 
@@ -629,13 +637,13 @@ export class Lobby extends Scene {
         playerIds.forEach((playerId, index) => {
             const player = lobby.players[playerId];
             if (!player) {
-                console.error("Invalid player data:", playerId, player);
+                // console.error("Invalid player data:", playerId, player);
                 return;
             }
 
             // Make sure we still have access to the scene
             if (!this.scene || !this.sys) {
-                console.error("Scene or scene.sys became undefined during player rendering");
+                // console.error("Scene or scene.sys became undefined during player rendering");
                 return;
             }
 
@@ -668,7 +676,7 @@ export class Lobby extends Scene {
                 this.lobbyPlayerListContainer.add([playerBg, text]);
                 yPos += 60; // More spacing between players
             } catch (error) {
-                console.error("Error rendering player in lobby:", error);
+                // console.error("Error rendering player in lobby:", error);
             }
         });
 

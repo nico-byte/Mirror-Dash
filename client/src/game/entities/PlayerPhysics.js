@@ -5,6 +5,12 @@ export class PlayerPhysics {
         this.setupPhysics();
     }
 
+    init(scene, sprite) {
+        this.scene = scene;
+        this.sprite = sprite;
+        this.setupPhysics();
+    }
+
     setupPhysics() {
         if (!this.scene.physics || !this.sprite) return;
 

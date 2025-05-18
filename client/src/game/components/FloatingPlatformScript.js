@@ -5,6 +5,12 @@ export default class FloatingPlatformScript {
         this.awake();
     }
 
+    init(gameObject, scene) {
+        this.gameObject = gameObject;
+        this.scene = scene;
+        this.awake();
+    }
+
     awake() {
         this.scene.tweens.add({
             targets: this.gameObject,

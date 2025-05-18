@@ -8,6 +8,12 @@ export class SocketManager {
         this.lastReceivedUpdate = {};
     }
 
+    init(scene) {
+        this.scene = scene;
+        this.synchronizationInterval = null;
+        this.lastReceivedUpdate = {};
+    }
+
     setupLobby(data) {
         // Get server URL from environment variable or use default
         const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
@@ -43,7 +49,7 @@ export class SocketManager {
 
     setupSocketListeners() {
         if (!this.scene || !this.scene.socket) {
-            console.error("Cannot setup socket listeners - scene or socket is undefined");
+            // console.error("Cannot setup socket listeners - scene or socket is undefined");
             return;
         }
 
@@ -69,7 +75,7 @@ export class SocketManager {
                             // Important: Request the lobby state after creating it
                             this.scene.socket.emit("requestLobbyState", { lobbyId: this.scene.lobbyId });
                         } else {
-                            console.error("Failed to create a quick play session:", response);
+                            // console.error("Failed to create a quick play session:", response);
                             alert("Failed to create a quick play session. Please try again.");
                             this.scene.scene.start("MainMenu");
                         }
@@ -335,7 +341,7 @@ export class SocketManager {
 
     updateGameState(lobby) {
         if (!lobby || !lobby.players) {
-            console.error("Invalid lobby state:", lobby);
+            // console.error("Invalid lobby state:", lobby);
             return;
         }
 

@@ -7,6 +7,14 @@ export class GameTimer {
         this.syncing = false; // Flag to prevent sync loops
     }
 
+    init(scene) {
+        this.scene = scene;
+        this.timeLeft = 180; // in seconds
+        this.timerEvent = null;
+        this.gameUI = null;
+        this.syncing = false; // Flag to prevent sync loops
+    }
+
     setGameUI(gameUI) {
         this.gameUI = gameUI;
     }

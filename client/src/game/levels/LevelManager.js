@@ -11,6 +11,15 @@ export class LevelManager {
         this.initialized = false;
     }
 
+    init(scene) {
+        this.scene = scene;
+        this.currentLevel = null;
+        this.levels = {};
+        this.pendingPlatforms = [];
+        this.pendingJumpPads = [];
+        this.initialized = false;
+    }
+
     /**
      * Register a level with the manager
      * @param {string} key - The level identifier
@@ -121,7 +130,7 @@ export class LevelManager {
             try {
                 levelData.createBackground(this.scene, midPoint);
             } catch (error) {
-                console.error("Error creating background:", error);
+                // console.error("Error creating background:", error);
             }
         }
 
@@ -156,7 +165,7 @@ export class LevelManager {
                         });
                     }
                 } catch (error) {
-                    console.error("Error creating platform:", error, "at", platform.x, platform.y);
+                    // console.error("Error creating platform:", error, "at", platform.x, platform.y);
                 }
             });
         }
@@ -184,7 +193,7 @@ export class LevelManager {
                         });
                     }
                 } catch (error) {
-                    console.error("Error creating jump pad:", error, "at", jumpPad.x, jumpPad.y);
+                    // console.error("Error creating jump pad:", error, "at", jumpPad.x, jumpPad.y);
                 }
             });
         }
@@ -212,7 +221,7 @@ export class LevelManager {
                         });
                     }
                 } catch (error) {
-                    console.error("Error creating spike:", error, "at", spike.x, spike.y);
+                    // console.error("Error creating spike:", error, "at", spike.x, spike.y);
                 }
             });
         }
@@ -227,7 +236,7 @@ export class LevelManager {
                     levelData.finish.height || 100
                 );
             } catch (error) {
-                console.error("Error creating finish line:", error);
+                // console.error("Error creating finish line:", error);
             }
         }
 
@@ -246,7 +255,7 @@ export class LevelManager {
                     this.scene.bottomCamera.setBounds(0, 0, worldWidth, worldHeight);
                 }
             } catch (error) {
-                console.error("Error setting world bounds:", error);
+                // console.error("Error setting world bounds:", error);
             }
         }
 
@@ -487,7 +496,7 @@ export class LevelManager {
 
         // Defensive check - make sure the scene and its physics system are valid
         if (!this.scene || !this.scene.add || !this.scene.physics) {
-            console.error("Invalid scene object when creating spikes at", x, y);
+            // console.error("Invalid scene object when creating spikes at", x, y);
             return null;
         }
 
@@ -510,7 +519,7 @@ export class LevelManager {
                     spike.refreshBody();
                 }
             } catch (err) {
-                console.error(`Failed to create spike at ${x},${y}:`, err);
+                // console.error(`Failed to create spike at ${x},${y}:`, err);
                 return null;
             }
 
@@ -522,7 +531,7 @@ export class LevelManager {
                     .setScale(scaleX, scaleY)
                     .setFlipY(true);
             } catch (err) {
-                console.error(`Failed to create mirror spike at ${x},${screenHeight - y + midPoint}:`, err);
+                // console.error(`Failed to create mirror spike at ${x},${screenHeight - y + midPoint}:`, err);
             }
 
             // Safely set camera visibility
@@ -607,7 +616,7 @@ export class LevelManager {
 
         // Defensive check
         if (!this.scene || !this.scene.add || !this.scene.physics) {
-            console.error("Invalid scene object when creating finish line at", x, y);
+            // console.error("Invalid scene object when creating finish line at", x, y);
             return null;
         }
 
@@ -635,7 +644,7 @@ export class LevelManager {
 
                 this.scene.finishObjectRect = finishObjectRect;
             } catch (err) {
-                console.error("Error creating finish object:", err);
+                // console.error("Error creating finish object:", err);
             }
 
             // Create visual indicators for top and bottom views
@@ -654,7 +663,7 @@ export class LevelManager {
                     .setDepth(1);
                 this.scene.mirrorFinishVisual = mirrorFinishVisual;
             } catch (err) {
-                console.error("Error creating finish visuals:", err);
+                // console.error("Error creating finish visuals:", err);
             }
 
             // Set camera visibility with safety checks

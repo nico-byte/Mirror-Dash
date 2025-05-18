@@ -54,6 +54,47 @@ export class Game extends Scene {
         this.syncAttempts = 0;
     }
 
+    init() {
+        this.socket = null;
+        this.player = null;
+        this.otherPlayers = {};
+        this.playersFinished = {};
+        this.playerName = "Player_" + Math.floor(Math.random() * 1000);
+        this.connected = false;
+        this.lobbyId = null;
+        this.debugMode = false;
+        this.levelId = "level1"; // Default level
+        this.playerConnection = null;
+
+        // Split screen properties
+        this.splitLine = null;
+        this.topCamera = null;
+        this.bottomCamera = null;
+
+        // Camera scrolling properties
+        this.autoScrollCamera = import.meta.env.VITE_AUTO_SCROLL_CAMERA === "true";
+        this.scrollSpeed = 50;
+        this.instantDeathMode = import.meta.env.VITE_INSTANT_DEATH_MODE === "true";
+
+        // Level properties
+        this.platforms = null;
+        this.jumpPads = null;
+
+        // Component managers
+        this.progressManager = new ProgressManager();
+        this.socketManager = null;
+        this.gameUI = null;
+        this.gameInput = null;
+        this.collisionManager = null;
+        this.gameTimer = null;
+        this.playerRespawn = null;
+
+        // For synchronization
+        this.lastUpdateTime = 0;
+        this.updateInterval = 50; // Send position updates every 50ms
+        this.syncAttempts = 0;
+    }
+
     preload() {
         this.load.audio("levelMusic", "../assets/music/dnb_og.wav");
 

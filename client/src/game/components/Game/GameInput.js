@@ -5,6 +5,12 @@ export class GameInput {
         this.wasd = null;
     }
 
+    init(scene) {
+        this.scene = scene;
+        this.cursors = null;
+        this.wasd = null;
+    }
+
     setupInputs() {
         // Setup arrow keys
         this.cursors = this.scene.input.keyboard.createCursorKeys();

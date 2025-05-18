@@ -8,6 +8,7 @@ export class FinishLevel extends Scene {
     }
 
     init(data) {
+        this.progressManager = new ProgressManager();
         this.timeLeft = data?.timeLeft ?? 0;
         this.stars = data?.stars ?? 0;
         this.levelId = data?.levelId ?? "level1";

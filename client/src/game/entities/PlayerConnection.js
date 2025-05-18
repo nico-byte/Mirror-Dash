@@ -13,6 +13,20 @@ export class PlayerConnection {
         this.initialized = false;
     }
 
+    init(scene) {
+        this.scene = scene;
+        // Beams for top view
+        this.beam = null;
+        this.glow = null;
+        // Beams for bottom view
+        this.mirrorBeam = null;
+        this.mirrorGlow = null;
+
+        this.particleEmitter = null;
+        this.mirrorParticleEmitter = null;
+        this.initialized = false;
+    }
+
     initialize() {
         // Create the beam graphics objects for top view
         this.beam = this.scene.add.graphics();
