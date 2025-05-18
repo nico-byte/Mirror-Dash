@@ -40,7 +40,7 @@ export class ProgressManager {
                 this.saveProgress();
             }
         } catch (error) {
-            console.error("Error loading player progress:", error);
+            // console.error("Error loading player progress:", error);
             // Initialize with default progress
             this.progress = {
                 playerName: playerName,
@@ -64,7 +64,7 @@ export class ProgressManager {
             localStorage.setItem(`multiplayer_progress_${this.progress.playerName}`, JSON.stringify(this.progress));
             console.log(`Progress saved for player: ${this.progress.playerName}`);
         } catch (error) {
-            console.error("Error saving player progress:", error);
+            // console.error("Error saving player progress:", error);
         }
     }
 

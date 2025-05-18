@@ -97,7 +97,7 @@ export class Preloader extends Scene {
             // Set a timeout in case connection takes too long
             setTimeout(() => {
                 if (!this.socket.connected) {
-                    console.error("Socket connection timed out, proceeding anyway");
+                    // console.error("Socket connection timed out, proceeding anyway");
                     this.navigateBasedOnEnvVars(startDirectly, skipMenu, skipLobby, directConnect, defaultPlayerName);
                 }
             }, 3000);
@@ -141,7 +141,7 @@ export class Preloader extends Scene {
                                         socket: this.socket,
                                     });
                                 } else {
-                                    console.error("Failed to create lobby, starting game without one");
+                                    // console.error("Failed to create lobby, starting game without one");
                                     this.scene.start("Game", {
                                         playerName: defaultPlayerName,
                                         socket: this.socket,
