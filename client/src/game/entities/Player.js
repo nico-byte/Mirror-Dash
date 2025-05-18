@@ -173,7 +173,11 @@ export class Player {
     }
 
     destroy() {
-        this.visuals.destroy();
+        if (this.visuals) {
+            this.visuals.destroy();
+        } else {
+            console.warn("PlayerVisuals instance is not initialized or already destroyed.");
+        }
         // if (this.ufoParticlesEmitter) { // Removed: No particles for simple UFO
         //     this.ufoParticlesEmitter.destroy();
         // }
