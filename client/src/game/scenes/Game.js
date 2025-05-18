@@ -154,7 +154,7 @@ export class Game extends Scene {
             this.jumpPads,
             this.finishObject,
             this.movingPlatforms,
-            this.spikes 
+            this.spikes
         );
 
         // Setup input
@@ -286,6 +286,7 @@ export class Game extends Scene {
 
         // Emit to server that this player has finished
         if (this.socket && this.socket.connected && this.lobbyId) {
+            console.log("Sending playerFinished event to server");
             this.socket.emit("playerFinished", {
                 lobbyId: this.lobbyId,
                 playerId: this.socket.id,
@@ -361,10 +362,10 @@ export class Game extends Scene {
         particles.explode(50);
 
         // Add a celebration sound
-        if (this.sound.add) {
-            const celebrationSound = this.sound.add("finish", { volume: 0.5 });
-            celebrationSound.play();
-        }
+        // if (this.sound.add) {
+        //     const celebrationSound = this.sound.add("finish", { volume: 0.5 });
+        //     celebrationSound.play();
+        // }
 
         // Create a flash effect
         const flash = this.add.rectangle(0, 0, this.scale.width, this.scale.height / 2, 0xffffff);
@@ -441,6 +442,11 @@ export class Game extends Scene {
         // Background panel for message
         const panel = this.add.rectangle(0, 0, 500, 120, 0x000000, 0.7).setStrokeStyle(4, 0x00ff00);
 
+        // Calculate how many players have finished
+        const totalPlayers = Object.keys(this.otherPlayers || {}).length + 1; // +1 for main player
+        const finishedPlayers = Object.keys(this.playersFinished || {}).length;
+        const remainingPlayers = totalPlayers - finishedPlayers;
+
         // Create waiting message
         const waitingText = this.add
             .text(0, -20, "You reached the finish line!", {
@@ -451,8 +457,17 @@ export class Game extends Scene {
             })
             .setOrigin(0.5);
 
+        let subTextMessage = "Waiting for the other player...";
+
+        // If everyone has finished, change the message
+        if (finishedPlayers >= totalPlayers) {
+            subTextMessage = "All players finished! Preparing next screen...";
+        } else if (remainingPlayers > 0) {
+            subTextMessage = `Waiting for ${remainingPlayers} more player${remainingPlayers > 1 ? "s" : ""}...`;
+        }
+
         const subText = this.add
-            .text(0, 20, "Waiting for the other player...", {
+            .text(0, 20, subTextMessage, {
                 fontFamily: "Arial",
                 fontSize: "20px",
                 color: "#ffff00",
@@ -460,11 +475,16 @@ export class Game extends Scene {
             })
             .setOrigin(0.5);
 
+        this.waitingText = subText;
+
         // Add dots animation for waiting
         let dots = "";
         const updateDots = () => {
-            dots = dots.length >= 3 ? "" : dots + ".";
-            subText.setText("Waiting for the other player" + dots);
+            // Only update dots if we're still waiting for players
+            if (Object.keys(this.playersFinished || {}).length < totalPlayers) {
+                dots = dots.length >= 3 ? "" : dots + ".";
+                subText.setText(subTextMessage.replace("...", "") + dots);
+            }
         };
 
         // Update dots every 500ms
@@ -480,13 +500,17 @@ export class Game extends Scene {
     }
 
     checkAllPlayersFinished() {
-        const totalPlayers = Object.keys(this.otherPlayers).length + 1; // +1 for the main player
-        const finishedPlayers = Object.keys(this.playersFinished).length;
+        // Calculate total players more explicitly
+        const totalPlayers = Object.keys(this.otherPlayers || {}).length + 1; // +1 for the main player
+        const finishedPlayers = Object.keys(this.playersFinished || {}).length;
 
         console.log(`Players finished: ${finishedPlayers}/${totalPlayers}`);
+        console.log(`Finished players IDs: ${Object.keys(this.playersFinished || {}).join(", ")}`);
 
         // Only complete the level if all players have finished
         if (finishedPlayers >= totalPlayers) {
+            console.log("All players have finished! Transitioning to finish screen...");
+
             // Clear waiting animation interval if it exists
             if (this.waitingInterval) {
                 clearInterval(this.waitingInterval);
@@ -571,6 +595,8 @@ export class Game extends Scene {
                     });
                 },
             });
+        } else {
+            console.log("Not all players have finished yet. Waiting...");
         }
     }
 

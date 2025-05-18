@@ -306,24 +306,52 @@ io.on("connection", socket => {
     socket.on("playerFinished", ({ lobbyId, playerId }) => {
         if (lobbyId) {
             const lobby = lobbies[lobbyId];
-            const player = lobby?.players?.[playerId];
-
-            if (player) {
-                if (!leaderboard[player.name]) {
-                    leaderboard[player.name] = { wins: 0, lastWin: null };
-                }
-                leaderboard[player.name].wins += 1;
-                leaderboard[player.name].lastWin = Date.now();
-                console.log(`Player ${playerId} finished in lobby ${lobbyId}`);
-                // Broadcast to all other players in the lobby
-                socket.to(lobbyId).emit("playerFinished", {
-                    playerId: socket.id,
-                    lobbyId,
-                    leaderboard: getSortedLeaderboard(),
-                });
+            if (!lobby) {
+                console.error(`Player ${socket.id} tried to finish in non-existent lobby: ${lobbyId}`);
+                return;
             }
 
-            io.emit("leaderboardUpdate", getSortedLeaderboard());
+            const player = lobby.players[socket.id];
+            if (!player) {
+                console.error(`Player ${socket.id} is not in lobby: ${lobbyId}`);
+                return;
+            }
+
+            console.log(`Player ${player.name} (${socket.id}) finished in lobby ${lobbyId}`);
+
+            // Update player state in the lobby
+            player.hasFinished = true;
+
+            // Count how many players have finished
+            const totalPlayers = Object.keys(lobby.players).length;
+            const finishedPlayers = Object.values(lobby.players).filter(p => p.hasFinished).length;
+            console.log(
+                `${finishedPlayers} out of ${totalPlayers} players have finished in lobby ${lobby.name} (${lobbyId})`
+            );
+
+            // Update leaderboard
+            if (!leaderboard[player.name]) {
+                leaderboard[player.name] = { wins: 0, lastWin: null };
+            }
+
+            // Only count as a win if all players finish (win is for completing the level, not just being first)
+            if (finishedPlayers >= totalPlayers) {
+                leaderboard[player.name].wins += 1;
+                leaderboard[player.name].lastWin = Date.now();
+            }
+
+            // Broadcast to all other players in the lobby
+            socket.to(lobbyId).emit("playerFinished", {
+                playerId: socket.id,
+                lobbyId,
+                finishedPlayers,
+                totalPlayers,
+            });
+
+            // If this is the last player to finish, broadcast a final leaderboard update
+            if (finishedPlayers >= totalPlayers) {
+                io.to(lobbyId).emit("leaderboardUpdate", getSortedLeaderboard());
+            }
         }
     });
 

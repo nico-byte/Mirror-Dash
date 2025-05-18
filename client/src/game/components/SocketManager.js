@@ -141,7 +141,49 @@ export class SocketManager {
         this.scene.socket.on("playerFinished", data => {
             if (data && data.playerId && data.playerId !== this.scene.socket.id) {
                 console.log(`Other player ${data.playerId} has finished the level`);
+
+                // Add this player to the finished players list
+                if (!this.scene.playersFinished) {
+                    this.scene.playersFinished = {};
+                }
                 this.scene.playersFinished[data.playerId] = true;
+
+                // Show a visual indication that the other player has finished
+                if (this.scene.otherPlayers && this.scene.otherPlayers[data.playerId]) {
+                    const otherPlayer = this.scene.otherPlayers[data.playerId];
+                    if (otherPlayer.sprite) {
+                        // Create a finish effect at other player's position
+                        if (typeof this.scene.createFinishEffect === "function") {
+                            this.scene.createFinishEffect(otherPlayer.x, otherPlayer.y);
+                        }
+
+                        // Fade out the other player
+                        this.scene.tweens.add({
+                            targets: otherPlayer.sprite,
+                            alpha: 0.3,
+                            scale: 1.2,
+                            duration: 500,
+                            ease: "Power2",
+                        });
+
+                        // Fade out their name
+                        if (otherPlayer.text) {
+                            this.scene.tweens.add({
+                                targets: otherPlayer.text,
+                                alpha: 0.3,
+                                duration: 500,
+                            });
+                        }
+                    }
+                }
+
+                // Update the UI to show waiting message if we've already finished
+                if (this.scene.playersFinished[this.scene.socket.id]) {
+                    // If we're already at the finish, update the waiting message
+                    if (this.scene.waitingText) {
+                        this.scene.waitingText.setText("The other player has also finished!");
+                    }
+                }
 
                 // Check if all players have now finished
                 this.scene.checkAllPlayersFinished();
@@ -339,6 +381,16 @@ export class SocketManager {
         if (this.synchronizationInterval) {
             clearInterval(this.synchronizationInterval);
             this.synchronizationInterval = null;
+        }
+
+        // Remove socket listeners to prevent memory leaks
+        if (this.scene.socket) {
+            this.scene.socket.off("timerSync");
+            this.scene.socket.off("playerFinished"); // Make sure to remove this listener
+            this.scene.socket.off("lobbyState");
+            this.scene.socket.off("playerMoved");
+            this.scene.socket.off("gameStart");
+            this.scene.socket.off("lobbyError");
         }
 
         this.lastReceivedUpdate = {};

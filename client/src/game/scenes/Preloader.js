@@ -59,8 +59,6 @@ export class Preloader extends Scene {
         this.load.image("logo", "/assets/logo_4.png");
 
         this.load.image("particle", "/assets/particle.png");
-
-        this.load.audio("finish", "/assets/sounds/finish.mp3");
     }
 
     create() {
