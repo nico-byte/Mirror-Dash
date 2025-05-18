@@ -14,7 +14,7 @@ export class Leaderboard extends Scene {
     create() {
         const { width, height } = this.scale;
 
-        this.cameras.main.setBackgroundColor(0x000033);
+        this.cameras.main.setBackgroundColor(0x060322);
 
         this.title = this.add
             .text(width / 2, 80, "🏆 Leaderboard", {

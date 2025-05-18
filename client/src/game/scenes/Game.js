@@ -493,49 +493,9 @@ export class Game extends Scene {
             ease: "Power2",
             onComplete: () => flash.destroy(),
         });
-
-        // Add a celebration text animation
-        const celebrationText = this.add
-            .text(this.scale.width / 2, this.scale.height / 4, "FINISH!", {
-                fontFamily: "Arial Black",
-                fontSize: "48px",
-                color: "#ffff00",
-                stroke: "#000000",
-                strokeThickness: 6,
-            })
-            .setOrigin(0.5)
-            .setScrollFactor(0)
-            .setDepth(101);
-
-        // Make bottom camera ignore the celebration text
-        if (this.bottomCamera) {
-            this.bottomCamera.ignore(celebrationText);
-        }
-
-        // Animate the celebration text
-        this.tweens.add({
-            targets: celebrationText,
-            scale: 1.5,
-            duration: 500,
-            yoyo: true,
-            onComplete: () => {
-                this.tweens.add({
-                    targets: celebrationText,
-                    alpha: 0,
-                    duration: 500,
-                    delay: 1000,
-                    onComplete: () => celebrationText.destroy(),
-                });
-            },
-        });
     }
 
     displayWaitingMessage() {
-        // Remove any existing waiting message
-        if (this.waitingText) {
-            this.waitingText.destroy();
-        }
-
         if (this.waitingContainer) {
             this.waitingContainer.destroy();
         }
@@ -545,23 +505,10 @@ export class Game extends Scene {
         this.waitingContainer.setDepth(100);
         this.waitingContainer.setScrollFactor(0);
 
-        // Background panel for message
-        const panel = this.add.rectangle(0, 0, 500, 120, 0x000000, 0.7).setStrokeStyle(4, 0x00ff00);
-
         // Calculate how many players have finished
         const totalPlayers = Object.keys(this.otherPlayers || {}).length + 1; // +1 for main player
         const finishedPlayers = Object.keys(this.playersFinished || {}).length;
         const remainingPlayers = totalPlayers - finishedPlayers;
-
-        // Create waiting message
-        const waitingText = this.add
-            .text(0, -20, "You reached the finish line!", {
-                fontFamily: "Arial Black",
-                fontSize: "24px",
-                color: "#ffffff",
-                align: "center",
-            })
-            .setOrigin(0.5);
 
         let subTextMessage = "Waiting for the other player...";
 
@@ -579,9 +526,8 @@ export class Game extends Scene {
                 color: "#ffff00",
                 align: "center",
             })
-            .setOrigin(0.5);
-
-        this.waitingText = subText;
+            .setOrigin(0.5)
+            .setDepth(100);
 
         // Add dots animation for waiting
         let dots = "";
@@ -597,7 +543,7 @@ export class Game extends Scene {
         this.waitingInterval = setInterval(updateDots, 500);
 
         // Add all elements to container
-        this.waitingContainer.add([panel, waitingText, subText]);
+        this.waitingContainer.add([subText]);
 
         // Make it visible only in top camera
         if (this.bottomCamera) {
@@ -630,27 +576,9 @@ export class Game extends Scene {
                 this.bottomCamera.ignore(overlay);
             }
 
-            const completeText = this.add
-                .text(this.scale.width / 2, this.scale.height / 4, "ALL PLAYERS FINISHED!", {
-                    fontFamily: "Arial Black",
-                    fontSize: "32px",
-                    color: "#ffffff",
-                    stroke: "#000000",
-                    strokeThickness: 6,
-                    align: "center",
-                })
-                .setOrigin(0.5)
-                .setDepth(201)
-                .setScrollFactor(0)
-                .setAlpha(0);
-
-            if (this.bottomCamera) {
-                this.bottomCamera.ignore(completeText);
-            }
-
             // Fade in the overlay
             this.tweens.add({
-                targets: [overlay, completeText],
+                targets: [overlay],
                 alpha: overlay.alpha < 0.1 ? 0.7 : 0, // Toggle alpha
                 duration: 1000,
                 onComplete: () => {

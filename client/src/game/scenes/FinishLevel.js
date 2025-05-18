@@ -33,7 +33,7 @@ export class FinishLevel extends Scene {
 
     create() {
         // Force camera to a solid background color
-        this.cameras.main.setBackgroundColor(0x00aa33);
+        this.cameras.main.setBackgroundColor(0x060322);
 
         const { width, height } = this.scale;
 
