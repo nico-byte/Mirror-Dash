@@ -68,6 +68,12 @@ export class LevelSelector extends Scene {
                 description: "Advanced platforming",
                 unlocked: this.progressManager.isLevelCompleted("level1"),
             },
+            {
+                id: "level3",
+                name: "Level 3",
+                description: "Height shifts, moving platforms, and floating spike hazards",
+                unlocked: this.progressManager.isLevelCompleted("level2"),
+            }
         ];
 
         // Create level selection panel

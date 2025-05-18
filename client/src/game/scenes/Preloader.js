@@ -50,9 +50,9 @@ export class Preloader extends Scene {
         this.load.image("spike", "/assets/Player_Platforms/spikes.png");
 
         // powerup ufo textures
-        this.load.image("ufo", "/assets/Player_Platforms/ufo.png");
         this.load.image("portal", "/assets/Player_Platforms/portal.png");
-
+        this.load.image("ufo", "/assets/Player_Platforms/ufo.png");
+        
         // Load player sprite
         this.load.image("sprite", "/assets/Player_Platforms/sprite.png");
 

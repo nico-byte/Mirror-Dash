@@ -3,7 +3,7 @@
  */
 export const Level3 = {
     name: "Level 3",
-    description: "Advanced platforming challenges",
+    description: "Height shifts, moving platforms, and floating spike hazards",
 
     // Player spawn position
     spawnPoint: { x: 100, y: 500 },
@@ -36,8 +36,6 @@ export const Level3 = {
         { x: 3600, y: 460, texture: "platform_3x1", scaleY: 1.4 },
         { x: 3950, y: 460, texture: "platform_4x1", scaleY: 1.4 },
         { x: 4300, y: 420, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 4650, y: 420, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4750, y: 420, texture: "platform_3x1", scaleY: 1.4 },
     ],
 
     jumpPads: [    
@@ -57,6 +55,10 @@ export const Level3 = {
         { x: 950, y: 470, texture: "spike", scaleX: 1, scaleY: 1 },
         { x: 1850, y: 480, texture: "spike", scaleX: 1, scaleY: 1 },
         { x: 2900, y: 468, texture: "spike", scaleX: 1, scaleY: 1 },
+    ],
+
+    portal: [
+        { x: 4382, y: 356, texture: "portal", scaleX: 1, scaleY: 1}
     ],
 
     finish: {

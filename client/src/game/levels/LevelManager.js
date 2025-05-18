@@ -271,6 +271,22 @@ export class LevelManager {
             }
         }
 
+        // Create portals in the level
+        if (levelData.portal) {
+            levelData.portal.forEach(portalConfig => {
+                try {
+                    this.createPortalWithMirror(
+                        portalConfig.x,
+                        portalConfig.y,
+                        portalConfig.texture || "portal",
+                        portalConfig.scaleX || 1,
+                        portalConfig.scaleY || 1
+                    );
+                } catch (error) {
+                }
+            });
+        }
+
         // Set world and camera bounds
         if (this.isSceneReady()) {
             try {
@@ -691,5 +707,40 @@ export class LevelManager {
      */
     getMovingPlatforms() {
         return this.movingPlatforms || [];
+    }
+    
+    createPortalWithMirror(x, y, texture = "portal", scaleX = 1, scaleY = 1) {
+        if (!this.isSceneReady()) {
+            this.pendingPortals = this.pendingPortals || [];
+            this.pendingPortals.push({ x, y, texture, scaleX, scaleY });
+            return null;
+        }
+
+        const screenHeight = this.scene.scale.height;
+        const midPoint = screenHeight / 2;
+
+        try {
+            if (!this.scene.portalGroup) {
+                this.scene.portalGroup = this.scene.physics.add.staticGroup();
+            }
+
+            const portal = this.scene.portalGroup.create(x, y, texture);
+            portal.setScale(scaleX, scaleY);
+            portal.refreshBody();
+
+            // Create mirrored version for bottom view
+            const mirrorPortal = this.scene.add
+                .image(x, screenHeight - y + midPoint, texture)
+                .setScale(scaleX, scaleY)
+                .setFlipY(true);
+
+            // Set camera visibility
+            if (this.scene.topCamera) this.scene.topCamera.ignore(mirrorPortal);
+            if (this.scene.bottomCamera) this.scene.bottomCamera.ignore(portal);
+
+            return portal;
+        } catch (error) {
+            return null;
+        }
     }
 }
