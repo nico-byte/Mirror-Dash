@@ -743,6 +743,12 @@ export class Game extends Scene {
             this.timerEvent = null;
         }
 
+        if (this.levelMusic) {
+            this.levelMusic.stop();
+            this.levelMusic.destroy();
+            this.levelMusic = null;
+        }
+
         if (this.syncTimer) {
             this.syncTimer.remove();
             this.syncTimer = null;
