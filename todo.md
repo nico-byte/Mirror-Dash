@@ -37,7 +37,8 @@
 | [ ]    | Fix Quick Play                                            |          |                       |
 | [ ]    | Ufo Name Change                                           |          |                       |
 | [ ]    | Add partial star review                                   |          |                       |
-
+| [ ]    | Shared Game Over                                          |          |                       |
+| [ ]    | Jump possible 0,5sec after corner                         |          |                       |
 
 ## Server
 
