@@ -275,23 +275,67 @@ export class LevelSelector extends Scene {
     }
 
     startLevel(levelId) {
-        console.log(`Starting level: ${levelId}`);
+        console.log(`Requesting to start level: ${levelId}`);
 
-        // Notify the server that we're changing levels
+        const loadingText = this.add
+            .text(this.scale.width / 2, this.scale.height / 2, "Requesting level change...", {
+                fontFamily: "Arial Black",
+                fontSize: 24,
+                color: "#ffffff",
+                stroke: "#000000",
+                strokeThickness: 4,
+                backgroundColor: "#000000",
+                padding: { x: 20, y: 10 },
+            })
+            .setOrigin(0.5);
+
+        // Request level change with confirmation
         if (this.socket && this.socket.connected && this.lobbyId) {
-            this.socket.emit("changeLevel", {
+            this.socket.emit("requestLevelChange", {
                 lobbyId: this.lobbyId,
+                levelId: levelId,
+                requesterId: this.socket.id,
+            });
+
+            // Listen for confirmation
+            this.socket.once("levelChangeConfirmed", data => {
+                if (data && data.levelId === levelId) {
+                    loadingText.setText("Level change confirmed!\nStarting game...");
+
+                    // Start the level after a brief delay
+                    this.time.delayedCall(1000, () => {
+                        this.scene.start("Game", {
+                            socket: this.socket,
+                            playerName: this.playerName,
+                            levelId: levelId,
+                            lobbyId: this.lobbyId,
+                        });
+                    });
+                }
+            });
+
+            // Add a timeout for the case where confirmation never comes
+            this.time.delayedCall(10000, () => {
+                loadingText.setText("No response from other player.\nStarting level anyway.");
+
+                // Proceed after timeout
+                this.time.delayedCall(2000, () => {
+                    this.scene.start("Game", {
+                        socket: this.socket,
+                        playerName: this.playerName,
+                        levelId: levelId,
+                        lobbyId: this.lobbyId,
+                    });
+                });
+            });
+        } else {
+            // If there's no lobby or socket connection, just start the level
+            this.scene.start("Game", {
+                socket: this.socket,
+                playerName: this.playerName,
                 levelId: levelId,
             });
         }
-
-        // Pass data including socket, player name, and level ID
-        this.scene.start("Game", {
-            socket: this.socket,
-            playerName: this.playerName,
-            levelId: levelId,
-            lobbyId: this.lobbyId,
-        });
     }
 
     backToMainMenu() {

@@ -263,6 +263,99 @@ io.on("connection", socket => {
         }
     });
 
+    socket.on("playerGameOver", ({ lobbyId, reason }) => {
+        if (lobbyId) {
+            const lobby = lobbies[lobbyId];
+            if (!lobby) {
+                console.error(`Player ${socket.id} tried to trigger game over in non-existent lobby: ${lobbyId}`);
+                return;
+            }
+
+            const player = lobby.players[socket.id];
+            if (!player) {
+                console.error(`Player ${socket.id} is not in lobby: ${lobbyId}`);
+                return;
+            }
+
+            console.log(
+                `Player ${player.name} (${socket.id}) triggered game over in lobby ${lobbyId}, reason: ${reason}`
+            );
+
+            // Broadcast game over to all other players in the lobby
+            io.to(lobbyId).emit("gameOverBroadcast", {
+                playerId: socket.id,
+                playerName: player.name,
+                reason: reason,
+                lobbyId: lobbyId,
+            });
+        }
+    });
+
+    socket.on("requestLevelChange", ({ lobbyId, levelId, requesterId }) => {
+        if (lobbyId && levelId) {
+            const lobby = lobbies[lobbyId];
+            if (!lobby) {
+                console.error(`Level change requested for non-existent lobby: ${lobbyId}`);
+                socket.emit("lobbyError", { message: "Lobby not found." });
+                return;
+            }
+
+            // Get the requesting player
+            const requester = lobby.players[requesterId];
+            if (!requester) {
+                console.error(`Unknown player ${requesterId} requested level change`);
+                return;
+            }
+
+            console.log(`Player ${requester.name} (${requesterId}) requested level change to ${levelId}`);
+
+            // Update the lobby's current level
+            lobby.currentLevel = levelId;
+
+            // Send confirmation to all players in the lobby
+            io.to(lobbyId).emit("levelChangeConfirmed", {
+                levelId: levelId,
+                requesterId: requesterId,
+                requesterName: requester.name,
+            });
+
+            // Also notify with the levelChanged event for backward compatibility
+            io.to(lobbyId).emit("levelChanged", {
+                playerId: requesterId,
+                levelId: levelId,
+                lobbyId: lobbyId,
+            });
+        }
+    });
+
+    socket.on("playerLeaveLobby", ({ lobbyId, playerId }) => {
+        if (lobbyId) {
+            const lobby = lobbies[lobbyId];
+            if (!lobby) {
+                console.error(`Player trying to leave non-existent lobby: ${lobbyId}`);
+                return;
+            }
+
+            // Ensure the player can only leave themselves
+            if (playerId !== socket.id) {
+                console.error(`Player ${socket.id} tried to force another player ${playerId} to leave`);
+                return;
+            }
+
+            socket.leave(lobbyId);
+            removePlayerFromLobby(playerId, lobbyId);
+
+            // Send an event only to the player who left
+            socket.emit("leftLobby", { success: true });
+
+            // Notify other players that this player has left
+            socket.to(lobbyId).emit("playerLeftLobby", {
+                playerId: playerId,
+                playerName: lobby.players[playerId]?.name || "Unknown player",
+            });
+        }
+    });
+
     // Leave the current lobby
     socket.on("leaveLobby", ({ lobbyId }) => {
         if (lobbyId) {
@@ -361,6 +454,41 @@ io.on("connection", socket => {
         if (lobby) {
             // Send current timer value to the requesting client
             socket.emit("timerSync", { timeLeft: lobby.timeLeft });
+        }
+    });
+
+    socket.on("forceLevelChange", ({ lobbyId, levelId, initiator, playerName }) => {
+        if (lobbyId && levelId) {
+            console.log(
+                `Player ${playerName} (${initiator}) is forcing level change to ${levelId} in lobby ${lobbyId}`
+            );
+
+            // Validate the lobby exists
+            const lobby = lobbies[lobbyId];
+            if (!lobby) {
+                console.error(`Cannot change level - lobby ${lobbyId} not found`);
+                socket.emit("lobbyError", { message: "Lobby not found for level change." });
+                return;
+            }
+
+            // Update the current level in the lobby data
+            lobby.currentLevel = levelId;
+
+            // Reset player finished states for the new level
+            Object.keys(lobby.players).forEach(playerId => {
+                if (lobby.players[playerId]) {
+                    lobby.players[playerId].hasFinished = false;
+                }
+            });
+
+            // Broadcast level change command to ALL players in the lobby
+            io.to(lobbyId).emit("forceLevelChanged", {
+                levelId: levelId,
+                initiatorId: initiator,
+                initiatorName: playerName,
+                lobbyId: lobbyId,
+                timestamp: Date.now(),
+            });
         }
     });
 

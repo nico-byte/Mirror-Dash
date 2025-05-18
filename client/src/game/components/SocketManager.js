@@ -138,6 +138,64 @@ export class SocketManager {
             }
         });
 
+        this.scene.socket.on("gameOverBroadcast", data => {
+            if (data && data.reason && data.playerId !== this.scene.socket.id) {
+                console.log(`Game over triggered by other player: ${data.playerId}, reason: ${data.reason}`);
+
+                // Display a short notification before transitioning
+                const gameOverText = this.scene.add
+                    .text(this.scene.scale.width / 2, this.scene.scale.height / 4, `Other player lost! Game Over`, {
+                        fontFamily: "Arial Black",
+                        fontSize: 32,
+                        color: "#ff0000",
+                        stroke: "#000000",
+                        strokeThickness: 6,
+                        align: "center",
+                    })
+                    .setOrigin(0.5)
+                    .setScrollFactor(0)
+                    .setDepth(1000);
+
+                // After a short delay, transition to game over scene
+                this.scene.time.delayedCall(1500, () => {
+                    if (this.scene.handleGameOver) {
+                        this.scene.handleGameOver("other_player");
+                    }
+                });
+            }
+        });
+
+        this.scene.socket.on("playerLeftLobby", data => {
+            if (data && data.playerId) {
+                console.log(`Player ${data.playerName} (${data.playerId}) has left the lobby`);
+
+                // If we're in a game scene, just notify but don't exit
+                if (this.scene.scene.key === "Game") {
+                    // Create a notification for the player
+                    const notification = this.scene.add
+                        .text(this.scene.scale.width / 2, 100, `${data.playerName} has left the game.`, {
+                            fontFamily: "Arial",
+                            fontSize: 20,
+                            color: "#ffffff",
+                            backgroundColor: "#000000",
+                            padding: { x: 15, y: 10 },
+                        })
+                        .setOrigin(0.5)
+                        .setScrollFactor(0)
+                        .setDepth(1000);
+
+                    // Fade out after a few seconds
+                    this.scene.tweens.add({
+                        targets: notification,
+                        alpha: 0,
+                        delay: 3000,
+                        duration: 1000,
+                        onComplete: () => notification.destroy(),
+                    });
+                }
+            }
+        });
+
         this.scene.socket.on("playerFinished", data => {
             if (data && data.playerId && data.playerId !== this.scene.socket.id) {
                 console.log(`Other player ${data.playerId} has finished the level`);
@@ -190,6 +248,43 @@ export class SocketManager {
             }
         });
 
+        this.scene.socket.on("forceLevelChanged", data => {
+            if (data && data.levelId && data.lobbyId) {
+                console.log(`Force level change to: ${data.levelId} by ${data.initiatorName}`);
+
+                // Create notification text
+                const notification = this.scene.add
+                    .text(
+                        this.scene.scale.width / 2,
+                        this.scene.scale.height / 3,
+                        `${data.initiatorName} is changing level...`,
+                        {
+                            fontFamily: "Arial",
+                            fontSize: 28,
+                            color: "#ffffff",
+                            backgroundColor: "#000000",
+                            padding: { x: 20, y: 10 },
+                        }
+                    )
+                    .setOrigin(0.5)
+                    .setScrollFactor(0)
+                    .setDepth(999);
+
+                // Small delay before changing scene to ensure notification is visible
+                this.scene.time.delayedCall(1000, () => {
+                    // Only change if we're not the initiator (they'll change on their own)
+                    if (this.scene.socket.id !== data.initiatorId) {
+                        this.scene.scene.start("Game", {
+                            socket: this.scene.socket,
+                            playerName: this.scene.playerName,
+                            levelId: data.levelId,
+                            lobbyId: data.lobbyId,
+                        });
+                    }
+                });
+            }
+        });
+
         // Handle lobby error event
         this.scene.socket.on("lobbyError", ({ message }) => {
             console.error("Lobby error:", message);
@@ -220,10 +315,6 @@ export class SocketManager {
             console.error("Invalid lobby state:", lobby);
             return;
         }
-
-        console.log("Updating game state with lobby:", lobby.id);
-        console.log("Current player ID:", this.scene.socket?.id);
-        console.log("Players in lobby:", Object.keys(lobby.players));
 
         // Only proceed if we're in the Game scene
         if (this.scene.scene.key !== "Game") {

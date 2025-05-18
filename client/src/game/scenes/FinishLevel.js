@@ -180,20 +180,95 @@ export class FinishLevel extends Scene {
 
     startNextLevel() {
         if (this.nextLevelId) {
-            // Notify the server that we're changing levels
-            if (this.socket && this.socket.connected && this.lobbyId) {
-                this.socket.emit("changeLevel", {
-                    lobbyId: this.lobbyId,
-                    levelId: this.nextLevelId,
-                });
-            }
+            // Prevent multiple clicks
+            if (this.isTransitioning) return;
+            this.isTransitioning = true;
 
+            // Show loading message
+            const loadingText = this.add
+                .text(this.scale.width / 2, this.scale.height / 2, "Loading next level...", {
+                    fontFamily: "Arial Black",
+                    fontSize: 24,
+                    color: "#ffffff",
+                    stroke: "#000000",
+                    strokeThickness: 4,
+                    backgroundColor: "#000000",
+                    padding: { x: 20, y: 10 },
+                })
+                .setOrigin(0.5);
+
+            // First make sure we cleanup current scene resources
+            this.cleanupCurrentScene();
+
+            // Notify the server about the level change with a callback to confirm
+            if (this.socket && this.socket.connected && this.lobbyId) {
+                // Set a timeout to prevent infinite hanging
+                const timeoutId = setTimeout(() => {
+                    console.log("Level change request timed out, proceeding anyway");
+                    this.proceedToNextLevel();
+                }, 5000);
+
+                // Send the level change request to server
+                try {
+                    this.socket.emit("forceLevelChange", {
+                        lobbyId: this.lobbyId,
+                        levelId: this.nextLevelId,
+                        initiator: this.socket.id,
+                        playerName: this.playerName,
+                    });
+
+                    // Short delay to give server time to broadcast
+                    setTimeout(() => {
+                        clearTimeout(timeoutId);
+                        this.proceedToNextLevel();
+                    }, 1500);
+                } catch (err) {
+                    console.error("Error during level change:", err);
+                    clearTimeout(timeoutId);
+                    this.proceedToNextLevel();
+                }
+            } else {
+                // If no socket connection, just proceed
+                setTimeout(() => this.proceedToNextLevel(), 1000);
+            }
+        }
+    }
+
+    // Helper to cleanup current scene resources
+    cleanupCurrentScene() {
+        // Unregister any event listeners
+        if (this.socket) {
+            this.socket.off("forceLevelChanged");
+            this.socket.off("gameOverBroadcast");
+            // Add any other socket events that need cleanup
+        }
+
+        // Stop any active sounds, timers, etc.
+        this.sound.stopAll();
+
+        // Stop all tweens
+        this.tweens.killAll();
+
+        // Cancel any pending delayed calls
+        this.time.removeAllEvents();
+    }
+
+    // Helper to proceed to next level
+    proceedToNextLevel() {
+        // Use start with a special protection flag to prevent errors
+        try {
             this.scene.start("Game", {
                 socket: this.socket,
                 playerName: this.playerName,
                 levelId: this.nextLevelId,
                 lobbyId: this.lobbyId,
+                isLevelTransition: true, // Signal that this is a level transition
             });
+        } catch (err) {
+            console.error("Error starting Game scene:", err);
+            // Last resort - reload the page
+            alert("Error loading level. The game will now restart.");
+            window.location.reload();
         }
     }
 
@@ -240,5 +315,5 @@ export class FinishLevel extends Scene {
             socket: this.socket,
             playerName: this.playerName,
         });
-}
+    }
 }

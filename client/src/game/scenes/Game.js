@@ -76,15 +76,21 @@ export class Game extends Scene {
             console.log("Player name:", this.playerName);
         }
 
+        // Track if this is a level transition to handle cleanup differently
+        this.isLevelTransition = data && data.isLevelTransition === true;
+
+        // Ensure clean start for all properties
+        this.otherPlayers = {};
+        this.playersFinished = {};
+        this.levelLoaded = false;
+
         // Initialize progress manager
+        this.progressManager = new ProgressManager();
         this.progressManager.loadProgress(this.playerName);
 
         // Initialize socket manager
         this.socketManager = new SocketManager(this);
         this.socketManager.setupLobby(data);
-
-        // Clear other players to start fresh
-        this.otherPlayers = {};
 
         // Initialize components
         this.gameUI = new GameUI(this);
@@ -345,6 +351,48 @@ export class Game extends Scene {
 
         // Check if all players have finished
         this.checkAllPlayersFinished();
+    }
+
+    handleGameOver(reason = "default") {
+        console.log("Game over triggered:", reason);
+
+        // Notify server that this player has game over
+        if (this.socket && this.socket.connected && this.lobbyId) {
+            this.socket.emit("playerGameOver", {
+                lobbyId: this.lobbyId,
+                reason: reason,
+            });
+        }
+
+        // Stop music with fade out if it exists
+        if (this.levelMusic) {
+            this.tweens.add({
+                targets: this.levelMusic,
+                volume: 0,
+                duration: 1000,
+                onComplete: () => {
+                    this.levelMusic.stop();
+
+                    // Navigate to Game Over scene
+                    this.scene.start("GameOver", {
+                        levelId: this.levelId,
+                        playerName: this.playerName,
+                        socket: this.socket,
+                        lobbyId: this.lobbyId,
+                        reason: reason,
+                    });
+                },
+            });
+        } else {
+            // No music to fade, switch immediately
+            this.scene.start("GameOver", {
+                levelId: this.levelId,
+                playerName: this.playerName,
+                socket: this.socket,
+                lobbyId: this.lobbyId,
+                reason: reason,
+            });
+        }
     }
 
     createFinishEffect(x, y) {

@@ -68,7 +68,6 @@ export class LevelManager {
 
         // Process pending platforms
         if (this.pendingPlatforms.length > 0) {
-            console.log(`Processing ${this.pendingPlatforms.length} pending platforms`);
             this.pendingPlatforms.forEach(platform => {
                 this.createPlatformWithMirror(
                     platform.x,
@@ -96,7 +95,7 @@ export class LevelManager {
     }
 
     /**
-     * Load a specific level
+     * Load a specific level with improved error handling
      * @param {string} key - The identifier of the level to load
      * @returns {object} The created level objects
      */
@@ -111,109 +110,143 @@ export class LevelManager {
 
         this.currentLevel = key;
         const levelData = this.levels[key];
+        console.log(`Starting to load level: "${key}"`);
 
         // Calculate screen dimensions for mirroring
         const screenHeight = this.scene.scale ? this.scene.scale.height : 768; // Fallback height
         const midPoint = screenHeight / 2;
 
-        // Create background if provided
+        // Create background if provided - with error catching
         if (levelData.createBackground && this.isSceneReady()) {
-            levelData.createBackground(this.scene, midPoint);
+            try {
+                levelData.createBackground(this.scene, midPoint);
+            } catch (error) {
+                console.error("Error creating background:", error);
+            }
         }
 
         // Create platforms - either directly or queue for later
-        levelData.platforms.forEach(platform => {
-            if (this.isSceneReady()) {
-                this.createPlatformWithMirror(
-                    platform.x,
-                    platform.y,
-                    platform.texture,
-                    platform.scaleX || 1,
-                    platform.scaleY || 1,
-                    platform.isStatic !== false,
-                    platform.motion || null,
-                    platform.range || 80,
-                    platform.speed || 2000
-                );
-            } else {
-                // Queue for later creation
-                this.pendingPlatforms.push({
-                    x: platform.x,
-                    y: platform.y,
-                    texture: platform.texture,
-                    scaleX: platform.scaleX || 1,
-                    scaleY: platform.scaleY || 1,
-                    isStatic: platform.isStatic !== false,
-                    motion: platform.motion || null,
-                    range: platform.range || 80,
-                    speed: platform.speed || 2000,
-                });
-                console.log(`Queued platform at ${platform.x}, ${platform.y} for later creation`);
-            }
-        });
-
-        // Create jump pads - either directly or queue for later
-        if (levelData.jumpPads) {
-            levelData.jumpPads.forEach(jumpPad => {
-                if (this.isSceneReady()) {
-                    this.createJumpPadWithMirror(
-                        jumpPad.x,
-                        jumpPad.y,
-                        jumpPad.texture || "jumppad",
-                        jumpPad.scaleX || 1,
-                        jumpPad.scaleY || 1
-                    );
-                } /*else {
-                    // Queue for later creation
-                    this.pendingJumpPads.push({
-                        x: jumpPad.x,
-                        y: jumpPad.y,
-                        color: jumpPad.color || 0xffff00,
-                    });
-                    console.log(`Queued jump pad at ${jumpPad.x}, ${jumpPad.y} for later creation`);
-                }*/
-            });
-        }
-
-        // Create spikes - either directly or queue for later
-        if (levelData.spikes) {
-            levelData.spikes.forEach(spike => {
-                if (this.isSceneReady()) {
-                    this.createSpikesWithMirror(
-                        spike.x,
-                        spike.y,
-                        spike.texture || "spike",
-                        spike.scaleX || 1,
-                        spike.scaleY || 1
-                    );
-                } else {
-                    console.warn(`Spike at ${spike.x}, ${spike.y} could not be created as the scene is not ready.`);
+        if (levelData.platforms) {
+            levelData.platforms.forEach(platform => {
+                try {
+                    if (this.isSceneReady()) {
+                        this.createPlatformWithMirror(
+                            platform.x,
+                            platform.y,
+                            platform.texture,
+                            platform.scaleX || 1,
+                            platform.scaleY || 1,
+                            platform.isStatic !== false,
+                            platform.motion || null,
+                            platform.range || 80,
+                            platform.speed || 2000
+                        );
+                    } else {
+                        // Queue for later creation
+                        this.pendingPlatforms.push({
+                            x: platform.x,
+                            y: platform.y,
+                            texture: platform.texture,
+                            scaleX: platform.scaleX || 1,
+                            scaleY: platform.scaleY || 1,
+                            isStatic: platform.isStatic !== false,
+                            motion: platform.motion || null,
+                            range: platform.range || 80,
+                            speed: platform.speed || 2000,
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error creating platform:", error, "at", platform.x, platform.y);
                 }
             });
         }
 
-        // Create finish line
+        // Create jump pads - either directly or queue for later
+        if (levelData.jumpPads) {
+            levelData.jumpPads.forEach(jumpPad => {
+                try {
+                    if (this.isSceneReady()) {
+                        this.createJumpPadWithMirror(
+                            jumpPad.x,
+                            jumpPad.y,
+                            jumpPad.texture || "jumppad",
+                            jumpPad.scaleX || 1,
+                            jumpPad.scaleY || 1
+                        );
+                    } else {
+                        // Queue for later creation
+                        this.pendingJumpPads.push({
+                            x: jumpPad.x,
+                            y: jumpPad.y,
+                            texture: jumpPad.texture || "jumppad",
+                            scaleX: jumpPad.scaleX || 1,
+                            scaleY: jumpPad.scaleY || 1,
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error creating jump pad:", error, "at", jumpPad.x, jumpPad.y);
+                }
+            });
+        }
+
+        // Create spikes with defensive checks
+        if (levelData.spikes) {
+            levelData.spikes.forEach(spike => {
+                try {
+                    if (this.isSceneReady()) {
+                        this.createSpikesWithMirror(
+                            spike.x,
+                            spike.y,
+                            spike.texture || "spike",
+                            spike.scaleX || 1,
+                            spike.scaleY || 1
+                        );
+                    } else {
+                        this.pendingSpikes = this.pendingSpikes || [];
+                        this.pendingSpikes.push({
+                            x: spike.x,
+                            y: spike.y,
+                            texture: spike.texture || "spike",
+                            scaleX: spike.scaleX || 1,
+                            scaleY: spike.scaleY || 1,
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error creating spike:", error, "at", spike.x, spike.y);
+                }
+            });
+        }
+
+        // Create finish line with defensive code
         if (levelData.finish && this.isSceneReady()) {
-            this.createFinishWithMirror(
-                levelData.finish.x,
-                levelData.finish.y,
-                levelData.finish.width || 100,
-                levelData.finish.height || 100
-            );
+            try {
+                this.createFinishWithMirror(
+                    levelData.finish.x,
+                    levelData.finish.y,
+                    levelData.finish.width || 100,
+                    levelData.finish.height || 100
+                );
+            } catch (error) {
+                console.error("Error creating finish line:", error);
+            }
         }
 
         // Set world and camera bounds
         if (this.isSceneReady()) {
-            const worldWidth = levelData.worldBounds?.width || 5000;
-            const worldHeight = levelData.worldBounds?.height || 800;
-            this.scene.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+            try {
+                const worldWidth = levelData.worldBounds?.width || 5000;
+                const worldHeight = levelData.worldBounds?.height || 800;
+                this.scene.physics.world.setBounds(0, 0, worldWidth, worldHeight);
 
-            if (this.scene.topCamera) {
-                this.scene.topCamera.setBounds(0, 0, worldWidth, worldHeight);
-            }
+                if (this.scene.topCamera) {
+                    this.scene.topCamera.setBounds(0, 0, worldWidth, worldHeight);
+                }
 
-            if (this.scene.bottomCamera) {
-                this.scene.bottomCamera.setBounds(0, 0, worldWidth, worldHeight);
+                if (this.scene.bottomCamera) {
+                    this.scene.bottomCamera.setBounds(0, 0, worldWidth, worldHeight);
+                }
+            } catch (error) {
+                console.error("Error setting world bounds:", error);
             }
         }
 
@@ -340,53 +373,52 @@ export class LevelManager {
             if (motion === "vertical") {
                 // Calculate new position based on sine wave with high precision
                 const newY = baseY + Math.sin(t) * amplitude;
-                
+
                 // Store old position before update for precise delta calculation
                 const oldY = platform.y;
-                
+
                 // Update position
                 platform.setY(newY);
-                
+
                 // Calculate velocity based on cosine (derivative of sine) for smooth movement
                 // Multiply by appropriate factor to match the sine wave's amplitude and frequency
-                const velocity = Math.cos(t) * amplitude * Math.PI / (speed / 1000);
+                const velocity = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
                 platform.body.velocity.y = velocity;
                 platform.body.velocity.x = 0; // No horizontal movement
-                
+
                 // Set precise previous position for exact delta calculation
                 platform.body.prev.y = oldY;
-                
+
                 // Store exact delta value for collision handler to use
                 platform.body._deltaY = newY - oldY;
-                
             } else if (motion === "horizontal") {
                 // Calculate new position based on sine wave with high precision
                 const newX = baseX + Math.sin(t) * amplitude;
-                
+
                 // Store old position before update for precise delta calculation
                 const oldX = platform.x;
-                
+
                 // Update position
                 platform.setX(newX);
-                
+
                 // Calculate velocity based on cosine (derivative of sine) for smooth movement
-                const velocity = Math.cos(t) * amplitude * Math.PI / (speed / 1000);
+                const velocity = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
                 platform.body.velocity.x = velocity;
                 platform.body.velocity.y = 0; // No vertical movement
-                
+
                 // Set precise previous position for exact delta calculation
                 platform.body.prev.x = oldX;
-                
+
                 // Store exact delta value for collision handler to use
                 platform.body._deltaX = newX - oldX;
             }
 
             // Override the built-in deltaX/deltaY methods to use our precise values
-            platform.body.deltaX = function() {
+            platform.body.deltaX = function () {
                 return this._deltaX !== undefined ? this._deltaX : this.position.x - this.prev.x;
             };
-            
-            platform.body.deltaY = function() {
+
+            platform.body.deltaY = function () {
                 return this._deltaY !== undefined ? this._deltaY : this.position.y - this.prev.y;
             };
 
@@ -446,7 +478,7 @@ export class LevelManager {
     }
 
     /**
-     * Create spikes with their mirrored version
+     * Create spikes with their mirrored version - with improved error handling
      */
     createSpikesWithMirror(x, y, texture = "spike", scaleX = 1, scaleY = 1) {
         if (!this.isSceneReady()) {
@@ -456,29 +488,68 @@ export class LevelManager {
             return null;
         }
 
-        const screenHeight = this.scene.scale.height;
+        // Defensive check - make sure the scene and its physics system are valid
+        if (!this.scene || !this.scene.add || !this.scene.physics) {
+            console.error("Invalid scene object when creating spikes at", x, y);
+            return null;
+        }
+
+        const screenHeight = this.scene.scale ? this.scene.scale.height : 768;
         const midPoint = screenHeight / 2;
 
         try {
+            // Ensure spike group exists
             if (!this.scene.spikeGroup) {
-                console.warn("Spike group is not initialized, creating it now");
                 this.scene.spikeGroup = this.scene.physics.add.staticGroup();
             }
 
-            const spike = this.scene.spikeGroup.create(x, y, texture);
-            spike.setScale(scaleX, scaleY);
-            spike.refreshBody();
+            // Create the spike with more defensive checks
+            let spike = null;
+            try {
+                spike = this.scene.spikeGroup.create(x, y, texture);
+                spike.setScale(scaleX, scaleY);
+                if (spike.refreshBody) {
+                    spike.refreshBody();
+                }
+            } catch (err) {
+                console.error(`Failed to create spike at ${x},${y}:`, err);
+                return null;
+            }
 
-            // Create mirrored spike
-            const mirrorSpike = this.scene.add
-                .image(x, screenHeight - y + midPoint, texture)
-                .setScale(scaleX, scaleY)
-                .setFlipY(true);
+            // Create mirrored spike with defensive checks
+            let mirrorSpike = null;
+            try {
+                mirrorSpike = this.scene.add
+                    .image(x, screenHeight - y + midPoint, texture)
+                    .setScale(scaleX, scaleY)
+                    .setFlipY(true);
+            } catch (err) {
+                console.error(`Failed to create mirror spike at ${x},${screenHeight - y + midPoint}:`, err);
+            }
+
+            // Safely set camera visibility
+            this.safelySetCameraVisibility(this.scene.topCamera, [mirrorSpike]);
+            this.safelySetCameraVisibility(this.scene.bottomCamera, [spike]);
 
             return spike;
         } catch (error) {
             console.error("Error creating spikes:", error, "at position:", x, y);
             return null;
+        }
+    }
+
+    // Helper method for safely setting camera visibility
+    safelySetCameraVisibility(camera, objects) {
+        if (!camera || !objects) return;
+
+        for (const obj of objects) {
+            if (obj && camera.ignore) {
+                try {
+                    camera.ignore(obj);
+                } catch (err) {
+                    console.warn("Error setting camera visibility:", err);
+                }
+            }
         }
     }
 
@@ -497,8 +568,6 @@ export class LevelManager {
                 const padTop = pad.y - pad.body.height / 2;
                 const isAbove = playerBottom <= padTop + 10;
                 const isFalling = player.body.velocity.y > 0;
-
-                console.log("JumpPad collision detected", { playerBottom, padTop, isAbove, isFalling });
 
                 if (isAbove && isFalling) {
                     if (!pad.cooldown) {
@@ -534,6 +603,13 @@ export class LevelManager {
     createFinishWithMirror(x, y, width, height) {
         if (!this.isSceneReady()) {
             console.warn("Scene not fully initialized! Cannot create finish line yet.");
+            this.pendingFinish = { x, y, width, height };
+            return null;
+        }
+
+        // Defensive check
+        if (!this.scene || !this.scene.add || !this.scene.physics) {
+            console.error("Invalid scene object when creating finish line at", x, y);
             return null;
         }
 
@@ -542,39 +618,55 @@ export class LevelManager {
             const midPoint = screenHeight / 2;
 
             // Create finish object (collision)
-            this.scene.finishObject = this.scene.physics.add.staticGroup();
-            this.scene.finishObjectRect = this.scene.finishObject
-                .create(x, y, "pokal")
-                .setSize(width, height)
-                .setDisplaySize(width, height)
-                .setOrigin(0.5)
-                .refreshBody();
-
-            // Visual fill for finish line (top view)
-
-            // Mirror finish line for bottom view
-            this.scene.mirrorFinishVisual = this.scene.add.rectangle(
-                x,
-                screenHeight - y + midPoint,
-                width,
-                height,
-                0xff0000
-            );
-            this.scene.mirrorFinishVisual.setDepth(1);
-
-            // Set camera visibility
-            if (this.scene.bottomCamera) {
-                this.scene.bottomCamera.ignore([this.scene.finishObjectRect, this.scene.finishVisual]);
+            if (!this.scene.finishObject) {
+                this.scene.finishObject = this.scene.physics.add.staticGroup();
             }
 
-            if (this.scene.topCamera) {
-                this.scene.topCamera.ignore(this.scene.mirrorFinishVisual);
+            // Safely create the finish object
+            let finishObjectRect = null;
+            try {
+                finishObjectRect = this.scene.finishObject
+                    .create(x, y, "pokal")
+                    .setSize(width, height)
+                    .setDisplaySize(width, height)
+                    .setOrigin(0.5);
+
+                if (finishObjectRect.refreshBody) {
+                    finishObjectRect.refreshBody();
+                }
+
+                this.scene.finishObjectRect = finishObjectRect;
+            } catch (err) {
+                console.error("Error creating finish object:", err);
             }
+
+            // Create visual indicators for top and bottom views
+            let finishVisual = null;
+            let mirrorFinishVisual = null;
+
+            try {
+                // Visual for finish line (top view)
+                finishVisual = this.scene.add.rectangle(x, y, width, height, 0xff0000).setAlpha(0.6);
+                this.scene.finishVisual = finishVisual;
+
+                // Mirror finish line for bottom view
+                mirrorFinishVisual = this.scene.add
+                    .rectangle(x, screenHeight - y + midPoint, width, height, 0xff0000)
+                    .setAlpha(0.6)
+                    .setDepth(1);
+                this.scene.mirrorFinishVisual = mirrorFinishVisual;
+            } catch (err) {
+                console.error("Error creating finish visuals:", err);
+            }
+
+            // Set camera visibility with safety checks
+            this.safelySetCameraVisibility(this.scene.bottomCamera, [finishObjectRect, finishVisual]);
+            this.safelySetCameraVisibility(this.scene.topCamera, [mirrorFinishVisual]);
 
             return {
                 finishObject: this.scene.finishObject,
-                finishVisual: this.scene.finishVisual,
-                mirrorFinishVisual: this.scene.mirrorFinishVisual,
+                finishVisual: finishVisual,
+                mirrorFinishVisual: mirrorFinishVisual,
             };
         } catch (error) {
             console.error("Error creating finish line:", error, "at position:", x, y);

@@ -110,30 +110,35 @@ export class GameTimer {
     onTimerEnd() {
         console.log("Timer finished!");
 
-        // Fade out and stop music if it exists
-        if (this.levelMusic) {
-            this.scene.tweens.add({
-                targets: this.levelMusic,
-                volume: 0,
-                duration: 1000,
-                onComplete: () => {
-                    this.levelMusic.stop();
-
-                    // Now switch to GameOver scene after fade completes
-                    this.scene.scene.start("GameOver", {
-                        levelId: this.scene.levelId,
-                        playerName: this.scene.playerName,
-                        socket: this.scene.socket,
-                    });
-                },
-            });
+        // Use the shared game over handler if available
+        if (this.scene.handleGameOver) {
+            this.scene.handleGameOver("timeout");
         } else {
-            // No music to fade, switch immediately
-            this.scene.scene.start("GameOver", {
-                levelId: this.scene.levelId,
-                playerName: this.scene.playerName,
-                socket: this.scene.socket,
-            });
+            // Fade out and stop music if it exists (fallback logic)
+            if (this.levelMusic) {
+                this.scene.tweens.add({
+                    targets: this.levelMusic,
+                    volume: 0,
+                    duration: 1000,
+                    onComplete: () => {
+                        this.levelMusic.stop();
+
+                        // Now switch to GameOver scene after fade completes
+                        this.scene.scene.start("GameOver", {
+                            levelId: this.scene.levelId,
+                            playerName: this.scene.playerName,
+                            socket: this.scene.socket,
+                        });
+                    },
+                });
+            } else {
+                // No music to fade, switch immediately
+                this.scene.scene.start("GameOver", {
+                    levelId: this.scene.levelId,
+                    playerName: this.scene.playerName,
+                    socket: this.scene.socket,
+                });
+            }
         }
     }
 
