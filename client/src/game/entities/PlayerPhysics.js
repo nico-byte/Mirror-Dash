@@ -9,10 +9,10 @@ export class PlayerPhysics {
         if (!this.scene.physics || !this.sprite) return;
 
         this.scene.physics.add.existing(this.sprite);
-        
+
         // Adjust collision box to better match the character sprite
         // Making a slightly narrower hitbox for better platform interactions
-        this.sprite.body.setSize(20, 28, true); 
+        this.sprite.body.setSize(20, 28, true);
         this.sprite.body.setOffset(6, 4);
 
         // Configure physics properties
@@ -56,12 +56,21 @@ export class PlayerPhysics {
                 newAnimation = "idle";
             }
 
-            // Jump - Only if touching the ground
-            if ((cursors.up.isDown || wasd.W.isDown || wasd.Space.isDown) && this.sprite.body.touching.down) {
+            // Jump - Allow jumping slightly after leaving the ground
+            const gracePeriod = 100; // 0.4 seconds in milliseconds
+            if (this.sprite.body.touching.down) {
+                this.sprite.body.lastTouchedDown = Date.now(); // Update the last time the player was on the ground
+            }
+
+            const canJump =
+                this.sprite.body.touching.down ||
+                (this.sprite.body.lastTouchedDown && Date.now() - this.sprite.body.lastTouchedDown <= gracePeriod);
+
+            if ((cursors.up.isDown || wasd.W.isDown || wasd.Space.isDown) && canJump) {
                 this.sprite.body.setVelocityY(-jumpStrength);
                 newAnimation = "jump";
                 moved = true;
-                
+
                 // Clear any platform-related properties to prevent snapping back when jumping
                 this.sprite.platformRelativePosition = null;
                 this.sprite.previousX = null;
