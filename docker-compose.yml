@@ -7,7 +7,7 @@ services:
       - "8080:80"
     restart: unless-stopped
     networks:
-      - app-network
+      - mirror-net
     depends_on:
       - server
 
@@ -17,8 +17,8 @@ services:
       - "9000:9000"
     restart: unless-stopped
     networks:
-      - app-network
+      - mirror-net
 
 networks:
-  app-network:
+  mirror-net:
     driver: bridge

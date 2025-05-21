@@ -20,7 +20,7 @@ echo "Image Tag: $TAG"
 echo "Creating production .env file..."
 cat > ./client/.env.production << EOL
 # Production Environment Settings
-VITE_SERVER_URL=http://$SERVER_IP:9000
+VITE_SERVER_URL=/
 VITE_START_DIRECTLY=false
 VITE_SKIP_MENU=false
 VITE_SKIP_LOBBY=false
@@ -40,7 +40,7 @@ version: '3.8'
 services:
   client:
     environment:
-      - VITE_SERVER_URL=http://$SERVER_IP:9000
+      - VITE_SERVER_URL=/socket.io
 EOL
 
 # SSH into the server and set up Docker if it's not already installed
@@ -70,7 +70,7 @@ docker pull $DOCKER_USERNAME/mirror-dash-server:$TAG
 docker compose pull
 docker compose up -d --force-recreate
 
-echo "Deployment complete! Your game is now running at http://$SERVER_IP"
+echo "Deployment complete! Your game is now running at https://$SERVER_IP"
 ENDSSH
 
 echo "Deployment completed successfully!"
