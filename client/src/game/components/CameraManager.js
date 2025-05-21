@@ -31,7 +31,15 @@ export class CameraManager {
         // Configure the main camera for fullscreen
         cameras.main.setBackgroundColor(0x87ceeb); // Light blue sky
         cameras.main.setName("mainCamera");
-        cameras.main.setBounds(0, 0, 3000, 1000);
+
+        // Dynamically set camera bounds based on level dimensions
+        const levelWidth = this.scene.levelWidth || 3000;
+        const levelHeight = this.scene.levelHeight || 1000;
+        cameras.main.setBounds(0, 0, levelWidth, levelHeight);
+
+        // Ensure the camera can scroll to the very end of the level
+        cameras.main.setScroll(0, 0);
+
         this.scene.mainCamera = cameras.main;
 
         // Add fullscreen toggle button
@@ -85,13 +93,11 @@ export class CameraManager {
             const player = this.scene.player;
 
             // Ensure camera follows player on both X and Y axes
-            if (!camera._follow) {
-                camera.startFollow(player.sprite, true, 0.5, 0.5);
-            }
+            camera.startFollow(player.sprite, true, 0.1, 0.1); // Smooth follow with low lerp values
 
-            if (this.scene.autoScrollCamera) {
+            if (this.autoScrollCamera) {
                 // Calculate what the auto-scroll position would be
-                this.lastAutoScrollX += this.scene.scrollSpeed * (this.scene.game.loop.delta / 1000);
+                this.lastAutoScrollX += this.scrollSpeed * (this.scene.game.loop.delta / 1000);
 
                 // Get player's position and velocity
                 const playerX = player.sprite.x;
@@ -99,26 +105,19 @@ export class CameraManager {
 
                 // Check if player is ahead of auto-scroll and moving faster (only when going right)
                 if (playerX > this.lastAutoScrollX + camera.width * 0.3 && playerVelocityX > 0) {
-                    // Player is controlling the camera - follow their X position
                     this.playerControllingCamera = true;
-                    // Make the camera follow the player directly based on their position
                     camera.scrollX = playerX - camera.width * 0.3; // Keep player 30% from left edge
-                }
-                // If player was controlling but now slowed down, let auto-scroll catch up
-                else if (
+                } else if (
                     this.playerControllingCamera &&
                     (playerX <= this.lastAutoScrollX + camera.width * 0.3 || playerVelocityX <= 0)
                 ) {
-                    // Transition back to auto-scroll
                     this.playerControllingCamera = false;
                 }
 
-                // If not player-controlled, continue auto-scrolling
                 if (!this.playerControllingCamera) {
                     camera.scrollX = this.lastAutoScrollX;
                 }
 
-                // Update auto-scroll position if player is controlling camera
                 if (this.playerControllingCamera) {
                     this.lastAutoScrollX = camera.scrollX;
                 }

@@ -46,7 +46,15 @@ const StartGame = parent => {
 
     // Dynamically resize the game to fit the window
     const resize = () => {
-        game.scale.resize(window.innerWidth, window.innerHeight);
+        const { innerWidth, innerHeight } = window;
+        game.scale.resize(innerWidth, innerHeight);
+
+        // Ensure all scenes are notified of the resize
+        game.scene.scenes.forEach(scene => {
+            if (scene.scale) {
+                scene.scale.resize(innerWidth, innerHeight);
+            }
+        });
     };
 
     // Call resize on window resize

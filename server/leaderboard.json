@@ -1,0 +1,26 @@
+{
+  "Player_521": {
+    "name": "Player_521",
+    "wins": 1,
+    "lastWin": 1747862582224,
+    "levels": {
+      "level1": {
+        "timeLeft": 136,
+        "stars": 2,
+        "completedAt": 1747862582224
+      }
+    }
+  },
+  "Player_744": {
+    "name": "Player_744",
+    "wins": 1,
+    "lastWin": 1747862648274,
+    "levels": {
+      "level1": {
+        "timeLeft": 41,
+        "stars": 0.5,
+        "completedAt": 1747862648274
+      }
+    }
+  }
+}

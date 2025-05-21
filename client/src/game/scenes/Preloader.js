@@ -10,17 +10,27 @@ export class Preloader extends Scene {
     init() {
         const { width, height } = this.scale;
 
-        // Add a modern dark background
-        this.add.rectangle(width / 2, height / 2, width, height, 0x1a1a1a);
+        // Add a modern dark background with a gradient effect
+        const gradient = this.add.graphics();
+        gradient.fillGradientStyle(0x1a1a1a, 0x1a1a1a, 0x333333, 0x333333, 1);
+        gradient.fillRect(0, 0, width, height);
 
-        // Add a stylish loading text
-        this.add
+        // Add a stylish loading text with animation
+        const loadingText = this.add
             .text(width / 2, height * 0.4, "Loading...", {
                 fontSize: `${height * 0.06}px`,
                 color: "#ffffff",
                 fontStyle: "bold",
             })
             .setOrigin(0.5);
+
+        this.tweens.add({
+            targets: loadingText,
+            alpha: { from: 0.5, to: 1 },
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+        });
 
         // Add a progress bar outline
         const barWidth = width * 0.6;
@@ -37,6 +47,9 @@ export class Preloader extends Scene {
         this.load.on("progress", progress => {
             bar.width = barWidth * progress;
         });
+
+        // Add a fade-in effect for the scene
+        this.cameras.main.fadeIn(500);
     }
 
     preload() {
