@@ -722,15 +722,10 @@ export class Game extends Scene {
         }
 
         // Synchronize moving platform positions every second
-        if (
-            this.socket &&
-            this.socket.connected &&
-            this.lobbyId &&
-            (!this.lastPlatformSyncTime || time - this.lastPlatformSyncTime >= 1000)
-        ) {
+        if (this.socket && this.socket.connected && this.lobbyId && time - (this.lastPlatformSyncTime || 0) >= 3000) {
             this.lastPlatformSyncTime = time;
 
-            // Get platform positions
+            // Get platform positions with phase information
             const movingPlatforms = this.levelManager?.getMovingPlatforms() || [];
             if (movingPlatforms.length > 0) {
                 const platformPositions = movingPlatforms.map(({ platform }) => ({
@@ -738,6 +733,7 @@ export class Game extends Scene {
                     y: platform.y,
                     velocityX: platform.body ? platform.body.velocity.x : 0,
                     velocityY: platform.body ? platform.body.velocity.y : 0,
+                    phase: platform.platformData?.phase || 0,
                 }));
 
                 // Send platform positions to server

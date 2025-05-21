@@ -478,34 +478,94 @@ export class SocketManager {
     }
 
     syncPlatforms(platformData) {
-        const movingPlatforms = this.levelManager?.getMovingPlatforms() || [];
+        if (!this.scene || !this.scene.levelManager) return;
+
+        const movingPlatforms = this.scene.levelManager.getMovingPlatforms() || [];
 
         // Only sync if we have platforms to sync
-        if (movingPlatforms.length > 0 && platformData.length === movingPlatforms.length) {
+        if (movingPlatforms.length > 0 && platformData && platformData.length === movingPlatforms.length) {
             movingPlatforms.forEach((platformObj, index) => {
                 if (index >= platformData.length) return;
 
                 const syncData = platformData[index];
                 const platform = platformObj.platform;
 
-                if (platform && (Math.abs(platform.x - syncData.x) > 10 || Math.abs(platform.y - syncData.y) > 10)) {
-                    // Smoothly move platform to synced position
-                    this.tweens.add({
-                        targets: platform,
-                        x: syncData.x,
-                        y: syncData.y,
-                        duration: 300,
-                        ease: "Power1",
-                    });
+                if (platform && platform.body) {
+                    // Only apply sync if position difference is significant (avoid minor corrections)
+                    const positionDifference = Math.abs(platform.x - syncData.x) + Math.abs(platform.y - syncData.y);
 
-                    // Update velocity
-                    if (platform.body) {
+                    if (positionDifference > 15) {
+                        // Use tweens for smooth visual transition to synced position
+                        this.scene.tweens.add({
+                            targets: platform,
+                            x: syncData.x,
+                            y: syncData.y,
+                            duration: 300, // Smooth over 300ms
+                            ease: "Power1",
+                        });
+
+                        // Update velocity to match the synced platform
                         platform.body.velocity.x = syncData.velocityX;
                         platform.body.velocity.y = syncData.velocityY;
+
+                        // Set platform's motion phase to match remote state
+                        if (platformObj.motion === "horizontal") {
+                            platform.platformData.phase = syncData.phase || 0;
+                        } else if (platformObj.motion === "vertical") {
+                            platform.platformData.phase = syncData.phase || 0;
+                        }
                     }
                 }
             });
+
+            // Schedule next sync check
+            if (!this.platformSyncTimer) {
+                this.platformSyncTimer = this.scene.time.addEvent({
+                    delay: 2000, // Check sync every 2 seconds
+                    callback: this.requestPlatformSync,
+                    callbackScope: this,
+                });
+            }
         }
+    }
+
+    requestPlatformSync() {
+        if (this.scene && this.scene.socket && this.scene.socket.connected && this.scene.lobbyId) {
+            this.scene.socket.emit("requestPlatformSync", {
+                lobbyId: this.scene.lobbyId,
+            });
+        }
+    }
+
+    updateMovingPlatforms(time) {
+        if (!this.movingPlatforms) return;
+
+        this.movingPlatforms.forEach(({ platform, motion, range, speed, baseX, baseY }) => {
+            if (!platform || !platform.body) return;
+
+            // Calculate normalized phase value (0-1) for sync purposes
+            const normalizedTime = (time % speed) / speed;
+            platform.platformData = platform.platformData || {};
+            platform.platformData.phase = normalizedTime;
+
+            // Use sine wave based on normalized time for smoother and more predictable movement
+            if (motion === "vertical") {
+                const newY = baseY + Math.sin(normalizedTime * Math.PI * 2) * range;
+                platform.setY(newY);
+                platform.body.velocity.y =
+                    Math.cos(normalizedTime * Math.PI * 2) * range * ((Math.PI * 2) / speed) * 1000;
+                platform.body.velocity.x = 0;
+            } else if (motion === "horizontal") {
+                const newX = baseX + Math.sin(normalizedTime * Math.PI * 2) * range;
+                platform.setX(newX);
+                platform.body.velocity.x =
+                    Math.cos(normalizedTime * Math.PI * 2) * range * ((Math.PI * 2) / speed) * 1000;
+                platform.body.velocity.y = 0;
+            }
+
+            // Make sure the physics body is updated
+            platform.body.updateFromGameObject();
+        });
     }
 
     updateOtherPlayer(playerInfo) {

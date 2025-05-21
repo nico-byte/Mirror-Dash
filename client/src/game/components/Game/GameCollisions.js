@@ -123,12 +123,15 @@ export class GameCollisions {
         // Prevent multiple collisions in quick succession
         if (playerSprite.invulnerable) return;
 
-        console.log("Player hit spike - instant game over!");
+        console.log("Player hit spike - applying time penalty!");
+
+        // Default penalty (increased in instant death mode)
+        const penaltySeconds = this.scene.instantDeathMode ? 30 : 15;
 
         // Make player briefly invulnerable to prevent multiple hits
         playerSprite.invulnerable = true;
 
-        // Visual feedback before game over
+        // Visual feedback for spike hit
         this.scene.tweens.add({
             targets: playerSprite,
             alpha: 0.5,
@@ -136,24 +139,26 @@ export class GameCollisions {
             yoyo: true,
             repeat: 2,
             onComplete: () => {
-                // Trigger game over after the visual effect
-                if (this.scene.handleGameOver) {
-                    this.scene.handleGameOver("spike");
-                }
+                // Remove invulnerability after the visual effect
+                this.scene.time.delayedCall(1500, () => {
+                    playerSprite.invulnerable = false;
+                });
             },
         });
 
-        // Play a death sound if available
-        if (this.scene.sound && this.scene.sound.add) {
+        // Play a spike hit sound if available
+        if (this.scene.audioManager) {
+            this.scene.audioManager.playSfx("spike_hit", 0.5);
+        } else if (this.scene.sound && this.scene.sound.add) {
             try {
-                const deathSound = this.scene.sound.add("death", { volume: 0.5 });
-                deathSound.play();
+                const hitSound = this.scene.sound.add("spike_hit", { volume: 0.5 });
+                hitSound.play();
             } catch (error) {
                 // Sound not available, continue silently
             }
         }
 
-        // Create death particles for better visual feedback
+        // Create hit particles for better visual feedback
         if (this.scene.add && this.scene.add.particles) {
             try {
                 const particles = this.scene.add.particles(playerSprite.x, playerSprite.y, "particle", {
@@ -162,7 +167,7 @@ export class GameCollisions {
                     quantity: 20,
                     lifespan: 800,
                     blendMode: "ADD",
-                    tint: 0xff0000,
+                    tint: 0xff0000, // Red particles
                 });
 
                 // Auto-destroy the particles
@@ -172,6 +177,32 @@ export class GameCollisions {
             } catch (error) {
                 // Particles not available, continue silently
             }
+        }
+
+        // Apply time penalty through gameTimer
+        if (this.scene.gameTimer) {
+            this.scene.gameTimer.applyPenalty(penaltySeconds);
+
+            // Display penalty text
+            const penaltyText = this.scene.add
+                .text(playerSprite.x, playerSprite.y - 50, `-${penaltySeconds}s`, {
+                    fontFamily: "Arial",
+                    fontSize: "24px",
+                    color: "#ff0000",
+                    stroke: "#000000",
+                    strokeThickness: 4,
+                })
+                .setOrigin(0.5);
+
+            // Animate and destroy the penalty text
+            this.scene.tweens.add({
+                targets: penaltyText,
+                y: penaltyText.y - 80,
+                alpha: 0,
+                duration: 1500,
+                ease: "Power2",
+                onComplete: () => penaltyText.destroy(),
+            });
         }
     }
 
@@ -294,21 +325,21 @@ export class GameCollisions {
     handlePortalCollision(playerSprite, portal) {
         // Check if there's a reference to the player on the sprite itself
         const playerRef = playerSprite.playerRef;
-        
+
         // Log for debugging
         console.log("Portal collision detected", {
             playerSpriteExists: !!playerSprite,
             portalExists: !!portal,
             playerRefExists: !!playerRef,
-            hasToggleUfoMode: playerRef && typeof playerRef.toggleUfoMode === 'function'
+            hasToggleUfoMode: playerRef && typeof playerRef.toggleUfoMode === "function",
         });
-        
+
         // Check if we found the player reference
-        if (playerRef && typeof playerRef.toggleUfoMode === 'function') {
+        if (playerRef && typeof playerRef.toggleUfoMode === "function") {
             // Toggle UFO mode using the player reference
             playerRef.toggleUfoMode();
             console.log("Player collided with portal. UFO mode toggled.");
-            
+
             // Add portal effect
             if (this.scene.tweens) {
                 this.scene.tweens.add({
@@ -318,10 +349,10 @@ export class GameCollisions {
                     duration: 100,
                     yoyo: true,
                     repeat: 1,
-                    ease: "Power1"
+                    ease: "Power1",
                 });
             }
-            
+
             // Disable portal temporarily to prevent immediate re-triggering
             portal.body.enable = false;
             this.scene.time.delayedCall(1500, () => {
