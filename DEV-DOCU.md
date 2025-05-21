@@ -10,7 +10,8 @@
 6. [Split-Screen Implementation](#split-screen-implementation)
 7. [Multiplayer Testing](#multiplayer-testing)
 8. [Adding New Features](#adding-new-features)
-9. [Common Issues and Fixes](#common-issues-and-fixes)
+9. [Deployment](#deployment)
+10. [Common Issues and Fixes](#common-issues-and-fixes)
 
 ## Introduction
 
@@ -300,6 +301,138 @@ collectPowerup(playerSprite, powerup) {
     });
 }
 ```
+
+## Deployment
+
+The game can be deployed to a cloud server using Docker containers. This section describes the deployment process using Docker Hub to store the container images.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your local machine
+- A Docker Hub account
+- A cloud server
+- SSH access to your server
+
+### Deployment Architecture
+
+The deployment uses two Docker containers:
+
+1. **Client Container**: 
+   - Nginx container that serves the static Phaser game files
+   - Handles routing and WebSocket proxying to the server container
+   - Built from the `client/Dockerfile`
+
+2. **Server Container**:
+   - Node.js container running the Socket.io server
+   - Manages game lobbies and player communication
+   - Built from the `server/Dockerfile`
+
+### Deployment Files
+
+Key files for deployment:
+
+- `docker-build-push.sh`: Builds and pushes Docker images to Docker Hub
+- `deploy-dockerhub.sh`: Deploys the images to your server
+- `docker-compose.yml`: Defines the Docker containers and their network
+- `client/nginx.conf`: Nginx configuration for the client container
+- `client/.env.production`: Production environment variables for the client
+
+### Deployment Steps
+
+#### 1. Build and Push Docker Images
+
+To build the Docker images and push them to Docker Hub:
+
+```bash
+./docker-build-push.sh <your-dockerhub-username> [tag]
+```
+
+This script:
+- Logs you into Docker Hub (if needed)
+- Builds the client and server Docker images
+- Tags them with your Docker Hub username
+- Pushes them to Docker Hub
+
+#### 2. Deploy to Server
+
+After pushing the images to Docker Hub, deploy them to your server:
+
+```bash
+./deploy-dockerhub.sh <server-ip> <your-dockerhub-username> [tag]
+```
+
+This script:
+- Creates a production environment file with the server IP
+- Sets up Docker and Docker Compose V2 on your server (if not already installed)
+- Pulls the latest Docker images on the server
+- Creates a Docker Compose configuration with the correct environment variables
+- Starts the containers using Docker Compose
+
+The deployment script handles all the necessary steps, including installing Docker Compose V2 if it's not already available on the server.
+
+#### 3. Accessing Your Deployed Game
+
+After deployment, you can access your game at:
+
+- Game URL: `http://<your-server-ip>`
+
+The WebSocket connections are proxied through Nginx to your server, so all communication happens seamlessly.
+
+### Environment Variables
+
+The deployment scripts use and set the following environment variables:
+
+- `VITE_SERVER_URL`: The URL of the Socket.io server (set automatically)
+- Other game settings defined in `client/.env.production`
+
+### Troubleshooting Deployment
+
+If your deployment encounters issues:
+
+1. **Check Docker container logs**:
+   ```bash
+   ssh root@<your-server-ip>
+   cd /opt/mirror-dash
+   docker compose logs -f
+   ```
+
+2. **Verify Nginx configuration**:
+   ```bash
+   ssh root@<your-server-ip>
+   docker exec -it $(docker ps -qf "name=mirror-dash-client") nginx -t
+   ```
+
+3. **Check if containers are running**:
+   ```bash
+   ssh root@<your-server-ip>
+   docker ps
+   ```
+
+4. **Restart the containers**:
+   ```bash
+   ssh root@<your-server-ip>
+   cd /opt/mirror-dash
+   docker compose restart
+   ```
+
+5. **Manual container management**:
+   If the `docker compose` command doesn't work, you can manage containers manually:
+   ```bash
+   # Start containers
+   ssh root@<your-server-ip>
+   cd /opt/mirror-dash
+   docker compose up -d
+   
+   # Stop and remove containers
+   docker stop mirror-dash-client mirror-dash-server
+   docker rm mirror-dash-client mirror-dash-server
+
+   # Update containers
+   ssh root@<your-server-ip>
+   cd /opt/mirror-dash
+   docker compose pull
+   docker compose up -d --force-recreate
+   ```
 
 ## Common Issues and Fixes
 
