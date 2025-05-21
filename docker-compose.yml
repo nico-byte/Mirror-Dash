@@ -4,7 +4,7 @@ services:
   client:
     image: ${DOCKER_USERNAME}/mirror-dash-client:${TAG:-latest}
     ports:
-      - "80:80"
+      - "8080:80"
     restart: unless-stopped
     networks:
       - app-network
