@@ -42,11 +42,14 @@ export class Lobby extends Scene {
             console.log("Using existing socket connection:", this.socket.id);
         } else {
             // Connect to socket.io server using the environment variable or fallback
-            const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
+            const serverUrl = import.meta.env.VITE_SERVER_URL || "/";
             console.log("Connecting to socket server:", serverUrl);
 
             try {
-                this.socket = io(serverUrl);
+                this.socket = io(serverUrl, {
+                    path: "/socket.io",
+                    transports: ["websocket"],
+                });
                 console.log("Socket created");
             } catch (e) {
                 console.error("Error connecting to socket server:", e);

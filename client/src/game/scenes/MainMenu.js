@@ -12,10 +12,13 @@ export class MainMenu extends Scene {
         // If socket doesn't exist, create it
         if (!this.socket) {
             // Get server URL from environment variable or use default - match socketManager approach
-            const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
+            const serverUrl = import.meta.env.VITE_SERVER_URL || "/";
             
             // Create socket connection
-            this.socket = io(serverUrl);
+            this.socket = io(serverUrl, {
+                path: "/socket.io",
+                transports: ["websocket"],
+            });
             console.log("Socket connection initialized from MainMenu:", serverUrl);
         }
     }

@@ -16,7 +16,7 @@ export class SocketManager {
 
     setupLobby(data) {
         // Get server URL from environment variable or use default
-        const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
+        const serverUrl = import.meta.env.VITE_SERVER_URL || "/";
 
         // Get socket if passed from Lobby scene
         if (data && data.socket) {
@@ -25,7 +25,10 @@ export class SocketManager {
             console.log("Using existing socket connection");
         } else {
             // Connect to server if not already connected
-            this.scene.socket = io(serverUrl);
+            this.scene.socket = io(serverUrl, {
+                path: "/socket.io",
+                transports: ["websocket"],
+            });
             console.log("Connected to game server:", serverUrl);
         }
 
