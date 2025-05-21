@@ -321,11 +321,17 @@ export class Game extends Scene {
         // Play music through the audio manager
         if (this.audioManager) {
             // Don't force-play music if we're a joined player (to avoid duplication)
-            const isJoinedPlayer = this.socket && this.socket.connected && 
-                                   this.lobbyId && Object.keys(this.otherPlayers || {}).length > 0;
+            const isJoinedPlayer =
+                this.socket && this.socket.connected && this.lobbyId && Object.keys(this.otherPlayers || {}).length > 0;
 
             if (!isJoinedPlayer) {
-                this.levelMusic = this.audioManager.playMusic(settings.music, true, this.audioManager.musicVolume, true, false);
+                this.levelMusic = this.audioManager.playMusic(
+                    settings.music,
+                    true,
+                    this.audioManager.musicVolume,
+                    true,
+                    false
+                );
                 // Update references to music
                 this.gameTimer.setLevelMusic(this.levelMusic);
                 this.gameUI.setLevelMusic(this.levelMusic);
@@ -455,7 +461,7 @@ export class Game extends Scene {
         if (this.audioManager && this.levelMusic) {
             // Fade out and stop music
             this.audioManager.stopMusic(1000);
-            
+
             // Switch to Game Over scene after a short delay
             this.time.delayedCall(1200, () => {
                 // Clean up resources
@@ -713,6 +719,34 @@ export class Game extends Scene {
                 (otherPlayerInfo ? `\n${otherPlayerInfo}` : "");
 
             this.gameUI.updateDebugText(debugInfo);
+        }
+
+        // Synchronize moving platform positions every second
+        if (
+            this.socket &&
+            this.socket.connected &&
+            this.lobbyId &&
+            (!this.lastPlatformSyncTime || time - this.lastPlatformSyncTime >= 1000)
+        ) {
+            this.lastPlatformSyncTime = time;
+
+            // Get platform positions
+            const movingPlatforms = this.levelManager?.getMovingPlatforms() || [];
+            if (movingPlatforms.length > 0) {
+                const platformPositions = movingPlatforms.map(({ platform }) => ({
+                    x: platform.x,
+                    y: platform.y,
+                    velocityX: platform.body ? platform.body.velocity.x : 0,
+                    velocityY: platform.body ? platform.body.velocity.y : 0,
+                }));
+
+                // Send platform positions to server
+                this.socket.emit("platformSync", {
+                    lobbyId: this.lobbyId,
+                    platforms: platformPositions,
+                    time: time,
+                });
+            }
         }
 
         // Update moving platforms

@@ -205,57 +205,59 @@ const startGame = lobbyId => {
 const getSortedLeaderboard = () => {
     // Default level timer in seconds
     const LEVEL_TOTAL_TIME = 180;
-    
+
     return Object.entries(leaderboard)
         .map(([name, stats]) => {
             // Calculate total stars across all levels
             let totalStars = 0;
             let maxLevel = 0;
             let maxLevelName = "None";
-            let maxLevelTime = 0;           // Time left
-            let maxLevelElapsedTime = 0;    // Actual time to complete (LEVEL_TOTAL_TIME - timeLeft)
+            let maxLevelTime = 0; // Time left
+            let maxLevelElapsedTime = 0; // Actual time to complete (LEVEL_TOTAL_TIME - timeLeft)
             let maxLevelTimeFormatted = "--:--";
-            
+
             // Process level-specific stats if available
             if (stats.levels) {
                 Object.entries(stats.levels).forEach(([levelId, levelData]) => {
                     totalStars = levelData.stars || 0;
-                    
+
                     // Extract level number from levelId (e.g., "level2" -> 2)
                     const levelNum = parseInt(levelId.replace("level", "")) || 0;
-                    
+
                     // Track highest level completed
                     if (levelNum > maxLevel) {
                         maxLevel = levelNum;
                         maxLevelName = `Level ${levelNum}`;
-                        
+
                         // Store time for the highest level
                         maxLevelTime = levelData.timeLeft || 0;
-                        
+
                         // Calculate elapsed time (total time - time left)
                         maxLevelElapsedTime = LEVEL_TOTAL_TIME - maxLevelTime;
-                        
+
                         // Format the elapsed time as MM:SS
                         const minutes = Math.floor(maxLevelElapsedTime / 60);
                         const seconds = maxLevelElapsedTime % 60;
-                        maxLevelTimeFormatted = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+                        maxLevelTimeFormatted = `${minutes.toString().padStart(2, "0")}:${seconds
+                            .toString()
+                            .padStart(2, "0")}`;
                     }
                 });
             }
-            
+
             // Last play date formatted nicely
             const lastPlayed = stats.lastWin ? new Date(stats.lastWin).toLocaleDateString() : "Never";
-            
+
             return {
                 name,
                 wins: stats.wins || 0,
                 totalStars,
                 maxLevel,
                 maxLevelName,
-                elapsedTime: maxLevelElapsedTime,    // Store raw elapsed time for sorting
+                elapsedTime: maxLevelElapsedTime, // Store raw elapsed time for sorting
                 levelTimeFormatted: maxLevelTimeFormatted, // Elapsed time formatted as MM:SS
                 lastPlayed,
-                lastWin: stats.lastWin // Keep for sorting
+                lastWin: stats.lastWin, // Keep for sorting
             };
         })
         .sort((a, b) => {
@@ -263,17 +265,17 @@ const getSortedLeaderboard = () => {
             if (b.maxLevel !== a.maxLevel) {
                 return b.maxLevel - a.maxLevel;
             }
-            
+
             // Then by elapsed time (ascending - faster is better)
             if (a.elapsedTime !== b.elapsedTime) {
                 return a.elapsedTime - b.elapsedTime;
             }
-            
+
             // Then by total stars (descending)
             if (b.totalStars !== a.totalStars) {
                 return b.totalStars - a.totalStars;
             }
-            
+
             // Finally by most recent activity (descending)
             return b.lastWin - a.lastWin;
         })
@@ -536,6 +538,25 @@ io.on("connection", socket => {
         });
     });
 
+    socket.on("platformSync", ({ lobbyId, platforms, time }) => {
+        if (lobbyId) {
+            const lobby = lobbies[lobbyId];
+            if (lobby) {
+                // Store platform data in lobby
+                lobby.platformPositions = platforms;
+                lobby.platformTime = time;
+
+                // Broadcast to other players in this lobby
+                socket.to(lobbyId).emit("platformSync", {
+                    lobbyId,
+                    platforms,
+                    time,
+                    sourcePlayer: socket.id,
+                });
+            }
+        }
+    });
+
     // Request timer synchronization
     socket.on("requestTimerSync", ({ lobbyId }) => {
         const lobby = lobbies[lobbyId];
@@ -568,48 +589,54 @@ io.on("connection", socket => {
     // Handle explicit leaderboard updates from players who completed levels
     socket.on("updateLeaderboard", ({ playerName, levelId, timeLeft, stars }) => {
         if (!playerName) return;
-        
+
         const LEVEL_TOTAL_TIME = 180; // 3 minutes in seconds
         const elapsedTime = LEVEL_TOTAL_TIME - timeLeft;
         const minutes = Math.floor(elapsedTime / 60);
         const seconds = elapsedTime % 60;
         const timeFormatted = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-        
-        console.log(`Leaderboard update: ${playerName} completed ${levelId} in ${timeFormatted} with ${stars} stars (${timeLeft}s remaining)`);
-        
+
+        console.log(
+            `Leaderboard update: ${playerName} completed ${levelId} in ${timeFormatted} with ${stars} stars (${timeLeft}s remaining)`
+        );
+
         // Initialize player in leaderboard if not exists
         if (!leaderboard[playerName]) {
             leaderboard[playerName] = { wins: 0, lastWin: null };
         }
-        
+
         // Increment win count and update timestamp
         leaderboard[playerName].wins += 1;
         leaderboard[playerName].lastWin = Date.now();
-        
+
         // Initialize levels object if not exists
         if (!leaderboard[playerName].levels) {
             leaderboard[playerName].levels = {};
         }
-        
+
         // Store level info and star count
         if (levelId) {
             leaderboard[playerName].levels[levelId] = {
                 timeLeft: timeLeft || 0,
                 stars: stars || 0,
-                completedAt: Date.now()
+                completedAt: Date.now(),
             };
-            
-            console.log(`Stored level data for ${playerName}: ${levelId} with ${stars} stars and ${timeLeft}s remaining`);
+
+            console.log(
+                `Stored level data for ${playerName}: ${levelId} with ${stars} stars and ${timeLeft}s remaining`
+            );
         }
-        
+
         // Broadcast updated leaderboard to all connected clients
         const sortedLeaderboard = getSortedLeaderboard();
         io.emit("leaderboardUpdate", sortedLeaderboard);
-        
+
         // Log the new top player
         if (sortedLeaderboard.length > 0) {
             const top = sortedLeaderboard[0];
-            console.log(`Current leaderboard leader: ${top.name}, Level ${top.maxLevel}, completed in ${top.levelTimeFormatted}`);
+            console.log(
+                `Current leaderboard leader: ${top.name}, Level ${top.maxLevel}, completed in ${top.levelTimeFormatted}`
+            );
         }
     });
 

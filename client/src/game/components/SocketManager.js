@@ -144,6 +144,16 @@ export class SocketManager {
             }
         });
 
+        // Add platform sync listener
+        this.socket.on("platformSync", data => {
+            if (data && data.lobbyId === this.lobbyId && data.platforms && data.platforms.length > 0) {
+                // Only sync platforms if we're not the sender
+                if (data.sourcePlayer !== this.socket.id) {
+                    this.syncPlatforms(data.platforms);
+                }
+            }
+        });
+
         this.scene.socket.on("gameOverBroadcast", data => {
             if (data && data.reason && data.playerId !== this.scene.socket.id) {
                 console.log(`Game over triggered by other player: ${data.playerId}, reason: ${data.reason}`);
@@ -448,22 +458,53 @@ export class SocketManager {
         // If we've just transitioned from having no players to having players
         // (new player joined) or we had no players and we're first joining others,
         // ensure we don't duplicate the music
-        if ((newPlayerJoined && hadNoPlayersBeforeUpdate) && this.scene.levelManager) {
+        if (newPlayerJoined && hadNoPlayersBeforeUpdate && this.scene.levelManager) {
             // Get current level settings
             const levelSettings = this.scene.levelManager.getLevelSettings(this.scene.levelId);
             if (levelSettings && this.scene.audioManager && this.scene.levelMusic) {
                 console.log("Re-syncing audio for player join event");
-                
+
                 // Make sure we don't restart music that's already playing
                 // We set forcePlay to false to avoid duplicating music
                 this.scene.levelMusic = this.scene.audioManager.playMusic(
-                    levelSettings.music, 
-                    true, 
-                    this.scene.audioManager.musicVolume, 
+                    levelSettings.music,
+                    true,
+                    this.scene.audioManager.musicVolume,
                     false, // Don't stop current
-                    false  // Don't force play
+                    false // Don't force play
                 );
             }
+        }
+    }
+
+    syncPlatforms(platformData) {
+        const movingPlatforms = this.levelManager?.getMovingPlatforms() || [];
+
+        // Only sync if we have platforms to sync
+        if (movingPlatforms.length > 0 && platformData.length === movingPlatforms.length) {
+            movingPlatforms.forEach((platformObj, index) => {
+                if (index >= platformData.length) return;
+
+                const syncData = platformData[index];
+                const platform = platformObj.platform;
+
+                if (platform && (Math.abs(platform.x - syncData.x) > 10 || Math.abs(platform.y - syncData.y) > 10)) {
+                    // Smoothly move platform to synced position
+                    this.tweens.add({
+                        targets: platform,
+                        x: syncData.x,
+                        y: syncData.y,
+                        duration: 300,
+                        ease: "Power1",
+                    });
+
+                    // Update velocity
+                    if (platform.body) {
+                        platform.body.velocity.x = syncData.velocityX;
+                        platform.body.velocity.y = syncData.velocityY;
+                    }
+                }
+            });
         }
     }
 
