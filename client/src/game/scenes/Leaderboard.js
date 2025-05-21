@@ -9,11 +9,11 @@ export class Leaderboard extends Scene {
     init(data) {
         this.socket = data?.socket;
         this.playerName = data?.playerName;
-        
+
         // Ensure we don't have stale data from previous views
         this.entryTexts = [];
         this.isCleanedUp = false;
-        
+
         // Clean up any existing listeners when initializing the scene
         if (this.socket) {
             console.log("Removing previous leaderboard listeners");
@@ -27,21 +27,18 @@ export class Leaderboard extends Scene {
         this.cameras.main.setBackgroundColor(0x060322);
 
         this.title = this.add
-            .text(width / 2, 80, "🏆 Leaderboard", {
+            .text(width / 2, height * 0.1, "🏆 Leaderboard", {
                 fontFamily: "Arial Black",
-                fontSize: 48,
+                fontSize: `${height * 0.05}px`,
                 color: "#ffffff",
                 stroke: "#000000",
                 strokeThickness: 6,
             })
             .setOrigin(0.5);
 
-        // Container for dynamic entries
-        this.entryTexts = [];
-
         // Back button
-        const backButton = this.add
-            .rectangle(width / 2, height - 80, 240, 60, 0x666666, 0.8)
+        let backButton = this.add
+            .rectangle(width / 2, height * 0.9, width * 0.3, height * 0.08, 0x666666, 0.8)
             .setStrokeStyle(3, 0xffffff)
             .setInteractive({ useHandCursor: true })
             .on("pointerover", () => backButton.setFillStyle(0x888888, 0.8))
@@ -49,9 +46,9 @@ export class Leaderboard extends Scene {
             .on("pointerdown", () => this.goBack());
 
         this.add
-            .text(width / 2, height - 80, "Back to Menu", {
+            .text(width / 2, height * 0.9, "Back to Menu", {
                 fontFamily: "Arial Black",
-                fontSize: 22,
+                fontSize: `${height * 0.03}px`,
                 color: "#ffffff",
             })
             .setOrigin(0.5);
@@ -61,7 +58,7 @@ export class Leaderboard extends Scene {
             this.add
                 .text(width / 2, height / 2, "No connection to server.\nComplete a level to see the leaderboard.", {
                     fontFamily: "Arial",
-                    fontSize: 24,
+                    fontSize: `${height * 0.03}px`,
                     color: "#ffffff",
                     align: "center",
                 })
@@ -73,30 +70,30 @@ export class Leaderboard extends Scene {
         this.loadingText = this.add
             .text(width / 2, height / 2, "Loading leaderboard data...", {
                 fontFamily: "Arial",
-                fontSize: 24,
+                fontSize: `${height * 0.03}px`,
                 color: "#ffffff",
                 align: "center",
             })
             .setOrigin(0.5);
-        
+
         console.log("Setting up leaderboard listener");
-        
+
         // Listen to leaderboard updates from server - using a named function for easier cleanup
-        this.handleLeaderboardUpdate = (data) => {
+        this.handleLeaderboardUpdate = data => {
             if (this.loadingText && this.loadingText.destroy) {
                 this.loadingText.destroy();
                 this.loadingText = null;
             }
             this.updateLeaderboard(data);
         };
-        
+
         // Make sure we're not adding multiple listeners
         this.socket.off("leaderboardUpdate");
         this.socket.on("leaderboardUpdate", this.handleLeaderboardUpdate);
 
         // Request leaderboard data from server
         this.socket.emit("requestLeaderboard");
-        
+
         // If no data after 5 seconds, show an error
         this.loadingTimer = this.time.delayedCall(5000, () => {
             if (!this.entryTexts || this.entryTexts.length === 0) {
@@ -105,12 +102,17 @@ export class Leaderboard extends Scene {
                     this.loadingText = null;
                 }
                 this.add
-                    .text(width / 2, height / 2, "No leaderboard data available.\nComplete a level to see the leaderboard.", {
-                        fontFamily: "Arial",
-                        fontSize: 24,
-                        color: "#ffffff",
-                        align: "center",
-                    })
+                    .text(
+                        width / 2,
+                        height / 2,
+                        "No leaderboard data available.\nComplete a level to see the leaderboard.",
+                        {
+                            fontFamily: "Arial",
+                            fontSize: `${height * 0.03}px`,
+                            color: "#ffffff",
+                            align: "center",
+                        }
+                    )
                     .setOrigin(0.5);
             }
         });
@@ -131,19 +133,19 @@ export class Leaderboard extends Scene {
 
         // Add column headers
         this.createColumnHeaders(width);
-        
+
         // Data rows
         const startY = 190;
         const rowHeight = 40;
-        
+
         data.forEach((entry, index) => {
             this.createPlayerRow(entry, index, startY, rowHeight, width);
         });
     }
-    
+
     clearLeaderboardEntries() {
         console.log(`Clearing ${this.entryTexts.length} leaderboard entries`);
-        
+
         if (this.entryTexts && this.entryTexts.length > 0) {
             this.entryTexts.forEach(obj => {
                 if (obj && obj.destroy) {
@@ -151,11 +153,11 @@ export class Leaderboard extends Scene {
                 }
             });
         }
-        
+
         // Reinitialize the array
         this.entryTexts = [];
     }
-    
+
     displayNoDataMessage(width) {
         const noDataText = this.add
             .text(width / 2, 250, "No leaderboard data available yet.", {
@@ -165,33 +167,33 @@ export class Leaderboard extends Scene {
                 align: "center",
             })
             .setOrigin(0.5);
-        
+
         this.entryTexts.push(noDataText);
     }
-    
+
     createColumnHeaders(width) {
         const headerY = 140;
         this.headers = [
             { text: "Rank", x: width * 0.08, align: 0.5 },
             { text: "Player", x: width * 0.23, align: 0 },
-            { text: "Wins", x: width * 0.40, align: 0.5 },
+            { text: "Wins", x: width * 0.4, align: 0.5 },
             { text: "Stars", x: width * 0.52, align: 0.5 },
             { text: "Max Level", x: width * 0.67, align: 0.5 },
-            { text: "Completion", x: width * 0.85, align: 0.5 }
+            { text: "Completion", x: width * 0.85, align: 0.5 },
         ];
-        
+
         this.headers.forEach(header => {
             const headerText = this.add
                 .text(header.x, headerY, header.text, {
                     fontFamily: "Arial",
                     fontSize: 18,
                     color: "#aaaaaa",
-                    fontStyle: "bold"
+                    fontStyle: "bold",
                 })
                 .setOrigin(header.align, 0.5);
             this.entryTexts.push(headerText);
         });
-        
+
         // Add completion time explanation
         if (this.headers.length > 5) {
             const tooltip = this.add
@@ -199,39 +201,33 @@ export class Leaderboard extends Scene {
                     fontFamily: "Arial",
                     fontSize: 12,
                     color: "#888888",
-                    fontStyle: "italic"
+                    fontStyle: "italic",
                 })
                 .setOrigin(0.5, 0.5);
             this.entryTexts.push(tooltip);
         }
-        
+
         // Add divider line
-        const divider = this.add.line(
-            width / 2, headerY + 30, 
-            0, 0, width * 0.9, 0, 
-            0xaaaaaa, 0.5
-        );
+        const divider = this.add.line(width / 2, headerY + 30, 0, 0, width * 0.9, 0, 0xaaaaaa, 0.5);
         this.entryTexts.push(divider);
     }
-    
+
     createPlayerRow(entry, index, startY, rowHeight, width) {
         const isYou = entry.name === this.playerName;
         const rank = index + 1;
         const y = startY + index * rowHeight;
-        
+
         // Row background for current player
         if (isYou) {
-            const highlight = this.add.rectangle(
-                width / 2, y, 
-                width * 0.9, rowHeight - 5, 
-                0xffff00, 0.2
-            ).setOrigin(0.5, 0.5);
+            const highlight = this.add
+                .rectangle(width / 2, y, width * 0.9, rowHeight - 5, 0xffff00, 0.2)
+                .setOrigin(0.5, 0.5);
             this.entryTexts.push(highlight);
         }
-        
+
         // Get rank text/icon
         const rankPrefix = this.getRankPrefix(rank);
-        
+
         // Create each cell in the row
         this.createTextCell(this.headers[0].x, y, rankPrefix, isYou, 0.5, 22);
         this.createTextCell(this.headers[1].x, y, entry.name, isYou, 0, 22);
@@ -240,26 +236,30 @@ export class Leaderboard extends Scene {
         this.createTextCell(this.headers[4].x, y, entry.maxLevelName || "None", isYou, 0.5, 20);
         this.createTextCell(this.headers[5].x, y, entry.levelTimeFormatted || "--:--", isYou, 0.5, 20);
     }
-    
+
     getRankPrefix(rank) {
-        switch(rank) {
-            case 1: return "🥇";
-            case 2: return "🥈";
-            case 3: return "🥉";
-            default: return `${rank}.`;
+        switch (rank) {
+            case 1:
+                return "🥇";
+            case 2:
+                return "🥈";
+            case 3:
+                return "🥉";
+            default:
+                return `${rank}.`;
         }
     }
-    
+
     createTextCell(x, y, content, isHighlighted, originX, fontSize) {
         const textObj = this.add
             .text(x, y, content, {
                 fontFamily: "Arial",
                 fontSize: fontSize,
                 color: isHighlighted ? "#ffff00" : "#ffffff",
-                fontStyle: isHighlighted ? "bold" : "normal"
+                fontStyle: isHighlighted ? "bold" : "normal",
             })
             .setOrigin(originX, 0.5);
-        
+
         this.entryTexts.push(textObj);
         return textObj;
     }
@@ -274,30 +274,30 @@ export class Leaderboard extends Scene {
 
     cleanupScene() {
         console.log("Cleaning up Leaderboard scene");
-        
+
         // Clean up socket listeners
         if (this.socket) {
             console.log("Removing leaderboard socket listeners");
             this.socket.off("leaderboardUpdate", this.handleLeaderboardUpdate);
         }
-        
+
         // Cancel any pending timers
         if (this.loadingTimer) {
             this.loadingTimer.remove();
             this.loadingTimer = null;
         }
         this.time.removeAllEvents();
-        
+
         // Clean up loading text if still present
         if (this.loadingText && this.loadingText.destroy) {
             this.loadingText.destroy();
             this.loadingText = null;
         }
-        
+
         // Clear all display objects
         this.clearLeaderboardEntries();
     }
-    
+
     shutdown() {
         this.cleanupScene();
     }

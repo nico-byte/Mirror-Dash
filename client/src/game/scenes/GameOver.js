@@ -19,15 +19,18 @@ export class GameOver extends Scene {
         this.cameras.main.setBackgroundColor(0x060322);
 
         // Set the background image
-        this.add.image(512, 384, "Game_Over").setOrigin(0.5).setAlpha(1);
+        this.add
+            .image(this.scale.width / 2, this.scale.height / 2, "Game_Over")
+            .setOrigin(0.5)
+            .setAlpha(1);
 
         // Level name
         const levelName = this.levelId === "level1" ? "Level 1" : this.levelId === "level2" ? "Level 2" : this.levelId;
 
         this.add
-            .text(512, 400, levelName, {
+            .text(this.scale.width / 2, this.scale.height * 0.4, levelName, {
                 fontFamily: "Orbitron",
-                fontSize: 32,
+                fontSize: `${this.scale.height * 0.05}px`,
                 color: "#ffff00",
                 stroke: "#000000",
                 strokeThickness: 4,
@@ -37,7 +40,14 @@ export class GameOver extends Scene {
 
         // Retry button
         const retryButton = this.add
-            .rectangle(512, 500, 240, 60, 0x0066aa, 0.8)
+            .rectangle(
+                this.scale.width / 2,
+                this.scale.height * 0.6,
+                this.scale.width * 0.3,
+                this.scale.height * 0.08,
+                0x0066aa,
+                0.8
+            )
             .setStrokeStyle(3, 0xffffff)
             .setInteractive({ useHandCursor: true })
             .on("pointerover", () => retryButton.setFillStyle(0x0088cc, 0.8))
@@ -45,16 +55,23 @@ export class GameOver extends Scene {
             .on("pointerdown", () => this.retryLevel());
 
         this.add
-            .text(512, 500, "Retry Level", {
+            .text(this.scale.width / 2, this.scale.height * 0.6, "Retry Level", {
                 fontFamily: "Orbitron",
-                fontSize: 22,
+                fontSize: `${this.scale.height * 0.03}px`,
                 color: "#ffffff",
             })
             .setOrigin(0.5);
 
         // Level selection button
         const levelSelectButton = this.add
-            .rectangle(512, 580, 240, 60, 0xaa6600, 0.8)
+            .rectangle(
+                this.scale.width / 2,
+                this.scale.height * 0.7,
+                this.scale.width * 0.3,
+                this.scale.height * 0.08,
+                0xaa6600,
+                0.8
+            )
             .setStrokeStyle(3, 0xffffff)
             .setInteractive({ useHandCursor: true })
             .on("pointerover", () => levelSelectButton.setFillStyle(0xcc8800, 0.8))
@@ -62,16 +79,23 @@ export class GameOver extends Scene {
             .on("pointerdown", () => this.goToLevelSelector());
 
         this.add
-            .text(512, 580, "Level Selection", {
+            .text(this.scale.width / 2, this.scale.height * 0.7, "Level Selection", {
                 fontFamily: "Orbitron",
-                fontSize: 22,
+                fontSize: `${this.scale.height * 0.03}px`,
                 color: "#ffffff",
             })
             .setOrigin(0.5);
 
         // Main menu button
         const mainMenuButton = this.add
-            .rectangle(512, 660, 240, 60, 0x666666, 0.8)
+            .rectangle(
+                this.scale.width / 2,
+                this.scale.height * 0.8,
+                this.scale.width * 0.3,
+                this.scale.height * 0.08,
+                0x666666,
+                0.8
+            )
             .setStrokeStyle(3, 0xffffff)
             .setInteractive({ useHandCursor: true })
             .on("pointerover", () => mainMenuButton.setFillStyle(0x888888, 0.8))
@@ -79,25 +103,34 @@ export class GameOver extends Scene {
             .on("pointerdown", () => this.goToMainMenu());
 
         this.add
-            .text(512, 660, "Main Menu", {
+            .text(this.scale.width / 2, this.scale.height * 0.8, "Main Menu", {
                 fontFamily: "Orbitron",
-                fontSize: 22,
+                fontSize: `${this.scale.height * 0.03}px`,
                 color: "#ffffff",
             })
             .setOrigin(0.5);
 
         // Add credits panel
-        const creditsPanel = this.add.rectangle(512, 730, 800, 60, 0x000000, 0.6).setStrokeStyle(1, 0x444444);
+        const creditsPanel = this.add
+            .rectangle(
+                this.scale.width / 2,
+                this.scale.height * 0.9,
+                this.scale.width * 0.8,
+                this.scale.height * 0.05,
+                0x000000,
+                0.6
+            )
+            .setStrokeStyle(1, 0x444444);
 
         // Add credits text
         this.add
             .text(
-                512,
-                730,
+                this.scale.width / 2,
+                this.scale.height * 0.9,
                 "Credits: Sound: Josef | Pixelart/Map: Matthias | Coders: Nico, Mika, Robin (Josef, Matthias)",
                 {
                     fontFamily: "Arial",
-                    fontSize: 16,
+                    fontSize: `${this.scale.height * 0.02}px`,
                     color: "#aaaaaa",
                     align: "center",
                 }

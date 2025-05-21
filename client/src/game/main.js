@@ -19,8 +19,9 @@ const config = {
     backgroundColor: "#028af8",
     fontFamily: "Orbitron, Arial",
     scale: {
-        mode: Scale.FIT,
-        autoCenter: Scale.CENTER_BOTH,
+        mode: Scale.RESIZE, // Adjust the game size to fit the screen
+        autoCenter: Scale.CENTER_BOTH, // Center the game on the screen
+        fullscreenTarget: "game-container", // Enable fullscreen targeting the game container
     },
     // Use Phaser's built-in Arcade physics
     physics: {
@@ -41,7 +42,20 @@ const config = {
 };
 
 const StartGame = parent => {
-    return new Game({ ...config, parent });
+    const game = new Game({ ...config, parent });
+
+    // Dynamically resize the game to fit the window
+    const resize = () => {
+        game.scale.resize(window.innerWidth, window.innerHeight);
+    };
+
+    // Call resize on window resize
+    window.addEventListener("resize", resize);
+
+    // Initial resize to fit the current window size
+    resize();
+
+    return game;
 };
 
 export default StartGame;
