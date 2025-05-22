@@ -272,7 +272,6 @@ export class GameCollisions {
                 // This prevents teleporting while still keeping player on platform
                 const playerCenterX = playerSprite.x;
                 const platformCenterX = platform.x;
-                const distanceFromCenter = Math.abs(playerCenterX - platformCenterX);
 
                 // Instead of correcting towards center, maintain relative position
                 // Store initial relative position when player lands on platform
@@ -290,7 +289,10 @@ export class GameCollisions {
 
                 // Adjust player position to maintain the relative position plus any input movement
                 const targetPosition = platformCenterX + playerSprite.platformRelativePosition;
-                playerSprite.x = targetPosition;
+
+                // Use lerp for smoothing to reduce flickering
+                const lerpFactor = 0.5; // Higher value = less smoothing but more responsive
+                playerSprite.x = Phaser.Math.Linear(playerSprite.x, targetPosition, lerpFactor);
 
                 // Store the current position for the next frame
                 playerSprite.previousX = playerSprite.x;

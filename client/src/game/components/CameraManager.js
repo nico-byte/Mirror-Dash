@@ -33,7 +33,7 @@ export class CameraManager {
         cameras.main.setName("mainCamera");
 
         // Dynamically set camera bounds based on level dimensions
-        const levelWidth = this.scene.levelWidth || 3000;
+        const levelWidth = this.scene.levelWidth || 6000; // Increased default to 6000
         const levelHeight = this.scene.levelHeight || 1000;
         cameras.main.setBounds(0, 0, levelWidth, levelHeight);
 
@@ -44,6 +44,21 @@ export class CameraManager {
 
         // Add fullscreen toggle button
         this.addFullscreenButton();
+
+        // Listen for resize events
+        this.scene.scale.on("resize", this.handleResize, this);
+    }
+
+    // New method to handle resize events
+    handleResize() {
+        if (!this.scene || !this.scene.mainCamera) return;
+
+        // Get current level dimensions
+        const levelWidth = this.scene.levelWidth || 6000;
+        const levelHeight = this.scene.levelHeight || 1000;
+
+        // Re-set camera bounds to ensure they're correct after resize
+        this.scene.mainCamera.setBounds(0, 0, levelWidth, levelHeight);
     }
 
     addFullscreenButton() {
@@ -92,21 +107,28 @@ export class CameraManager {
             const camera = this.scene.mainCamera;
             const player = this.scene.player;
 
-            // Ensure camera follows player on both X and Y axes
-            camera.startFollow(player.sprite, true, 0.1, 0.1); // Smooth follow with low lerp values
+            // Get level dimensions for camera bounds checking
+            const levelWidth = this.scene.levelWidth || 6000;
+            const levelHeight = this.scene.levelHeight || 1000;
+            const maxScrollX = Math.max(0, levelWidth - camera.width);
+            const maxScrollY = Math.max(0, levelHeight - camera.height);
 
             if (this.autoScrollCamera) {
-                // Calculate what the auto-scroll position would be
-                this.lastAutoScrollX += this.scrollSpeed * (this.scene.game.loop.delta / 1000);
+                // Calculate what the auto-scroll position would be with smoother interpolation
+                const deltaTime = this.scene.game.loop.delta / 1000;
+                this.lastAutoScrollX += this.scrollSpeed * deltaTime;
+
+                // Clamp auto-scroll position to level bounds
+                this.lastAutoScrollX = Math.min(Math.max(0, this.lastAutoScrollX), maxScrollX);
 
                 // Get player's position and velocity
                 const playerX = player.sprite.x;
+                const playerY = player.sprite.y;
                 const playerVelocityX = player.sprite.body ? player.sprite.body.velocity.x : 0;
 
                 // Check if player is ahead of auto-scroll and moving faster (only when going right)
                 if (playerX > this.lastAutoScrollX + camera.width * 0.3 && playerVelocityX > 0) {
                     this.playerControllingCamera = true;
-                    camera.scrollX = playerX - camera.width * 0.3; // Keep player 30% from left edge
                 } else if (
                     this.playerControllingCamera &&
                     (playerX <= this.lastAutoScrollX + camera.width * 0.3 || playerVelocityX <= 0)
@@ -114,14 +136,47 @@ export class CameraManager {
                     this.playerControllingCamera = false;
                 }
 
-                if (!this.playerControllingCamera) {
-                    camera.scrollX = this.lastAutoScrollX;
-                }
-
+                // Handle camera movement
                 if (this.playerControllingCamera) {
+                    // Player controls X-axis, smooth follow on both axes
+                    const desiredScrollX = Math.min(Math.max(0, playerX - camera.width * 0.3), maxScrollX);
+                    const desiredScrollY = Math.min(Math.max(0, playerY - camera.height * 0.5), maxScrollY);
+
+                    // Smooth interpolation for both X and Y
+                    const lerpFactorX = 0.08; // Smooth horizontal follow
+                    const lerpFactorY = 0.12; // Slightly faster vertical follow
+
+                    camera.scrollX += (desiredScrollX - camera.scrollX) * lerpFactorX;
+                    camera.scrollY += (desiredScrollY - camera.scrollY) * lerpFactorY;
+
+                    // Update auto-scroll position to match camera
                     this.lastAutoScrollX = camera.scrollX;
+                } else {
+                    // Auto-scroll controls X-axis, smooth follow on Y-axis
+                    const desiredScrollY = Math.min(Math.max(0, playerY - camera.height * 0.5), maxScrollY);
+
+                    // Smooth X movement to auto-scroll position
+                    const lerpFactorX = 0.06; // Smoother auto-scroll
+                    const lerpFactorY = 0.12; // Responsive vertical follow
+
+                    camera.scrollX += (this.lastAutoScrollX - camera.scrollX) * lerpFactorX;
+                    camera.scrollY += (desiredScrollY - camera.scrollY) * lerpFactorY;
                 }
+            } else {
+                // No auto-scroll, just follow player smoothly on both axes
+                const desiredScrollX = Math.min(Math.max(0, playerX - camera.width * 0.5), maxScrollX);
+                const desiredScrollY = Math.min(Math.max(0, playerY - camera.height * 0.5), maxScrollY);
+
+                const lerpFactorX = 0.1;
+                const lerpFactorY = 0.15;
+
+                camera.scrollX += (desiredScrollX - camera.scrollX) * lerpFactorX;
+                camera.scrollY += (desiredScrollY - camera.scrollY) * lerpFactorY;
             }
+
+            // Final clamp to ensure camera never goes out of bounds
+            camera.scrollX = Math.min(Math.max(0, camera.scrollX), maxScrollX);
+            camera.scrollY = Math.min(Math.max(0, camera.scrollY), maxScrollY);
         }
     }
 }

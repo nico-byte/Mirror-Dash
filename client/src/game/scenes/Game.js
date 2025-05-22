@@ -199,6 +199,33 @@ export class Game extends Scene {
         }
     }
 
+    /**
+     * Handle game resize events
+     * @param {Object} gameSize - The new game size
+     */
+    handleResize(gameSize) {
+        // Make sure we have the level dimensions
+        const levelWidth = this.levelWidth || 6000;
+        const levelHeight = this.levelHeight || 1000;
+
+        // Update world bounds to ensure they're correct after resize
+        if (this.physics && this.physics.world) {
+            this.physics.world.setBounds(0, 0, levelWidth, levelHeight);
+        }
+
+        // Update camera bounds
+        if (this.cameraManager) {
+            this.cameraManager.handleResize();
+        }
+
+        // Update UI elements if needed
+        if (this.gameUI) {
+            this.gameUI.updateUI(gameSize.width, gameSize.height);
+        }
+
+        console.log(`Game resized: ${gameSize.width}x${gameSize.height}, level bounds: ${levelWidth}x${levelHeight}`);
+    }
+
     create() {
         // Create player animations
         this.createAnimations();
@@ -233,6 +260,8 @@ export class Game extends Scene {
         this.levelLoaded = true;
 
         this.applyLevelSettings(levelInfo.settings);
+
+        this.scale.on("resize", this.handleResize, this);
 
         // Create main player at level spawn position
         this.player = new Player(this, levelInfo.spawnPoint.x, levelInfo.spawnPoint.y, this.playerName, true);
