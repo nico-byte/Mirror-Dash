@@ -479,20 +479,21 @@ export class LevelManager {
         }
     }
 
-    /**
-     * Call this from scene.update()
-     */
+    // Add this method to the LevelManager class
+    // This improves the platform movement for better synchronization
     updateMovingPlatforms(time) {
         if (!this.movingPlatforms) return;
 
         this.movingPlatforms.forEach(({ platform, motion, range, speed, baseX, baseY }) => {
             if (!platform || !platform.body) return;
 
-            const t = time / (speed || 2000);
+            // Use a more deterministic approach for platform movement
+            // This will ensure platforms move the same way for all players
+            const t = (time / speed) % (2 * Math.PI); // Use a normalized time value
             const amplitude = Math.abs(range || 80);
 
             if (motion === "vertical") {
-                // Calculate new position based on sine wave with high precision
+                // Calculate new position based on sine wave
                 const newY = baseY + Math.sin(t) * amplitude;
 
                 // Store old position before update for precise delta calculation
@@ -501,7 +502,7 @@ export class LevelManager {
                 // Update position
                 platform.setY(newY);
 
-                // Calculate velocity based on cosine (derivative of sine) for smooth movement
+                // Calculate velocity for proper physics interactions
                 const velocity = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
                 platform.body.velocity.y = velocity;
                 platform.body.velocity.x = 0; // No horizontal movement
@@ -512,7 +513,7 @@ export class LevelManager {
                 // Store exact delta value for collision handler to use
                 platform.body._deltaY = newY - oldY;
             } else if (motion === "horizontal") {
-                // Calculate new position based on sine wave with high precision
+                // Calculate new position based on sine wave
                 const newX = baseX + Math.sin(t) * amplitude;
 
                 // Store old position before update for precise delta calculation
@@ -521,7 +522,7 @@ export class LevelManager {
                 // Update position
                 platform.setX(newX);
 
-                // Calculate velocity based on cosine (derivative of sine) for smooth movement
+                // Calculate velocity for proper physics interactions
                 const velocity = (Math.cos(t) * amplitude * Math.PI) / (speed / 1000);
                 platform.body.velocity.x = velocity;
                 platform.body.velocity.y = 0; // No vertical movement
@@ -549,11 +550,6 @@ export class LevelManager {
             platform.body.immovable = true;
             platform.body.moves = true;
             platform.body.allowGravity = false;
-
-            // Explicitly refresh collision box dimensions
-            if (platform.refreshBody) {
-                platform.refreshBody();
-            }
         });
     }
 

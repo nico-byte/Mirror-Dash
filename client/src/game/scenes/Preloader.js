@@ -8,21 +8,48 @@ export class Preloader extends Scene {
     }
 
     init() {
-        this.socket = null;
-        //  We loaded this image in our Boot Scene, so we can display it here
-        this.add.image(512, 384, "background");
+        const { width, height } = this.scale;
 
-        //  A simple progress bar. This is the outline of the bar.
-        this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, 0xffffff);
+        // Add a modern dark background with a gradient effect
+        const gradient = this.add.graphics();
+        gradient.fillGradientStyle(0x1a1a1a, 0x1a1a1a, 0x333333, 0x333333, 1);
+        gradient.fillRect(0, 0, width, height);
 
-        //  This is the progress bar itself. It will increase in size from the left based on the % of progress.
-        const bar = this.add.rectangle(512 - 230, 384, 4, 28, 0xffffff);
+        // Add a stylish loading text with animation
+        const loadingText = this.add
+            .text(width / 2, height * 0.4, "Loading...", {
+                fontSize: `${height * 0.06}px`,
+                color: "#ffffff",
+                fontStyle: "bold",
+            })
+            .setOrigin(0.5);
 
-        //  Use the 'progress' event emitted by the LoaderPlugin to update the loading bar
-        this.load.on("progress", progress => {
-            //  Update the progress bar (our bar is 464px wide, so 100% = 464px)
-            bar.width = 4 + 460 * progress;
+        this.tweens.add({
+            targets: loadingText,
+            alpha: { from: 0.5, to: 1 },
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
         });
+
+        // Add a progress bar outline
+        const barWidth = width * 0.6;
+        const barHeight = height * 0.05;
+        const barX = width / 2 - barWidth / 2;
+        const barY = height * 0.5;
+
+        this.add.rectangle(barX + barWidth / 2, barY + barHeight / 2, barWidth, barHeight).setStrokeStyle(2, 0xffffff);
+
+        // Add the progress bar itself
+        const bar = this.add.rectangle(barX, barY + barHeight / 2, 0, barHeight, 0x00ff00).setOrigin(0, 0.5);
+
+        // Update the progress bar width dynamically
+        this.load.on("progress", progress => {
+            bar.width = barWidth * progress;
+        });
+
+        // Add a fade-in effect for the scene
+        this.cameras.main.fadeIn(500);
     }
 
     preload() {
@@ -52,7 +79,7 @@ export class Preloader extends Scene {
         // powerup ufo textures
         this.load.image("portal", "/assets/Player_Platforms/portal.png");
         this.load.image("ufo", "/assets/Player_Platforms/ufo.png");
-        
+
         // Load player sprite
         this.load.image("sprite", "/assets/Player_Platforms/sprite.png");
 

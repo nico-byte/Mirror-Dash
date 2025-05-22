@@ -147,6 +147,16 @@ export class SocketManager {
             }
         });
 
+        // Add platform sync listener
+        this.socket.on("platformSync", data => {
+            if (data && data.lobbyId === this.lobbyId && data.platforms && data.platforms.length > 0) {
+                // Only sync platforms if we're not the sender
+                if (data.sourcePlayer !== this.socket.id) {
+                    this.syncPlatforms(data.platforms);
+                }
+            }
+        });
+
         this.scene.socket.on("gameOverBroadcast", data => {
             if (data && data.reason && data.playerId !== this.scene.socket.id) {
                 console.log(`Game over triggered by other player: ${data.playerId}, reason: ${data.reason}`);
@@ -451,23 +461,114 @@ export class SocketManager {
         // If we've just transitioned from having no players to having players
         // (new player joined) or we had no players and we're first joining others,
         // ensure we don't duplicate the music
-        if ((newPlayerJoined && hadNoPlayersBeforeUpdate) && this.scene.levelManager) {
+        if (newPlayerJoined && hadNoPlayersBeforeUpdate && this.scene.levelManager) {
             // Get current level settings
             const levelSettings = this.scene.levelManager.getLevelSettings(this.scene.levelId);
             if (levelSettings && this.scene.audioManager && this.scene.levelMusic) {
                 console.log("Re-syncing audio for player join event");
-                
+
                 // Make sure we don't restart music that's already playing
                 // We set forcePlay to false to avoid duplicating music
                 this.scene.levelMusic = this.scene.audioManager.playMusic(
-                    levelSettings.music, 
-                    true, 
-                    this.scene.audioManager.musicVolume, 
+                    levelSettings.music,
+                    true,
+                    this.scene.audioManager.musicVolume,
                     false, // Don't stop current
-                    false  // Don't force play
+                    false // Don't force play
                 );
             }
         }
+    }
+
+    syncPlatforms(platformData) {
+        if (!this.scene || !this.scene.levelManager) return;
+
+        const movingPlatforms = this.scene.levelManager.getMovingPlatforms() || [];
+
+        // Only sync if we have platforms to sync
+        if (movingPlatforms.length > 0 && platformData && platformData.length === movingPlatforms.length) {
+            movingPlatforms.forEach((platformObj, index) => {
+                if (index >= platformData.length) return;
+
+                const syncData = platformData[index];
+                const platform = platformObj.platform;
+
+                if (platform && platform.body) {
+                    // Only apply sync if position difference is significant (avoid minor corrections)
+                    const positionDifference = Math.abs(platform.x - syncData.x) + Math.abs(platform.y - syncData.y);
+
+                    if (positionDifference > 15) {
+                        // Use tweens for smooth visual transition to synced position
+                        this.scene.tweens.add({
+                            targets: platform,
+                            x: syncData.x,
+                            y: syncData.y,
+                            duration: 300, // Smooth over 300ms
+                            ease: "Power1",
+                        });
+
+                        // Update velocity to match the synced platform
+                        platform.body.velocity.x = syncData.velocityX;
+                        platform.body.velocity.y = syncData.velocityY;
+
+                        // Set platform's motion phase to match remote state
+                        if (platformObj.motion === "horizontal") {
+                            platform.platformData.phase = syncData.phase || 0;
+                        } else if (platformObj.motion === "vertical") {
+                            platform.platformData.phase = syncData.phase || 0;
+                        }
+                    }
+                }
+            });
+
+            // Schedule next sync check
+            if (!this.platformSyncTimer) {
+                this.platformSyncTimer = this.scene.time.addEvent({
+                    delay: 2000, // Check sync every 2 seconds
+                    callback: this.requestPlatformSync,
+                    callbackScope: this,
+                });
+            }
+        }
+    }
+
+    requestPlatformSync() {
+        if (this.scene && this.scene.socket && this.scene.socket.connected && this.scene.lobbyId) {
+            this.scene.socket.emit("requestPlatformSync", {
+                lobbyId: this.scene.lobbyId,
+            });
+        }
+    }
+
+    updateMovingPlatforms(time) {
+        if (!this.movingPlatforms) return;
+
+        this.movingPlatforms.forEach(({ platform, motion, range, speed, baseX, baseY }) => {
+            if (!platform || !platform.body) return;
+
+            // Calculate normalized phase value (0-1) for sync purposes
+            const normalizedTime = (time % speed) / speed;
+            platform.platformData = platform.platformData || {};
+            platform.platformData.phase = normalizedTime;
+
+            // Use sine wave based on normalized time for smoother and more predictable movement
+            if (motion === "vertical") {
+                const newY = baseY + Math.sin(normalizedTime * Math.PI * 2) * range;
+                platform.setY(newY);
+                platform.body.velocity.y =
+                    Math.cos(normalizedTime * Math.PI * 2) * range * ((Math.PI * 2) / speed) * 1000;
+                platform.body.velocity.x = 0;
+            } else if (motion === "horizontal") {
+                const newX = baseX + Math.sin(normalizedTime * Math.PI * 2) * range;
+                platform.setX(newX);
+                platform.body.velocity.x =
+                    Math.cos(normalizedTime * Math.PI * 2) * range * ((Math.PI * 2) / speed) * 1000;
+                platform.body.velocity.y = 0;
+            }
+
+            // Make sure the physics body is updated
+            platform.body.updateFromGameObject();
+        });
     }
 
     updateOtherPlayer(playerInfo) {

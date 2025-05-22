@@ -46,9 +46,9 @@ export class LevelSelector extends Scene {
 
         // Title
         this.add
-            .text(this.scale.width / 2, 80, "Level Select", {
+            .text(this.scale.width / 2, this.scale.height * 0.1, "Level Select", {
                 fontFamily: "Arial Black",
-                fontSize: 48,
+                fontSize: `${this.scale.height * 0.05}px`,
                 color: "#ffffff",
                 stroke: "#000000",
                 strokeThickness: 8,

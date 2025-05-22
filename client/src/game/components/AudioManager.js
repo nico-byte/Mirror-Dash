@@ -1,5 +1,6 @@
 /**
- * AudioManager handles all game audio playback, including background music and sound effects
+ * Improved AudioManager that properly handles level-specific tracks
+ * and prevents overlapping music during scene transitions
  */
 export class AudioManager {
     /**
@@ -10,47 +11,94 @@ export class AudioManager {
         this.scene = scene;
         this.musicTracks = {};
         this.currentTrack = null;
+        this.currentTrackKey = null;
         this.musicVolume = 0.5;
         this.sfxVolume = 0.7;
         this.isMuted = false;
+
+        // Track global sound instance to prevent duplicates
+        if (!window.globalSoundManager) {
+            window.globalSoundManager = {
+                activeMusic: null,
+                activeTrackKey: null,
+            };
+        }
+
+        // Define level-specific music mapping
+        this.levelMusicMap = {
+            level1: "dnb_og",
+            level2: "dnb",
+            level3: "dnb2",
+            level4: "dnb5",
+            level5: "dnb7",
+            mainMenu: "main_menu",
+            lobby: "idk",
+            gameOver: "dub2",
+        };
     }
 
     /**
-     * Preload audio assets
+     * Preload audio assets - called during scene preload
      */
     preloadAudio() {
         const scene = this.scene;
 
-        // Load music tracks if not already loaded
-        if (!scene.sound.get('levelMusic')) {
-            scene.load.audio('levelMusic', '../assets/music/dnb_og.wav');
-        }
-        
-        // Load level music tracks
+        // Determine which tracks to load based on scene
+        let tracksToLoad = [];
+
+        // Load all necessary music tracks
         const musicTracks = [
-            'dnb_og.wav', 'dnb.wav', 'dnb2.wav', 'dnb5.wav', 
-            'dnb6.wav', 'dnb7.wav', 'dub2.wav', 'idk.wav', 'main_menu.wav'
+            "dnb_og.wav",
+            "dnb.wav",
+            "dnb2.wav",
+            "dnb5.wav",
+            "dnb6.wav",
+            "dnb7.wav",
+            "dub2.wav",
+            "idk.wav",
+            "main_menu.wav",
         ];
-        
+
+        // Load all music tracks
         musicTracks.forEach(track => {
-            const key = track.replace('.wav', '');
+            const key = track.replace(".wav", "");
             if (!scene.sound.get(key)) {
                 scene.load.audio(key, `../assets/music/${track}`);
             }
         });
-        
+
         // Load sound effects
-        if (!scene.sound.get('win')) {
-            scene.load.audio('win', '../assets/music/win.wav');
+        if (!scene.sound.get("win")) {
+            scene.load.audio("win", "../assets/music/win.wav");
         }
-        
-        if (!scene.sound.get('jumppad')) {
-            scene.load.audio('jumppad', '../assets/music/jumppad.wav');
+
+        if (!scene.sound.get("jumppad")) {
+            scene.load.audio("jumppad", "../assets/music/jumppad.wav");
+        }
+
+        // Load spike hit sound if needed
+        if (!scene.sound.get("spike_hit")) {
+            scene.load.audio("spike_hit", "../assets/music/jumppad.wav"); // Reuse jumppad sound
         }
     }
 
     /**
-     * Play background music
+     * Play music for a specific level
+     * @param {string} levelId - The level ID (e.g., 'level1')
+     * @param {boolean} forceRestart - Whether to force restart even if already playing
+     * @returns {Phaser.Sound.BaseSound} The sound object that was started
+     */
+    playLevelMusic(levelId, forceRestart = false) {
+        // Get the appropriate track key for this level
+        const trackKey = this.levelMusicMap[levelId] || "dnb_og";
+
+        console.log(`Playing level music for ${levelId}: ${trackKey}`);
+
+        return this.playMusic(trackKey, true, this.musicVolume, true, forceRestart);
+    }
+
+    /**
+     * Play background music with proper global tracking
      * @param {string} key - The audio key to play
      * @param {boolean} loop - Whether to loop the audio (default: true)
      * @param {number} volume - Volume level (0-1) (default: musicVolume)
@@ -59,42 +107,57 @@ export class AudioManager {
      * @returns {Phaser.Sound.BaseSound} The sound object that was started
      */
     playMusic(key, loop = true, volume = this.musicVolume, stopCurrent = true, forcePlay = false) {
-        // Check if this track is already playing in the global sound manager
-        const existingTrack = this.scene.sound.get(key);
-        if (existingTrack && existingTrack.isPlaying && !forcePlay) {
-            // Track is already playing somewhere, just reference it 
-            // without starting it again (to prevent overlap in multiplayer)
-            this.currentTrack = existingTrack;
-            console.log(`Using existing music track: ${key}`);
+        // IMPORTANT: Check the global sound manager first
+        if (window.globalSoundManager.activeMusic && window.globalSoundManager.activeTrackKey === key && !forcePlay) {
+            console.log(`Reusing global music track: ${key}`);
+
+            // Store reference to the global track
+            this.currentTrack = window.globalSoundManager.activeMusic;
+            this.currentTrackKey = key;
+
+            // Ensure proper volume
+            if (!this.isMuted) {
+                this.currentTrack.setVolume(volume);
+            }
+
             return this.currentTrack;
         }
-        
-        // Stop current music if requested
-        if (stopCurrent && this.currentTrack && this.currentTrack.isPlaying) {
-            this.stopMusic();
+
+        // Stop any previous global music to prevent overlap
+        if (window.globalSoundManager.activeMusic && stopCurrent) {
+            console.log(`Stopping previous global music: ${window.globalSoundManager.activeTrackKey}`);
+            window.globalSoundManager.activeMusic.stop();
+            window.globalSoundManager.activeMusic = null;
+            window.globalSoundManager.activeTrackKey = null;
         }
 
-        // Create a new track if it doesn't exist in our cache
-        if (!this.musicTracks[key]) {
-            try {
+        // Create a new track
+        try {
+            if (!this.musicTracks[key]) {
                 this.musicTracks[key] = this.scene.sound.add(key, {
                     loop: loop,
-                    volume: this.isMuted ? 0 : volume
+                    volume: this.isMuted ? 0 : volume,
                 });
-            } catch (error) {
-                console.error(`Failed to add music track ${key}:`, error);
-                return null;
             }
-        }
 
-        // Start playing and update current track reference
-        this.currentTrack = this.musicTracks[key];
-        
-        if (!this.currentTrack.isPlaying || forcePlay) {
-            this.currentTrack.play();
+            // Update our local tracking
+            this.currentTrack = this.musicTracks[key];
+            this.currentTrackKey = key;
+
+            // Update the global tracking
+            window.globalSoundManager.activeMusic = this.currentTrack;
+            window.globalSoundManager.activeTrackKey = key;
+
+            // Start playing if not already
+            if (!this.currentTrack.isPlaying || forcePlay) {
+                this.currentTrack.play();
+            }
+
+            return this.currentTrack;
+        } catch (error) {
+            console.error(`Failed to play music track ${key}:`, error);
+            return null;
         }
-        
-        return this.currentTrack;
     }
 
     /**
@@ -111,10 +174,28 @@ export class AudioManager {
                 duration: fadeOutDuration,
                 onComplete: () => {
                     this.currentTrack.stop();
-                }
+
+                    // Also clear global reference if it matches
+                    if (window.globalSoundManager.activeMusic === this.currentTrack) {
+                        window.globalSoundManager.activeMusic = null;
+                        window.globalSoundManager.activeTrackKey = null;
+                    }
+
+                    this.currentTrack = null;
+                    this.currentTrackKey = null;
+                },
             });
         } else {
             this.currentTrack.stop();
+
+            // Also clear global reference if it matches
+            if (window.globalSoundManager.activeMusic === this.currentTrack) {
+                window.globalSoundManager.activeMusic = null;
+                window.globalSoundManager.activeTrackKey = null;
+            }
+
+            this.currentTrack = null;
+            this.currentTrackKey = null;
         }
     }
 
@@ -126,9 +207,9 @@ export class AudioManager {
      */
     playSfx(key, volume = this.sfxVolume) {
         if (this.isMuted) return null;
-        
+
         return this.scene.sound.play(key, {
-            volume: volume
+            volume: volume,
         });
     }
 
@@ -138,7 +219,7 @@ export class AudioManager {
      */
     setMusicVolume(volume) {
         this.musicVolume = Math.max(0, Math.min(1, volume));
-        
+
         if (this.currentTrack && !this.isMuted) {
             this.currentTrack.setVolume(this.musicVolume);
         }
@@ -158,41 +239,40 @@ export class AudioManager {
      */
     toggleMute() {
         this.isMuted = !this.isMuted;
-        
+
         if (this.currentTrack) {
             this.currentTrack.setVolume(this.isMuted ? 0 : this.musicVolume);
         }
-        
+
         return this.isMuted;
-    }
-
-    /**
-     * Pause all audio
-     */
-    pauseAll() {
-        this.scene.sound.pauseAll();
-    }
-
-    /**
-     * Resume all audio
-     */
-    resumeAll() {
-        this.scene.sound.resumeAll();
     }
 
     /**
      * Clean up all resources
      */
     shutdown() {
-        // Stop and destroy all music tracks
-        Object.values(this.musicTracks).forEach(track => {
-            if (track) {
-                track.stop();
-                track.destroy();
-            }
-        });
-        
+        // Don't stop global music on local scene change
+        // Just free the local references
+
+        // Clear local music track references
         this.musicTracks = {};
         this.currentTrack = null;
+        this.currentTrackKey = null;
+    }
+
+    /**
+     * Force stop all audio globally
+     * Used when truly exiting a game session
+     */
+    forceStopAllAudio() {
+        // Stop all music globally
+        if (window.globalSoundManager.activeMusic) {
+            window.globalSoundManager.activeMusic.stop();
+            window.globalSoundManager.activeMusic = null;
+            window.globalSoundManager.activeTrackKey = null;
+        }
+
+        // Stop all sounds
+        this.scene.sound.stopAll();
     }
 }

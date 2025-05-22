@@ -10,8 +10,6 @@ export class Player {
         this.y = y;
         this.animation = "idle";
         this.direction = "right";
-        this.midPoint = scene.scale.height / 2;
-        this.screenHeight = scene.scale.height;
         this.lastUpdate = Date.now();
         this.isInUfoMode = false; // Added for simple UFO mechanic
 
@@ -20,11 +18,6 @@ export class Player {
         const sprites = this.visuals.createSprites(x, y, name, isMainPlayer);
         this.sprite = sprites.sprite;
         this.text = sprites.text;
-        this.mirrorSprite = sprites.mirrorSprite;
-        this.mirrorText = sprites.mirrorText;
-
-        // Setup camera visibility
-        this.visuals.setupCameraVisibility(isMainPlayer);
 
         // Setup physics if this is a playable character
         if (isMainPlayer && scene.physics) {
@@ -45,8 +38,6 @@ export class Player {
         this.y = y;
         this.animation = "idle";
         this.direction = "right";
-        this.midPoint = scene.scale.height / 2;
-        this.screenHeight = scene.scale.height;
         this.lastUpdate = Date.now();
         this.isInUfoMode = false; // Added for simple UFO mechanic
 
@@ -55,11 +46,6 @@ export class Player {
         const sprites = this.visuals.createSprites(x, y, name, isMainPlayer);
         this.sprite = sprites.sprite;
         this.text = sprites.text;
-        this.mirrorSprite = sprites.mirrorSprite;
-        this.mirrorText = sprites.mirrorText;
-
-        // Setup camera visibility
-        this.visuals.setupCameraVisibility(isMainPlayer);
 
         // Setup physics if this is a playable character
         if (isMainPlayer && scene.physics) {
@@ -103,7 +89,7 @@ export class Player {
         }
 
         // Update visual elements
-        this.visuals.updatePositions(this.x, this.y, this.midPoint, this.screenHeight);
+        this.visuals.updatePositions(this.x, this.y);
         this.visuals.updateAnimation(this.direction);
     }
 
@@ -140,7 +126,6 @@ export class Player {
         this.animation = animation;
         this.direction = direction;
         this.lastUpdate = Date.now();
-        // this.isInUfoMode = ufoMode; // Removed: UFO mode state is not synced for simple version
 
         // Safe update of sprite position
         if (this.sprite) {
@@ -149,7 +134,6 @@ export class Player {
         }
 
         // Update animations based on the network-received animation state
-        // This is moved to visuals.updateAnimation to ensure proper error handling
         this.visuals.updateAnimation(direction);
 
         // Use tweens for smooth movement of other players if available
@@ -178,9 +162,6 @@ export class Player {
         } else {
             console.warn("PlayerVisuals instance is not initialized or already destroyed.");
         }
-        // if (this.ufoParticlesEmitter) { // Removed: No particles for simple UFO
-        //     this.ufoParticlesEmitter.destroy();
-        // }
     }
 
     toggleUfoMode() {
@@ -192,13 +173,11 @@ export class Player {
             this.sprite.setTexture("ufo");
             this.sprite.setScale(0.5); // Adjust scale for UFO sprite
             this.physics.setUfoPhysics(true);
-            // Removed sound and particle effects
             console.log("Player entered simple UFO mode.");
         } else {
             this.sprite.setTexture("player_animations"); // Revert to player sprite
             this.sprite.setScale(1); // Revert scale
             this.physics.setUfoPhysics(false);
-            // Removed sound and particle effects
             console.log("Player exited simple UFO mode.");
         }
         // Ensure physics body is updated if it exists
@@ -206,6 +185,4 @@ export class Player {
             this.sprite.body.setSize(this.sprite.width, this.sprite.height);
         }
     }
-
-    // Removed createUfoParticles method
 }

@@ -136,61 +136,74 @@ export class Lobby extends Scene {
     }
 
     create() {
+        // Get screen dimensions for responsive positioning
+        const width = this.scale.width;
+        const height = this.scale.height;
+
         if (this.connectionError) {
             alert("Failed to connect to game server. Please try again later.");
             this.scene.start("MainMenu");
             return;
         }
 
-        this.lobbyListContainer = this.add.container(512, 520).setDepth(1000);
-        this.add.rectangle(512, 384, 1024, 786, 0x060322);
+        // Create containers with relative positioning
+        this.lobbyListContainer = this.add.container(width * 0.5, height * 0.55).setDepth(1000);
 
-        // Set a darker background for better visibility
+        // Responsive background that scales with the screen size
+        this.add.rectangle(width * 0.5, height * 0.5, width, height, 0x060322);
+
+        // Make background scale proportionally to screen size
         this.lobbyListBackground = this.add
-            .rectangle(512, 384, 512 * 1.9, 384 * 1.9, 0x222266)
+            .rectangle(width * 0.5, height * 0.5, width * 0.85, height * 0.85, 0x222266)
             .setAlpha(0.8)
             .setStrokeStyle(2, 0x6666ff);
 
-        // this.add.image(512, 384, "background").setAlpha(0.2);
-
+        // Title text with responsive font size
         this.lobbyListGameLobbyText = this.add
-            .text(512, 80, "Game Lobbies", {
+            .text(width * 0.5, height * 0.1, "Game Lobbies", {
                 fontFamily: "Orbitron, Arial",
-                fontSize: "48px",
+                fontSize: `${Math.max(24, height * 0.05)}px`, // Responsive font size with minimum
                 color: "#ffffff",
                 stroke: "#000000",
                 strokeThickness: 8,
             })
             .setOrigin(0.5);
 
+        // Player name section - responsive positioning
         this.lobbyListNameLabel = this.add
-            .text(512, 140, "Your Name:", {
+            .text(width * 0.5, height * 0.18, "Your Name:", {
                 fontFamily: "Orbitron, Arial",
-                fontSize: "20px",
+                fontSize: `${Math.max(16, height * 0.026)}px`,
                 color: "#ffffff",
             })
             .setOrigin(0.5);
 
+        // Responsive name input box
+        const nameBoxWidth = Math.min(width * 0.4, 320); // Capped at 320px or 40% of width
         this.lobbyListNameBox = this.add
-            .rectangle(512, 180, 320, 45, 0xffffff, 0.1)
+            .rectangle(width * 0.5, height * 0.22, nameBoxWidth, height * 0.06, 0xffffff, 0.1)
             .setStrokeStyle(2, 0xffffff)
             .setOrigin(0.5)
             .setInteractive({ useHandCursor: true });
         this.lobbyListNameBox.on("pointerdown", () => this.promptName());
 
         this.lobbyListPlayerNameText = this.add
-            .text(512, 180, this.playerName, {
+            .text(width * 0.5, height * 0.22, this.playerName, {
                 fontFamily: "Orbitron, Arial",
-                fontSize: "20px",
+                fontSize: `${Math.max(16, height * 0.026)}px`,
                 color: "#ffffff",
             })
             .setOrigin(0.5)
             .setInteractive({ useHandCursor: true });
         this.lobbyListPlayerNameText.on("pointerdown", () => this.promptName());
 
-        const makeButton = (y, label, baseColor, hoverColor, onClick) => {
+        // Responsive button generator
+        const makeButton = (yPercent, label, baseColor, hoverColor, onClick) => {
+            const buttonWidth = Math.min(width * 0.4, 320); // Responsive width capped at 320px
+            const buttonHeight = height * 0.08;
+
             const rect = this.add
-                .rectangle(0, 0, 320, 60, baseColor)
+                .rectangle(0, 0, buttonWidth, buttonHeight, baseColor)
                 .setOrigin(0.5)
                 .setStrokeStyle(2, 0xffffff)
                 .setInteractive({ useHandCursor: true });
@@ -198,14 +211,14 @@ export class Lobby extends Scene {
             const text = this.add
                 .text(0, 0, label, {
                     fontFamily: "Orbitron, Arial",
-                    fontSize: "24px",
+                    fontSize: `${Math.max(16, height * 0.03)}px`, // Responsive font size
                     color: "#ffffff",
                 })
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
 
             // Combine into a container so it moves as one unit
-            const button = this.add.container(512, y, [rect, text]);
+            const button = this.add.container(width * 0.5, height * yPercent, [rect, text]);
 
             // Set interactivity for the button (delegate events)
             rect.on("pointerover", () => rect.setFillStyle(hoverColor));
@@ -216,42 +229,47 @@ export class Lobby extends Scene {
             return button;
         };
 
-        this.lobbyListCreateLobbyButton = makeButton(260, "Create Lobby", 0x00aa00, 0x00cc00, () =>
+        // Create lobby button - responsive positioning
+        this.lobbyListCreateLobbyButton = makeButton(0.32, "Create Lobby", 0x00aa00, 0x00cc00, () =>
             this.createNewLobby()
         );
 
+        // Available lobbies title with responsive positioning
         this.lobbyListAvailableLobbiesText = this.add
-            .text(512, 330, "Available Lobbies", {
+            .text(width * 0.5, height * 0.4, "Available Lobbies", {
                 fontFamily: "Orbitron, Arial",
-                fontSize: "28px",
+                fontSize: `${Math.max(18, height * 0.036)}px`,
                 color: "#ffffff",
                 stroke: "#000000",
                 strokeThickness: 4,
             })
             .setOrigin(0.5);
 
-        this.lobbyListRefreshButton = makeButton(640, "Refresh Lobbies", 0x00aa00, 0x00cc00, () => {
+        // Responsive buttons at the bottom
+        this.lobbyListRefreshButton = makeButton(0.82, "Refresh Lobbies", 0x00aa00, 0x00cc00, () => {
             if (this.socket && this.socket.connected) {
                 console.log("Requesting lobby list");
                 this.socket.emit("getLobbyList");
             } else {
-                // console.error("Socket not connected, cannot request lobby list");
                 alert("Not connected to server. Please try again.");
             }
         });
-        this.lobbyListbackButton = makeButton(710, "Back to Main Menu", 0xaa0000, 0xcc0000, () =>
+
+        this.lobbyListbackButton = makeButton(0.92, "Back to Main Menu", 0xaa0000, 0xcc0000, () =>
             this.scene.start("MainMenu")
         );
 
+        // Lobby view (when inside a lobby)
         this.lobbyBackground = this.add
-            .rectangle(512, 384, 700, 480, 0x222266, 0.8)
+            .rectangle(width * 0.5, height * 0.5, width * 0.8, height * 0.7, 0x222266, 0.8)
             .setStrokeStyle(2, 0x6666ff)
             .setVisible(false);
 
+        // Lobby info text with responsive positioning
         this.lobbyNameText = this.add
-            .text(512, 200, "Lobby: ", {
+            .text(width * 0.5, height * 0.25, "Lobby: ", {
                 fontFamily: "Orbitron, Arial",
-                fontSize: 28,
+                fontSize: `${Math.max(18, height * 0.036)}px`,
                 color: "#ffffff",
                 stroke: "#000000",
                 strokeThickness: 4,
@@ -260,20 +278,21 @@ export class Lobby extends Scene {
             .setVisible(false);
 
         this.lobbyIdText = this.add
-            .text(512, 240, "ID: ", {
+            .text(width * 0.5, height * 0.3, "ID: ", {
                 fontFamily: "Orbitron, Arial",
-                fontSize: 16,
+                fontSize: `${Math.max(12, height * 0.02)}px`,
                 color: "#aaaaff",
             })
             .setOrigin(0.5)
             .setVisible(false);
 
-        this.lobbyPlayerListContainer = this.add.container(512, 300).setVisible(false);
+        // Player list for lobby view
+        this.lobbyPlayerListContainer = this.add.container(width * 0.5, height * 0.4).setVisible(false);
 
         this.lobbyPlayerText = this.add
-            .text(512, 280, "Players", {
+            .text(width * 0.5, height * 0.35, "Players", {
                 fontFamily: "Orbitron, Arial",
-                fontSize: 24,
+                fontSize: `${Math.max(16, height * 0.03)}px`,
                 color: "#ffffff",
                 stroke: "#000000",
                 strokeThickness: 4,
@@ -282,24 +301,26 @@ export class Lobby extends Scene {
             .setVisible(false);
 
         // Container for player list - this will be populated dynamically
-        this.lobbyUI = this.add.container(512, 350);
+        this.lobbyUI = this.add.container(width * 0.5, height * 0.45);
         this.lobbyPlayerListContainer = this.add.container(0, 0);
         this.lobbyUI.add(this.lobbyPlayerListContainer);
 
-        this.lobbyStartGameButton = makeButton(490, "Start Game", 0x00aa00, 0x00cc00, () => {
+        // Lobby action buttons - responsive positioning
+        this.lobbyStartGameButton = makeButton(0.65, "Start Game", 0x00aa00, 0x00cc00, () => {
             if (this.socket?.connected && this.currentLobbyId) {
                 this.socket.emit("requestGameStart", { lobbyId: this.currentLobbyId });
             }
         }).setVisible(false);
 
-        this.lobbyLeaveLobbyButton = makeButton(560, "Leave Lobby", 0xaa0000, 0xcc0000, () =>
+        this.lobbyLeaveLobbyButton = makeButton(0.75, "Leave Lobby", 0xaa0000, 0xcc0000, () =>
             this.leaveLobby()
         ).setVisible(false);
 
+        // Connection status text
         this.connectionStatusText = this.add
-            .text(512, 600, "Connecting to server...", {
+            .text(width * 0.5, height * 0.98, "Connecting to server...", {
                 fontFamily: "Orbitron, Arial",
-                fontSize: 14,
+                fontSize: `${Math.max(12, height * 0.018)}px`,
                 color: "#ffff00",
             })
             .setOrigin(0.5);
@@ -311,6 +332,7 @@ export class Lobby extends Scene {
             this.connectionStatusText.setText("Failed to connect to server").setColor("#ff0000");
         }
 
+        // Handle debug mode
         const debugMode = import.meta.env.VITE_DEBUG_MODE === "true";
         if (debugMode) {
             this.debugText = this.add.text(10, 10, "Debug: Lobby Scene", {
@@ -318,6 +340,226 @@ export class Lobby extends Scene {
                 fill: "#ffffff",
                 backgroundColor: "#000000",
             });
+        }
+
+        // If we're already in a lobby (e.g., returning from a game), show lobby UI
+        if (this.inLobby && this.currentLobbyId) {
+            this.showLobbyUI();
+        }
+
+        // Add listener for window resize
+        this.scale.on("resize", this.handleResize, this);
+    }
+
+    /**
+     * Handle window resize event - repositions all UI elements
+     * @param {object} gameSize - Contains the new width and height
+     */
+    handleResize(gameSize) {
+        const width = gameSize.width;
+        const height = gameSize.height;
+
+        // Berechne responsive Maße basierend auf der Bildschirmgröße
+        const buttonWidth = Math.min(width * 0.4, 320);
+        const buttonHeight = height * 0.08;
+        const nameBoxWidth = Math.min(width * 0.4, 320);
+        const lobbyListWidth = Math.min(600, width * 0.75);
+        const lobbyListHeight = Math.min(56, height * 0.07);
+        const lobbySpacing = Math.min(70, height * 0.09);
+
+        // === LOBBY LISTE (Hauptmenü der Lobby) ===
+
+        // Hintergrund-Rechteck aktualisieren
+        if (this.lobbyListBackground) {
+            this.lobbyListBackground.setPosition(width * 0.5, height * 0.5).setSize(width * 0.85, height * 0.85);
+        }
+
+        // Container für Lobby-Liste aktualisieren
+        if (this.lobbyListContainer) {
+            this.lobbyListContainer.setPosition(width * 0.5, height * 0.55);
+        }
+
+        // Titel aktualisieren
+        if (this.lobbyListGameLobbyText) {
+            this.lobbyListGameLobbyText
+                .setPosition(width * 0.5, height * 0.1)
+                .setFontSize(`${Math.max(24, height * 0.05)}px`);
+        }
+
+        // Spielername-Label & Eingabe
+        if (this.lobbyListNameLabel) {
+            this.lobbyListNameLabel
+                .setPosition(width * 0.5, height * 0.18)
+                .setFontSize(`${Math.max(16, height * 0.026)}px`);
+        }
+
+        if (this.lobbyListNameBox) {
+            this.lobbyListNameBox.setPosition(width * 0.5, height * 0.22).setSize(nameBoxWidth, height * 0.06);
+        }
+
+        if (this.lobbyListPlayerNameText) {
+            this.lobbyListPlayerNameText
+                .setPosition(width * 0.5, height * 0.22)
+                .setFontSize(`${Math.max(16, height * 0.026)}px`);
+        }
+
+        // Buttons aktualisieren
+        if (this.lobbyListCreateLobbyButton) {
+            // Extrahiere Komponenten
+            const button = this.lobbyListCreateLobbyButton;
+            const rect = button.list && button.list[0];
+            const text = button.list && button.list[1];
+
+            // Position aktualisieren
+            button.setPosition(width * 0.5, height * 0.32);
+
+            // Größe und Text aktualisieren falls verfügbar
+            if (rect) {
+                rect.setSize(buttonWidth, buttonHeight);
+            }
+
+            if (text) {
+                text.setFontSize(`${Math.max(16, height * 0.03)}px`);
+            }
+        }
+
+        // "Verfügbare Lobbies" Text
+        if (this.lobbyListAvailableLobbiesText) {
+            this.lobbyListAvailableLobbiesText
+                .setPosition(width * 0.5, height * 0.4)
+                .setFontSize(`${Math.max(18, height * 0.036)}px`);
+        }
+
+        // Refresh-Button
+        if (this.lobbyListRefreshButton) {
+            // Extrahiere Komponenten
+            const button = this.lobbyListRefreshButton;
+            const rect = button.list && button.list[0];
+            const text = button.list && button.list[1];
+
+            // Position aktualisieren
+            button.setPosition(width * 0.5, height * 0.82);
+
+            // Größe und Text aktualisieren falls verfügbar
+            if (rect) {
+                rect.setSize(buttonWidth, buttonHeight);
+            }
+
+            if (text) {
+                text.setFontSize(`${Math.max(16, height * 0.03)}px`);
+            }
+        }
+
+        // Back-Button
+        if (this.lobbyListbackButton) {
+            // Extrahiere Komponenten
+            const button = this.lobbyListbackButton;
+            const rect = button.list && button.list[0];
+            const text = button.list && button.list[1];
+
+            // Position aktualisieren
+            button.setPosition(width * 0.5, height * 0.92);
+
+            // Größe und Text aktualisieren falls verfügbar
+            if (rect) {
+                rect.setSize(buttonWidth, buttonHeight);
+            }
+
+            if (text) {
+                text.setFontSize(`${Math.max(16, height * 0.03)}px`);
+            }
+        }
+
+        // === LOBBY ANSICHT (wenn man in einer Lobby ist) ===
+
+        // Lobby Hintergrund
+        if (this.lobbyBackground) {
+            this.lobbyBackground.setPosition(width * 0.5, height * 0.5).setSize(width * 0.8, height * 0.7);
+        }
+
+        // Lobby Name und ID
+        if (this.lobbyNameText) {
+            this.lobbyNameText.setPosition(width * 0.5, height * 0.25).setFontSize(`${Math.max(18, height * 0.036)}px`);
+        }
+
+        if (this.lobbyIdText) {
+            this.lobbyIdText.setPosition(width * 0.5, height * 0.3).setFontSize(`${Math.max(12, height * 0.02)}px`);
+        }
+
+        // Player List Text
+        if (this.lobbyPlayerText) {
+            this.lobbyPlayerText
+                .setPosition(width * 0.5, height * 0.35)
+                .setFontSize(`${Math.max(16, height * 0.03)}px`);
+        }
+
+        // Player List Container
+        if (this.lobbyUI) {
+            this.lobbyUI.setPosition(width * 0.5, height * 0.45);
+        }
+
+        // Start Game Button
+        if (this.lobbyStartGameButton) {
+            // Extrahiere Komponenten
+            const button = this.lobbyStartGameButton;
+            const rect = button.list && button.list[0];
+            const text = button.list && button.list[1];
+
+            // Position aktualisieren
+            button.setPosition(width * 0.5, height * 0.65);
+
+            // Größe und Text aktualisieren falls verfügbar
+            if (rect) {
+                rect.setSize(buttonWidth, buttonHeight);
+            }
+
+            if (text) {
+                text.setFontSize(`${Math.max(16, height * 0.03)}px`);
+            }
+        }
+
+        // Leave Lobby Button
+        if (this.lobbyLeaveLobbyButton) {
+            // Extrahiere Komponenten
+            const button = this.lobbyLeaveLobbyButton;
+            const rect = button.list && button.list[0];
+            const text = button.list && button.list[1];
+
+            // Position aktualisieren
+            button.setPosition(width * 0.5, height * 0.75);
+
+            // Größe und Text aktualisieren falls verfügbar
+            if (rect) {
+                rect.setSize(buttonWidth, buttonHeight);
+            }
+
+            if (text) {
+                text.setFontSize(`${Math.max(16, height * 0.03)}px`);
+            }
+        }
+
+        // Connection Status Text
+        if (this.connectionStatusText) {
+            this.connectionStatusText
+                .setPosition(width * 0.5, height * 0.98)
+                .setFontSize(`${Math.max(12, height * 0.018)}px`);
+        }
+
+        // Debug Text
+        if (this.debugText) {
+            this.debugText.setPosition(10, 10);
+        }
+
+        // Aktualisiere die Lobbyliste oder den Lobbyzustand, je nachdem was gerade angezeigt wird
+        if (this.inLobby) {
+            // Wenn wir in einer Lobby sind, die Spielerliste aktualisieren
+            const lobby = this.lobbies[this.currentLobbyId];
+            if (lobby) {
+                this.updateLobbyState(lobby);
+            }
+        } else {
+            // Ansonsten die Lobbyliste aktualisieren
+            this.updateLobbiesList();
         }
     }
 
@@ -511,11 +753,15 @@ export class Lobby extends Scene {
     updateLobbiesList() {
         // Clear existing list
         if (!this.lobbyListContainer) {
-            // console.error("Lobby list container is undefined");
+            console.warn("Lobby list container is undefined");
             return;
         }
 
         this.lobbyListContainer.removeAll();
+
+        // Get screen dimensions
+        const width = this.scale.width;
+        const height = this.scale.height;
 
         // If in a lobby, don't show the list
         if (this.inLobby) return;
@@ -526,9 +772,9 @@ export class Lobby extends Scene {
         if (lobbyIds.length === 0) {
             // No lobbies available - show a nicer message
             const noLobbiesText = this.add
-                .text(0, -70, "No lobbies available.\nCreate a new one to get started!", {
+                .text(0, -height * 0.1, "No lobbies available.\nCreate a new one to get started!", {
                     fontFamily: "Arial",
-                    fontSize: 22,
+                    fontSize: Math.max(16, height * 0.028),
                     color: "#ffffff",
                     stroke: "#000000",
                     strokeThickness: 3,
@@ -539,7 +785,7 @@ export class Lobby extends Scene {
             // Add a hint icon
             const hintIcon = this.add
                 .text(-20, -20, "👆", {
-                    fontSize: 40,
+                    fontSize: Math.max(30, height * 0.04),
                 })
                 .setOrigin(0);
 
@@ -547,16 +793,21 @@ export class Lobby extends Scene {
             return;
         }
 
+        // Calculate entry sizes based on screen size
+        const entryWidth = Math.min(600, width * 0.75);
+        const entryHeight = Math.min(56, height * 0.07);
+        const entrySpacing = Math.min(70, height * 0.09);
+
         // Display each lobby as a button with improved styling
-        let yPos = -120;
+        let yPos = -height * 0.15; // Start position scales with screen height
         lobbyIds.forEach((lobbyId, index) => {
             const lobby = this.lobbies[lobbyId];
             if (!lobby) return;
 
             // Background for this lobby entry with border
-            const bgBorder = this.add.rectangle(10, yPos, 600, 56, 0xffffff, 0.3);
+            const bgBorder = this.add.rectangle(0, yPos, entryWidth, entryHeight + 4, 0xffffff, 0.3);
             const bg = this.add
-                .rectangle(10, yPos, 596, 52, 0x444444, 0.8)
+                .rectangle(0, yPos, entryWidth - 4, entryHeight, 0x444444, 0.8)
                 .setInteractive()
                 .on("pointerover", () => bg.setFillStyle(0x666666, 0.8))
                 .on("pointerout", () => bg.setFillStyle(0x444444, 0.8))
@@ -564,11 +815,11 @@ export class Lobby extends Scene {
                     this.joinLobby(lobbyId);
                 });
 
-            // Lobby name with better styling
+            // Lobby name with better styling - positioned for responsive layout
             const text = this.add
-                .text(-270, yPos, `${lobby.name}`, {
+                .text(-entryWidth * 0.4, yPos, `${lobby.name}`, {
                     fontFamily: "Arial",
-                    fontSize: 22,
+                    fontSize: Math.max(16, height * 0.026),
                     color: "#ffffff",
                     stroke: "#000000",
                     strokeThickness: 2,
@@ -576,11 +827,13 @@ export class Lobby extends Scene {
                 .setOrigin(0, 0.5);
 
             // Player count with visual indicator
-            const playerCountBg = this.add.rectangle(-100, yPos, 80, 36, 0x222222, 0.6).setOrigin(0, 0.5);
+            const playerCountBg = this.add
+                .rectangle(-entryWidth * 0.18, yPos, entryWidth * 0.12, entryHeight * 0.6, 0x222222, 0.6)
+                .setOrigin(0, 0.5);
             const playerCount = this.add
-                .text(-90, yPos, `${lobby.playerCount}/${lobby.maxPlayers}`, {
+                .text(-entryWidth * 0.15, yPos, `${lobby.playerCount}/${lobby.maxPlayers}`, {
                     fontFamily: "Arial",
-                    fontSize: 18,
+                    fontSize: Math.max(14, height * 0.022),
                     color: lobby.playerCount < lobby.maxPlayers ? "#00ff00" : "#ff0000",
                     stroke: "#000000",
                     strokeThickness: 2,
@@ -589,15 +842,23 @@ export class Lobby extends Scene {
 
             // Player icon
             const playerIcon = this.add
-                .text(-65, yPos, "👤", {
-                    fontSize: 20,
+                .text(-entryWidth * 0.08, yPos, "👤", {
+                    fontSize: Math.max(16, height * 0.024),
                 })
                 .setOrigin(0, 0.5);
 
             // Join button with better styling
-            const joinBtnBorder = this.add.rectangle(250, yPos, 104, 44, 0xffffff, 0.5);
+            const joinBtnWidth = Math.min(100, width * 0.12);
+            const joinBtnBorder = this.add.rectangle(
+                entryWidth * 0.35,
+                yPos,
+                joinBtnWidth + 4,
+                entryHeight * 0.7 + 4,
+                0xffffff,
+                0.5
+            );
             const joinBtn = this.add
-                .rectangle(250, yPos, 100, 40, 0x008800, 1)
+                .rectangle(entryWidth * 0.35, yPos, joinBtnWidth, entryHeight * 0.7, 0x008800, 1)
                 .setInteractive()
                 .on("pointerover", () => joinBtn.setFillStyle(0x00aa00))
                 .on("pointerout", () => joinBtn.setFillStyle(0x008800))
@@ -606,9 +867,9 @@ export class Lobby extends Scene {
                 });
 
             const joinText = this.add
-                .text(250, yPos, "Join", {
+                .text(entryWidth * 0.35, yPos, "Join", {
                     fontFamily: "Arial Black",
-                    fontSize: 18,
+                    fontSize: Math.max(14, height * 0.022),
                     color: "#ffffff",
                 })
                 .setOrigin(0.5);
@@ -626,7 +887,7 @@ export class Lobby extends Scene {
                 joinText,
             ]);
 
-            yPos += 70; // More spacing between entries
+            yPos += entrySpacing; // More spacing between entries
         });
     }
 
@@ -643,16 +904,22 @@ export class Lobby extends Scene {
         console.log("Updating lobby state:", lobby);
         console.log("Players in lobby:", Object.keys(lobby.players || {}));
 
-        // 1. Update lobby name and ID display
+        // Get screen dimensions for responsive positioning
+        const width = this.scale.width;
+        const height = this.scale.height;
+
+        // 1. Update lobby name and ID display with responsive positioning
         if (this.lobbyNameText) {
             this.lobbyNameText.setText(`Lobby: ${lobby.name || "Unknown"}`);
+            this.lobbyNameText.setPosition(width * 0.5, height * 0.25);
         }
 
         if (this.lobbyIdText) {
             this.lobbyIdText.setText(`ID: ${lobby.id || "Unknown"}`);
+            this.lobbyIdText.setPosition(width * 0.5, height * 0.3);
         }
 
-        // 2. IMPORTANT: Create a new container if it doesn't exist
+        // 2. Create a new container if it doesn't exist
         if (!this.lobbyPlayerListContainer) {
             console.log("Creating new player list container");
             this.lobbyPlayerListContainer = this.add.container(0, 0);
@@ -675,8 +942,9 @@ export class Lobby extends Scene {
             }
         }
 
-        // 4. Make sure the player container is visible
+        // 4. Make sure the player container is visible and properly positioned
         this.lobbyPlayerListContainer.setVisible(true);
+        this.lobbyUI.setPosition(width * 0.5, height * 0.45);
 
         // 5. Determine if current player is host
         const isHost = lobby.host === this.socket?.id;
@@ -693,14 +961,17 @@ export class Lobby extends Scene {
             const noPlayersText = this.add
                 .text(0, 0, "No players in lobby", {
                     fontFamily: "Arial",
-                    fontSize: 18,
+                    fontSize: Math.max(16, height * 0.024),
                     color: "#ff0000",
                 })
                 .setOrigin(0.5);
 
             this.lobbyPlayerListContainer.add(noPlayersText);
         } else {
-            let yPos = -20; // Starting Y position for first player
+            // Calculate player entry sizes based on screen
+            const entryHeight = Math.min(60, height * 0.08);
+            const entryWidth = Math.min(400, width * 0.7);
+            let yPos = -Math.min(60, height * 0.08); // Starting Y position for first player
 
             playerIds.forEach((playerId, index) => {
                 const player = lobby.players[playerId];
@@ -715,12 +986,19 @@ export class Lobby extends Scene {
                 const isCurrentPlayer = playerId === this.socket?.id;
 
                 // Player background
-                const playerBg = this.add.rectangle(0, yPos, 400, 50, isCurrentPlayer ? 0x334433 : 0x333344, 0.7);
+                const playerBg = this.add.rectangle(
+                    0,
+                    yPos,
+                    entryWidth,
+                    entryHeight,
+                    isCurrentPlayer ? 0x334433 : 0x333344,
+                    0.7
+                );
 
                 // Add a border for current player
                 let playerBorder = null;
                 if (isCurrentPlayer) {
-                    playerBorder = this.add.rectangle(0, yPos, 404, 54, 0x55ff55, 0.5);
+                    playerBorder = this.add.rectangle(0, yPos, entryWidth + 4, entryHeight + 4, 0x55ff55, 0.5);
                     this.lobbyPlayerListContainer.add(playerBorder);
                 }
 
@@ -731,7 +1009,7 @@ export class Lobby extends Scene {
                 const text = this.add
                     .text(0, yPos, `${prefix}${playerName}`, {
                         fontFamily: "Arial",
-                        fontSize: 22,
+                        fontSize: Math.max(16, height * 0.028),
                         color: isCurrentPlayer ? "#88ff88" : "#ffffff",
                         stroke: "#000000",
                         strokeThickness: 2,
@@ -742,15 +1020,15 @@ export class Lobby extends Scene {
                 this.lobbyPlayerListContainer.add([playerBg, text]);
 
                 // Increase position for next player
-                yPos += 60;
+                yPos += entryHeight + 5; // 5px gap between entries
             });
 
             // 7. Add waiting message if needed
             if (playerIds.length < 2) {
                 const waitingText = this.add
-                    .text(0, yPos + 40, "Waiting for more players...", {
+                    .text(0, yPos + entryHeight, "Waiting for more players...", {
                         fontFamily: "Arial",
-                        fontSize: 18,
+                        fontSize: Math.max(14, height * 0.024),
                         color: "#ffff00",
                         stroke: "#000000",
                         strokeThickness: 2,
@@ -762,10 +1040,13 @@ export class Lobby extends Scene {
             }
         }
 
-        // 8. Update Start Game button state
+        // 8. Update Start Game button state and ensure correct positioning
         const canStart = playerIds.length >= 2 && isHost;
         if (this.lobbyStartGameButton) {
             try {
+                // Update button container position for responsive layout
+                this.lobbyStartGameButton.setPosition(width * 0.5, height * 0.65);
+
                 // Update button container
                 const buttonContainer = this.lobbyStartGameButton;
                 const buttonRect = buttonContainer.list && buttonContainer.list[0];
@@ -779,10 +1060,18 @@ export class Lobby extends Scene {
                         buttonRect.setFillStyle(0x555555, 0.6);
                         buttonContainer.disableInteractive();
                     }
+
+                    // Ensure button is sized correctly
+                    buttonRect.setSize(Math.min(width * 0.4, 320), height * 0.08);
                 }
             } catch (error) {
                 console.warn("Error updating start button:", error);
             }
+        }
+
+        // Ensure leave button is positioned correctly
+        if (this.lobbyLeaveLobbyButton) {
+            this.lobbyLeaveLobbyButton.setPosition(width * 0.5, height * 0.75);
         }
     }
 
@@ -802,10 +1091,10 @@ export class Lobby extends Scene {
         if (this.debugText) {
             this.debugText.setText(
                 `Socket ID: ${this.socket?.id || "None"}\n` +
-                `Connected: ${this.socket?.connected || false}\n` +
-                `In Lobby: ${this.inLobby}\n` +
-                `Lobby ID: ${this.currentLobbyId || "None"}\n` +
-                `Available Lobbies: ${Object.keys(this.lobbies || {}).length}`
+                    `Connected: ${this.socket?.connected || false}\n` +
+                    `In Lobby: ${this.inLobby}\n` +
+                    `Lobby ID: ${this.currentLobbyId || "None"}\n` +
+                    `Available Lobbies: ${Object.keys(this.lobbies || {}).length}`
             );
         }
     }
