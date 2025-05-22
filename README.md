@@ -20,8 +20,7 @@ Mirror-Dash features a unique split-screen mechanic: **your partner's world is f
 
 ## 🎮 Play Now
 
-[Play Mirror-Dash Online](https://hetznergj-1.onrender.com)
-(It may take 50seconds to boot up the Game)
+[Play Mirror-Dash Online](https://mirror-dash.lintroom.net)
 
 ## 🛠️ Development
 

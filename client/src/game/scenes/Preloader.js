@@ -113,8 +113,11 @@ export class Preloader extends Scene {
         // If we're skipping directly to game with environment variables,
         // pre-establish the socket connection
         if ((startDirectly || skipMenu) && (skipLobby || directConnect)) {
-            const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:9000";
-            this.socket = io(serverUrl);
+            const serverUrl = import.meta.env.VITE_SERVER_URL || "/";
+            this.socket = io(serverUrl, {
+                path: "/socket.io",
+                transports: ["websocket"],
+            });
 
             // Wait for socket to connect before proceeding
             this.socket.on("connect", () => {
