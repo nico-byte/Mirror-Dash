@@ -22,15 +22,23 @@ class LeaderboardEntry {
      * @param {number} stars - Stars earned
      */
     addLevelCompletion(levelId, timeLeft, stars) {
-        this.wins += 1;
-        this.lastWin = Date.now();
-
-        // Store level info
-        this.levels[levelId] = {
-            timeLeft: timeLeft || 0,
-            stars: stars || 0,
-            completedAt: Date.now(),
-        };
+        const prev = this.levels[levelId];
+        const newStars = stars || 0;
+        const newTime = timeLeft || 0;
+        // Determine if this is first completion or a better score
+        const shouldUpdate = !prev || newStars > prev.stars || (newStars === prev.stars && newTime > prev.timeLeft);
+        if (shouldUpdate) {
+            if (!prev) {
+                this.wins += 1;
+            }
+            this.lastWin = Date.now();
+            // Store or overwrite level info
+            this.levels[levelId] = {
+                timeLeft: newTime,
+                stars: newStars,
+                completedAt: Date.now(),
+            };
+        }
     }
 
     /**

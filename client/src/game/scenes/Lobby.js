@@ -23,10 +23,10 @@ export class Lobby extends Scene {
         this.socket = null;
         this.lobbies = {};
         this.selectedLobbyId = null;
-        this.playerName = "Player_" + Math.floor(Math.random() * 1000);
+        this.playerName = localStorage.getItem("playerName") || "Player_" + Math.floor(Math.random() * 1000);
         this.currentLobbyId = null;
         this.inLobby = false;
-        this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
+        this.defaultLobbyName = localStorage.getItem("lobbyName") || "Game Lobby " + Math.floor(Math.random() * 100);
         this.connectionError = false;
 
         // Clear any previous UI references to prevent stale objects
@@ -60,10 +60,12 @@ export class Lobby extends Scene {
         // Player name can be passed from the main menu
         if (data && data.playerName) {
             this.playerName = data.playerName;
+            localStorage.setItem("playerName", this.playerName);
         }
 
         // Generate a new default lobby name for each session
-        this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
+        // this.defaultLobbyName = "Game Lobby " + Math.floor(Math.random() * 100);
+        // loaded from localStorage above or randomly generated
 
         // Reset state for new lobby scene
         this.inLobby = false;
@@ -567,6 +569,7 @@ export class Lobby extends Scene {
         const newName = prompt("Enter your name:", this.playerName);
         if (newName && newName.trim() !== "") {
             this.playerName = newName.trim();
+            localStorage.setItem("playerName", this.playerName);
             this.lobbyListPlayerNameText.setText(this.playerName);
         }
     }
@@ -580,6 +583,7 @@ export class Lobby extends Scene {
 
         const lobbyName = prompt("Enter lobby name:", this.defaultLobbyName);
         if (lobbyName && lobbyName.trim() !== "") {
+            localStorage.setItem("lobbyName", lobbyName.trim());
             console.log("Creating lobby with name:", lobbyName.trim());
             this.socket.emit(
                 "createLobby",
