@@ -331,8 +331,10 @@ The deployment uses two Docker containers:
 
 Key files for deployment:
 
-- `docker-build-push.sh`: Builds and pushes Docker images to Docker Hub
-- `deploy-dockerhub.sh`: Deploys the images to your server
+- `docker-build-push-client.sh`: Builds and pushes the client Docker image to Docker Hub
+- `docker-build-push-server.sh`: Builds and pushes the server Docker image to Docker Hub
+- `docker-build-push.sh`: Builds and pushes both client and server Docker images to Docker Hub
+- `deploy-to-cloud.sh`: Deploys the images to your cloud server
 - `docker-compose.yml`: Defines the Docker containers and their network
 - `client/nginx.conf`: Nginx configuration for the client container
 - `client/.env.production`: Production environment variables for the client
@@ -353,22 +355,32 @@ This script:
 - Tags them with your Docker Hub username
 - Pushes them to Docker Hub
 
+Alternativley the client and server image can be built seperately:
+
+```bash
+./docker-build-push-client.sh <your-dockerhub-username> [tag]
+```
+
+```bash
+./docker-build-push-server.sh <your-dockerhub-username> [tag]
+```
+
 #### 2. Deploy to Server
 
 After pushing the images to Docker Hub, deploy them to your server:
 
 ```bash
-./deploy-dockerhub.sh <server-ip> <your-dockerhub-username> [tag]
+./deploy.sh <server-ip> <your-dockerhub-username> [tag]
 ```
 
 This script:
 - Creates a production environment file with the server IP
-- Sets up Docker and Docker Compose V2 on your server (if not already installed)
+- Kills all running containers.
 - Pulls the latest Docker images on the server
 - Creates a Docker Compose configuration with the correct environment variables
 - Starts the containers using Docker Compose
 
-The deployment script handles all the necessary steps, including installing Docker Compose V2 if it's not already available on the server.
+The deployment script handles all the necessary steps.
 
 #### 3. Accessing Your Deployed Game
 
@@ -387,40 +399,36 @@ The deployment scripts use and set the following environment variables:
 
 ### Troubleshooting Deployment
 
-If your deployment encounters issues:
+To troubleshoot any deployment issues on your cloud server, ssh on to it and navigate to the mirror-dash folder:
+
+```bash
+ssh root@<your-server-ip>
+cd /opt/mirror-dash
+```
 
 1. **Check Docker container logs**:
    ```bash
-   ssh root@<your-server-ip>
-   cd /opt/mirror-dash
    docker compose logs -f
    ```
 
 2. **Verify Nginx configuration**:
    ```bash
-   ssh root@<your-server-ip>
    docker exec -it $(docker ps -qf "name=mirror-dash-client") nginx -t
    ```
 
 3. **Check if containers are running**:
    ```bash
-   ssh root@<your-server-ip>
    docker ps
    ```
 
 4. **Restart the containers**:
    ```bash
-   ssh root@<your-server-ip>
-   cd /opt/mirror-dash
    docker compose restart
    ```
 
 5. **Manual container management**:
-   If the `docker compose` command doesn't work, you can manage containers manually:
    ```bash
    # Start containers
-   ssh root@<your-server-ip>
-   cd /opt/mirror-dash
    docker compose up -d
    
    # Stop and remove containers
@@ -428,8 +436,6 @@ If your deployment encounters issues:
    docker rm mirror-dash-client mirror-dash-server
 
    # Update containers
-   ssh root@<your-server-ip>
-   cd /opt/mirror-dash
    docker compose pull
    docker compose up -d --force-recreate
    ```

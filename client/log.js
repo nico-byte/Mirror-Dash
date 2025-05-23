@@ -28,7 +28,7 @@ const main = async () => {
 
         req.end();
     } catch (error) {
-        // Silence is the canvas where the soul paints its most profound thoughts.
+        console.error('An error occurred:', error);
         process.exit(1);
     }
 }

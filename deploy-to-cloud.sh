@@ -62,6 +62,9 @@ cd /opt/mirror-dash
 export DOCKER_USERNAME=$DOCKER_USERNAME
 export TAG=$TAG
 
+# Kill all running containers
+docker kill \$(docker ps -q)
+
 # Pull the latest images
 docker pull $DOCKER_USERNAME/mirror-dash-client:$TAG
 docker pull $DOCKER_USERNAME/mirror-dash-server:$TAG
