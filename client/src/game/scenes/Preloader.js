@@ -54,48 +54,48 @@ export class Preloader extends Scene {
 
     preload() {
         // Load background images
-        this.load.image("bg1", "/assets/background/bg1.png");
-        this.load.image("bg2", "/assets/background/bg2.png");
-        this.load.image("bg3", "/assets/background/bg3.png");
-        this.load.image("bg4", "/assets/background/bg4.png");
-        this.load.image("bg5", "/assets/background/bg5.png");
+        this.load.image("bg1", "assets/background/bg1.png");
+        this.load.image("bg2", "assets/background/bg2.png");
+        this.load.image("bg3", "assets/background/bg3.png");
+        this.load.image("bg4", "assets/background/bg4.png");
+        this.load.image("bg5", "assets/background/bg5.png");
 
         // Load platform textures
-        this.load.image("platform_3x1", "/assets/Player_Platforms/platform_3x1.png");
-        this.load.image("platform_4x1", "/assets/Player_Platforms/platform_4x1.png");
+        this.load.image("platform_3x1", "assets/Player_Platforms/platform_3x1.png");
+        this.load.image("platform_4x1", "assets/Player_Platforms/platform_4x1.png");
 
         // Load jump pad textures
-        this.load.image("jumpPad", "/assets/Player_Platforms/jump_pad.png");
+        this.load.image("jumpPad", "assets/Player_Platforms/jump_pad.png");
 
         // Load finish line textures
-        this.load.image("pokal", "/assets/Player_Platforms/pokal.png");
+        this.load.image("pokal", "assets/Player_Platforms/pokal.png");
 
         // wall textures
-        this.load.image("wall", "/assets/Player_Platforms/wall.png");
+        this.load.image("wall", "assets/Player_Platforms/wall.png");
 
         // Load spike textures
-        this.load.image("spike", "/assets/Player_Platforms/spikes.png");
+        this.load.image("spike", "assets/Player_Platforms/spikes.png");
 
         // powerup ufo textures
-        this.load.image("portal", "/assets/Player_Platforms/portal.png");
-        this.load.image("ufo", "/assets/Player_Platforms/ufo.png");
+        this.load.image("portal", "assets/Player_Platforms/portal.png");
+        this.load.image("ufo", "assets/Player_Platforms/ufo.png");
 
         // Load player sprite
-        this.load.image("sprite", "/assets/Player_Platforms/sprite.png");
+        this.load.image("sprite", "assets/Player_Platforms/sprite.png");
 
         // Load player animation sprite sheet - CRITICAL FIX
-        this.load.spritesheet("player_animations", "/assets/Player_Platforms/player_animations.png", {
+        this.load.spritesheet("player_animations", "assets/Player_Platforms/player_animations.png", {
             frameWidth: 32,
             frameHeight: 32,
         });
 
         // Load logo for main menu
-        this.load.image("logo", "/assets/logo_4.png");
+        this.load.image("logo", "assets/logo_4.png");
 
-        this.load.audio("levelMusic", "/assets/music/dnb_og.wav");
+        this.load.audio("levelMusic", "assets/music/dnb_og.wav");
 
         // load background game over texture
-        this.load.image("Game_Over", "/assets/Game_Over.png");
+        this.load.image("Game_Over", "assets/Game_Over.png");
     }
 
     create() {

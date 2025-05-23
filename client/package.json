@@ -1,8 +1,8 @@
 {
-  "name": "template-vite",
-  "description": "A Phaser 3 template using Vite.",
+  "name": "mirror-dash",
+  "description": "A Phaser 3 game using Vite.",
   "version": "1.4.0",
-  "type": "module",
+  "main": "electron/main.cjs",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/phaserjs/template-vite.git"
