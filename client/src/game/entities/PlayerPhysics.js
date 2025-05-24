@@ -48,60 +48,66 @@ export class PlayerPhysics {
     }
 
     applyMovement(cursors, wasd, animation, direction, isInUfoMode = false) {
-        if (!this.sprite || !this.sprite.body) return { moved: false, animation, direction };
+        // Use class properties as fallback if parameters are undefined
+        const currentAnimation = animation || this.currentAnimation || "idle";
+        const currentDirection = direction || this.currentDirection || "right";
+        
+        console.log("Applying movement to player:", {
+            cursors,
+            wasd,
+            animation: currentAnimation,
+            direction: currentDirection,
+            isInUfoMode,
+            sprite: this.sprite ? this.sprite.texture.key : "no sprite",
+            body: this.sprite?.body ? "exists" : "no body",
+        });
+        
+        if (!this.sprite?.body) return { moved: false, animation: currentAnimation, direction: currentDirection };
 
         try {
             const speed = 500;
             const jumpStrength = 500;
             let moved = false;
-            let newAnimation = animation;
-            let newDirection = direction;
+            let newAnimation = currentAnimation;
+            let newDirection = currentDirection;
 
             if (isInUfoMode) {
+                console.log("Applying UFO movement mechanics");
                 // UFO Mechanics
-                // Maintain constant positive X velocity
                 this.sprite.body.setVelocityX(this.ufoConstantXSpeed);
-                newDirection = "right"; // UFO always moves right
-                this.sprite.setFlipX(false); // Ensure UFO faces right
+                newDirection = "right";
+                this.sprite.setFlipX(false);
 
                 if (cursors.up.isDown || wasd.W.isDown || wasd.Space.isDown) {
                     this.sprite.body.setVelocityY(-this.ufoBoostSpeed);
                     moved = true;
-                } else {
-                    // Downward input (S key or down arrow) is now ignored for UFO.
-                    // UFO will gently fall due to its reduced gravity if no upward input is given.
-                    // If you wanted it to hover, you might set velocityY to 0 here or apply a small upward thrust.
                 }
-
-                // Horizontal input (A/D, Left/Right) is ignored for UFO to maintain constant X speed.
-                // If you want to allow temporary speed boosts or slight direction changes, that logic would go here.
-                
             } else {
                 // Normal Player Mechanics
-                this.sprite.body.setAccelerationX(0); // Reset acceleration
-                this.sprite.body.setVelocityX(0); // Reset horizontal velocity for normal players
+                this.sprite.body.setAccelerationX(0);
+                this.sprite.body.setVelocityX(0);
 
                 // Horizontal movement
                 if (cursors.left.isDown || wasd.A.isDown) {
                     this.sprite.body.setVelocityX(-speed);
                     newAnimation = "run";
                     newDirection = "left";
-                    this.sprite.setFlipX(true); // Flip sprite when moving left
+                    this.sprite.setFlipX(true);
                     moved = true;
                 } else if (cursors.right.isDown || wasd.D.isDown) {
                     this.sprite.body.setVelocityX(speed);
                     newAnimation = "run";
                     newDirection = "right";
-                    this.sprite.setFlipX(false); // Reset flip when moving right
+                    this.sprite.setFlipX(false);
                     moved = true;
                 } else {
                     newAnimation = "idle";
                 }
 
-                // Jump - Allow jumping slightly after leaving the ground
-                const gracePeriod = 100; // 0.4 seconds in milliseconds
+                // Jump logic
+                const gracePeriod = 100;
                 if (this.sprite.body.touching.down) {
-                    this.sprite.body.lastTouchedDown = Date.now(); // Update the last time the player was on the ground
+                    this.sprite.body.lastTouchedDown = Date.now();
                 }
 
                 const canJump =
@@ -113,13 +119,17 @@ export class PlayerPhysics {
                     newAnimation = "jump";
                     moved = true;
 
-                    // Clear any platform-related properties to prevent snapping back when jumping
+                    // Clear platform-related properties
                     this.sprite.platformRelativePosition = null;
                     this.sprite.previousX = null;
                     this.sprite.inputVelocityX = null;
                     this.sprite.isOnMovingPlatform = false;
                 }
             }
+
+            // Store current state for next call
+            this.currentAnimation = newAnimation;
+            this.currentDirection = newDirection;
 
             return {
                 moved,
@@ -128,7 +138,11 @@ export class PlayerPhysics {
             };
         } catch (error) {
             console.error("Error applying movement to player:", error);
-            return { moved: false, animation, direction };
+            return { 
+                moved: false, 
+                animation: currentAnimation, 
+                direction: currentDirection 
+            };
         }
     }
 }

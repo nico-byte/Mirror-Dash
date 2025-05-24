@@ -3,6 +3,7 @@
   "description": "A Phaser 3 game using Vite.",
   "version": "1.4.0",
   "main": "electron/main.cjs",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/phaserjs/template-vite.git"
@@ -18,10 +19,14 @@
     "dev": "node log.js dev & vite --config vite/config.dev.mjs",
     "build": "node log.js build & vite build --config vite/config.prod.mjs",
     "dev-nolog": "vite --config vite/config.dev.mjs",
-    "build-nolog": "vite build --config vite/config.prod.mjs"
+    "build-nolog": "vite build --config vite/config.prod.mjs",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch"
   },
   "devDependencies": {
+    "@types/node": "^20.17.50",
     "terser": "^5.39.0",
+    "typescript": "^5.8.3",
     "vite": "^6.3.1"
   },
   "dependencies": {

@@ -4,30 +4,29 @@ import { GameOver } from "./scenes/GameOver";
 import { MainMenu } from "./scenes/MainMenu";
 import { Preloader } from "./scenes/Preloader";
 import { Lobby } from "./scenes/Lobby";
-import { AUTO, Game, Scale } from "phaser";
 import { FinishLevel } from "./scenes/FinishLevel";
 import { LevelSelector } from "./scenes/LevelSelector";
 import { Leaderboard } from "./scenes/Leaderboard";
 
 //  Find out more information about the Game Config at:
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
-const config = {
-    type: AUTO,
+const config: Phaser.Types.Core.GameConfig = {
+    type: Phaser.AUTO,
     width: 1024,
     height: 768,
     parent: "game-container",
     backgroundColor: "#028af8",
-    fontFamily: "Orbitron, Arial",
     scale: {
-        mode: Scale.RESIZE, // Adjust the game size to fit the screen
-        autoCenter: Scale.CENTER_BOTH, // Center the game on the screen
+        mode: Phaser.Scale.RESIZE, // Adjust the game size to fit the screen
+        autoCenter: Phaser.Scale.CENTER_BOTH, // Center the game on the screen
         fullscreenTarget: "game-container", // Enable fullscreen targeting the game container
     },
     // Use Phaser's built-in Arcade physics
     physics: {
         default: "arcade",
         arcade: {
-            gravity: { y: 800 },
+            gravity: { x: 0, y: 800 },
+            timeScale: 1.0,
             debug: false,
         },
     },
@@ -41,8 +40,8 @@ const config = {
     },
 };
 
-const StartGame = parent => {
-    const game = new Game({ ...config, parent });
+const StartGame = (parent: string) => {
+    const game = new Phaser.Game({ ...config, parent });
 
     // Dynamically resize the game to fit the window
     const resize = () => {

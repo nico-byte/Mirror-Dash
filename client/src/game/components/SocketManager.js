@@ -148,7 +148,7 @@ export class SocketManager {
         });
 
         // Add platform sync listener
-        this.socket.on("platformSync", data => {
+        this.scene.socket.on("platformSync", data => {
             if (data && data.lobbyId === this.lobbyId && data.platforms && data.platforms.length > 0) {
                 // Only sync platforms if we're not the sender
                 if (data.sourcePlayer !== this.socket.id) {
