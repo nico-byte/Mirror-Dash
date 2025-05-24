@@ -1,8 +1,85 @@
+import { Game } from "../scenes/Game"
+
+// Add this interface if PlatformData doesn't exist or doesn't match
+interface PlatformData {
+    motion: string;
+    range: number;
+    speed: number;
+    originX: number;
+    originY: number;
+}
+
+interface Platform extends Phaser.Types.Physics.Arcade.ImageWithDynamicBody {
+    platformData?: PlatformData;
+}
+
+interface SpawnPoint {
+    x: number,
+    y: number
+}
+
+interface WorldBounds {
+    width: number,
+    height: number,
+}
+
+interface Settings {
+    music: string,
+    cameraSpeed: number,
+    autoScroll: boolean
+}
+
+interface LevelItem {
+    x: number,
+    y: number,
+    texture: string,
+    scaleX: number,
+    scaleY: number,
+    isStatic?: boolean,
+    motion?: string,
+    range?: number,
+    speed?: number
+}
+
+interface Finish {
+    x: number,
+    y: number,
+    width: number,
+    height: number
+}
+
+type BackgroundCreatorFunction = (scene: Game, midPoint: number) => void;
+
+export interface Level {
+    name: string,
+    description: string,
+    spawnPoint: SpawnPoint,
+    worldBounds: WorldBounds,
+    settings: Settings,
+    platforms: Array<LevelItem>,
+    jumpPads: Array<LevelItem>,
+    spikes: Array<LevelItem>,
+    portals?: Array<LevelItem>,
+    finish: Finish,
+    createBackground: BackgroundCreatorFunction,
+}
+
 /**
  * LevelManager class to handle loading and rendering different game levels
  */
 export class LevelManager {
-    constructor(scene) {
+    scene: Game;
+    currentLevel: string | null;
+    levels: Record<string, Level>
+    pendingPlatforms: Array<LevelItem>;
+    movingPlatforms: Array<{ platform: Platform, motion: string, range: number, speed: number, baseX: number, baseY: number }> | null;
+    pendingJumpPads: Array<LevelItem>;
+    pendingSpikes: Array<LevelItem>;
+    pendingPortals: Array<LevelItem>;
+    pendingFinish: Finish | null;
+    initialized: boolean;
+
+    constructor(scene: Game) {
         this.scene = scene;
         this.currentLevel = null;
         this.levels = {};
@@ -14,7 +91,7 @@ export class LevelManager {
         this.initialized = false;
     }
 
-    init(scene) {
+    init(scene: Game) {
         this.scene = scene;
         this.currentLevel = null;
         this.levels = {};
@@ -31,7 +108,7 @@ export class LevelManager {
      * @param {string} key - The level identifier
      * @param {object} levelData - The level configuration
      */
-    registerLevel(key, levelData) {
+    registerLevel(key: string, levelData: Level) {
         if (key && levelData) {
             this.levels[key] = levelData;
         }
@@ -148,7 +225,7 @@ export class LevelManager {
      * @param {string} key - The identifier of the level to load
      * @returns {object} The created level objects
      */
-    loadLevel(key) {
+    loadLevel(key: string) {
         if (!this.levels[key]) {
             return {
                 spawnPoint: { x: 230, y: 500 },
@@ -177,6 +254,7 @@ export class LevelManager {
                 levelData.createBackground(this.scene, midPoint);
             } catch (error) {
                 // Silent error handling
+                console.warn("Error creating background:", error);
             }
         }
 
@@ -192,7 +270,7 @@ export class LevelManager {
                             platform.scaleX || 1,
                             platform.scaleY || 1,
                             platform.isStatic !== false,
-                            platform.motion || null,
+                            platform.motion || undefined,
                             platform.range || 80,
                             platform.speed || 2000
                         );
@@ -205,13 +283,14 @@ export class LevelManager {
                             scaleX: platform.scaleX || 1,
                             scaleY: platform.scaleY || 1,
                             isStatic: platform.isStatic !== false,
-                            motion: platform.motion || null,
+                            motion: platform.motion || "",
                             range: platform.range || 80,
                             speed: platform.speed || 2000,
                         });
                     }
                 } catch (error) {
                     // Silent error handling
+                    console.warn("Error creating platform:", error);
                 }
             });
         }
@@ -240,6 +319,7 @@ export class LevelManager {
                     }
                 } catch (error) {
                     // Silent error handling
+                    console.warn("Error creating jump pad:", error);
                 }
             });
         }
@@ -267,6 +347,7 @@ export class LevelManager {
                     }
                 } catch (error) {
                     // Silent error handling
+                    console.warn("Error creating spike:", error);
                 }
             });
         }
@@ -295,34 +376,7 @@ export class LevelManager {
                     }
                 } catch (error) {
                     // Silent error handling
-                }
-            });
-        }
-
-        // Create walls
-        if (levelData.walls) {
-            levelData.portals.forEach(portal => {
-                try {
-                    if (this.isSceneReady()) {
-                        this.createPortalWithMirror(
-                            portal.x,
-                            portal.y,
-                            portal.texture || "wall",
-                            portal.scaleX || 1,
-                            portal.scaleY || 1
-                        );
-                    } else {
-                        this.pendingPortals = this.pendingPortals || [];
-                        this.pendingPortals.push({
-                            x: portal.x,
-                            y: portal.y,
-                            texture: portal.texture || "wall",
-                            scaleX: portal.scaleX || 1,
-                            scaleY: portal.scaleY || 1,
-                        });
-                    }
-                } catch (error) {
-                    // Silent error handling
+                    console.warn("Error creating portal:", error);
                 }
             });
         }
@@ -338,6 +392,7 @@ export class LevelManager {
                 );
             } catch (error) {
                 // Silent error handling
+                console.warn("Error creating finish line:", error);
                 if (!this.isSceneReady()) {
                     this.pendingFinish = {
                         x: levelData.finish.x,
@@ -365,6 +420,7 @@ export class LevelManager {
                 }
             } catch (error) {
                 // Silent error handling
+                console.warn("Error setting world bounds:", error);
             }
         }
 
@@ -386,13 +442,13 @@ export class LevelManager {
      * Create a platform with its mirrored version
      */
     createPlatformWithMirror(
-        x,
-        y,
-        texture,
+        x: number,
+        y: number,
+        texture: string,
         scaleX = 1,
         scaleY = 1,
         isStatic = true,
-        motion = null,
+        motion = "",
         range = 80,
         speed = 2000
     ) {
@@ -430,7 +486,7 @@ export class LevelManager {
                     });
                 }
 
-                platform = this.scene.physics.add.image(x, y, texture);
+                platform = this.scene.physics.add.image(x, y, texture) as Platform;
                 platform.setScale(scaleX, scaleY);
                 platform.setImmovable(true);
                 platform.body.allowGravity = false;
@@ -475,13 +531,14 @@ export class LevelManager {
 
             return { platform, mirrorPlatform };
         } catch (error) {
+            console.warn("Error creating platform:", error);
             return { platform: null, mirrorPlatform: null };
         }
     }
 
     // Add this method to the LevelManager class
     // This improves the platform movement for better synchronization
-    updateMovingPlatforms(time) {
+    updateMovingPlatforms(time: number) {
         if (!this.movingPlatforms) return;
 
         this.movingPlatforms.forEach(({ platform, motion, range, speed, baseX, baseY }) => {
@@ -556,7 +613,7 @@ export class LevelManager {
     /**
      * Create a jump pad with its mirrored version
      */
-    createJumpPadWithMirror(x, y, texture = "jumpPad", scaleX = 0.5, scaleY = 0.5) {
+    createJumpPadWithMirror(x: number, y: number, texture = "jumpPad", scaleX = 0.5, scaleY = 0.5) {
         if (!this.isSceneReady()) {
             this.pendingJumpPads.push({ x, y, texture, scaleX, scaleY });
             return null;
@@ -586,11 +643,12 @@ export class LevelManager {
 
             return jumpPad;
         } catch (error) {
+            console.warn("Error creating jump pad:", error);
             return null;
         }
     }
 
-    createSpikesWithMirror(x, y, texture = "spike", scaleX = 1, scaleY = 1) {
+    createSpikesWithMirror(x: number, y: number, texture = "spike", scaleX = 1, scaleY = 1) {
         if (!this.isSceneReady()) {
             this.pendingSpikes = this.pendingSpikes || [];
             this.pendingSpikes.push({ x, y, texture, scaleX, scaleY });
@@ -619,7 +677,8 @@ export class LevelManager {
                 if (spike.refreshBody) {
                     spike.refreshBody();
                 }
-            } catch (err) {
+            } catch (error) {
+                console.warn("Error creating spike:", error);
                 return null;
             }
 
@@ -630,30 +689,33 @@ export class LevelManager {
                     .image(x, screenHeight - y + midPoint, texture)
                     .setScale(scaleX, scaleY)
                     .setFlipY(true);
-            } catch (err) {
+            } catch (error) {
                 // Silent error handling
+                console.warn("Error creating mirrored spike:", error);
             }
 
             // Safely set camera visibility
-            this.safelySetCameraVisibility(this.scene.topCamera, [mirrorSpike]);
-            this.safelySetCameraVisibility(this.scene.bottomCamera, [spike]);
+            this.safelySetCameraVisibility(this.scene.topCamera!, [mirrorSpike!]);
+            this.safelySetCameraVisibility(this.scene.bottomCamera!, [spike]);
 
             return spike;
         } catch (error) {
+            console.warn("Error creating spikes:", error);
             return null;
         }
     }
 
     // Helper method for safely setting camera visibility
-    safelySetCameraVisibility(camera, objects) {
+    safelySetCameraVisibility(camera: Phaser.Cameras.Scene2D.Camera, objects: LevelItem[] | Phaser.GameObjects.Image[] | Phaser.GameObjects.Rectangle[] | Phaser.Physics.Arcade.StaticGroup[]) {
         if (!camera || !objects) return;
 
         for (const obj of objects) {
             if (obj && camera.ignore) {
                 try {
-                    camera.ignore(obj);
-                } catch (err) {
+                    camera.ignore(obj as Phaser.GameObjects.GameObject);
+                } catch (error) {
                     // Silent error handling
+                    console.warn("Error setting camera visibility for object:", obj, error);
                 }
             }
         }
@@ -662,7 +724,7 @@ export class LevelManager {
     /**
      * Create a finish line with its mirrored version
      */
-    createFinishWithMirror(x, y, width, height) {
+    createFinishWithMirror(x: number, y: number, width: number, height: number) {
         if (!this.isSceneReady()) {
             this.pendingFinish = { x, y, width, height };
             return null;
@@ -683,7 +745,7 @@ export class LevelManager {
             }
 
             // Safely create the finish object
-            let finishObjectRect = null;
+            let finishObjectRect: Phaser.Physics.Arcade.StaticGroup;
             try {
                 finishObjectRect = this.scene.finishObject
                     .create(x, y, "pokal")
@@ -691,13 +753,10 @@ export class LevelManager {
                     .setDisplaySize(width, height)
                     .setOrigin(0.5);
 
-                if (finishObjectRect.refreshBody) {
-                    finishObjectRect.refreshBody();
-                }
-
                 this.scene.finishObjectRect = finishObjectRect;
-            } catch (err) {
+            } catch (error) {
                 // Silent error handling
+                console.warn("Error creating finish object:", error);
             }
 
             // Create visual indicators for top and bottom views
@@ -715,13 +774,14 @@ export class LevelManager {
                     .setAlpha(0.6)
                     .setDepth(1);
                 this.scene.mirrorFinishVisual = mirrorFinishVisual;
-            } catch (err) {
+            } catch (error) {
+                console.warn("Error creating finish visuals:", error);
                 // Silent error handling
             }
 
             // Set camera visibility with safety checks
-            this.safelySetCameraVisibility(this.scene.bottomCamera, [finishObjectRect, finishVisual]);
-            this.safelySetCameraVisibility(this.scene.topCamera, [mirrorFinishVisual]);
+            this.safelySetCameraVisibility(this.scene.bottomCamera!, [finishObjectRect!, finishVisual!]);
+            this.safelySetCameraVisibility(this.scene.topCamera!, [mirrorFinishVisual!]);
 
             return {
                 finishObject: this.scene.finishObject,
@@ -729,6 +789,7 @@ export class LevelManager {
                 mirrorFinishVisual: mirrorFinishVisual,
             };
         } catch (error) {
+            console.warn("Error creating finish line:", error);
             return null;
         }
     }
@@ -775,7 +836,7 @@ export class LevelManager {
         return this.movingPlatforms || [];
     }
 
-    createPortalWithMirror(x, y, texture = "portal", scaleX = 1, scaleY = 1) {
+    createPortalWithMirror(x: number, y: number, texture = "portal", scaleX = 1, scaleY = 1) {
         if (!this.isSceneReady()) {
             this.pendingPortals = this.pendingPortals || [];
             this.pendingPortals.push({ x, y, texture, scaleX, scaleY });
@@ -839,41 +900,6 @@ export class LevelManager {
             return portal;
         } catch (error) {
             console.error("Error creating portal:", error);
-            return null;
-        }
-    }
-
-    createWallWithMirror(x, y, texture = "wall", scaleX = 1, scaleY = 1) {
-        if (!this.isSceneReady()) {
-            this.pendingWalls = this.pendingWalls || [];
-            this.pendingWalls.push({ x, y, texture, scaleX, scaleY });
-            return null;
-        }
-
-        const screenHeight = this.scene.scale.height;
-        const midPoint = screenHeight / 2;
-
-        try {
-            if (!this.scene.wallGroup) {
-                this.scene.wallGroup = this.scene.physics.add.staticGroup();
-            }
-
-            const wall = this.scene.wallGroup.create(x, y, texture);
-            wall.setScale(scaleX, scaleY);
-            wall.refreshBody();
-
-            // Create mirrored version for bottom view
-            const mirrorWall = this.scene.add
-                .image(x, screenHeight - y + midPoint, texture)
-                .setScale(scaleX, scaleY)
-                .setFlipY(true);
-
-            // Set camera visibility
-            if (this.scene.topCamera) this.scene.topCamera.ignore(mirrorWall);
-            if (this.scene.bottomCamera) this.scene.bottomCamera.ignore(wall);
-
-            return wall;
-        } catch (error) {
             return null;
         }
     }

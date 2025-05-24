@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 const phasermsg = () => {
     return {
@@ -19,6 +20,15 @@ const phasermsg = () => {
 export default defineConfig({
     base: './',
     logLevel: 'warn',
+    resolve: {
+        alias: {
+            '@': resolve(__dirname, '../src'),
+            '@/components': resolve(__dirname, '../src/game/components'),
+            '@/entities': resolve(__dirname, '../src/game/entities'),
+            '@/levels': resolve(__dirname, '../src/game/levels'),
+            '@/scenes': resolve(__dirname, '../src/game/scenes')
+        }
+    },
     build: {
         rollupOptions: {
             output: {

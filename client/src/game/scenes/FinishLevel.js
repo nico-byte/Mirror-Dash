@@ -368,7 +368,7 @@ export class FinishLevel extends Scene {
         this.cleanupCurrentScene();
 
         // Notify other players about replaying the current level
-        if (this.socket && this.socket.connected && this.lobbyId) {
+        if (this.socket?.connected && this.lobbyId) {
             this.socket.emit("forceLevelChange", {
                 lobbyId: this.lobbyId,
                 levelId: this.levelId,

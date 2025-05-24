@@ -1,7 +1,9 @@
+import { Level } from "./LevelManager"
+
 /**
  * Level 1 configuration
  */
-export const Level1 = {
+export const Level1: Level = {
     name: "Level 1",
     description: "The first level with platforms and jump pads",
 
@@ -22,14 +24,14 @@ export const Level1 = {
 
     // Platform configurations
     platforms: [
-        { x: 85, y: 500, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 336, y: 570, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 606, y: 393, texture: "platform_4x1", scaleY: 1.4 },
+        { x: 85, y: 500, texture: "platform_4x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 336, y: 570, texture: "platform_3x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 606, y: 393, texture: "platform_4x1", scaleX: 1.0, scaleY: 1.4 },
         { x: 814, y: 565, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
-        { x: 996, y: 524, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 1211, y: 493, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 1434, y: 236, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 1610, y: 416, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 996, y: 524, texture: "platform_3x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 1211, y: 493, texture: "platform_4x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 1434, y: 236, texture: "platform_4x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 1610, y: 416, texture: "platform_3x1", scaleX: 1.0, scaleY: 1.4 },
         { x: 1764, y: 379, texture: "platform_4x1", scaleX: 0.5, scaleY: 1.4 },
 
         // Floating platform (vertical motion)
@@ -37,6 +39,7 @@ export const Level1 = {
             x: 1921,
             y: 345,
             texture: "platform_3x1",
+            scaleX: 1.0,
             scaleY: 1.4,
             isStatic: false,
             motion: "vertical",
@@ -48,16 +51,17 @@ export const Level1 = {
         { x: 2433, y: 500, texture: "platform_4x1", scaleX: 3, scaleY: 1.4 },
 
         // New section
-        { x: 2900, y: 270, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 3100, y: 420, texture: "platform_3x1", scaleY: 1.4 },
-        { x: 3280, y: 370, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 3450, y: 330, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 2900, y: 270, texture: "platform_4x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 3100, y: 420, texture: "platform_3x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 3280, y: 370, texture: "platform_4x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 3450, y: 330, texture: "platform_3x1", scaleX: 1.0, scaleY: 1.4 },
 
         // Sideways platform (horizontal motion)
         {
             x: 3750,
             y: 300,
             texture: "platform_3x1",
+            scaleX: 1.0,
             scaleY: 1.4,
             isStatic: false,
             motion: "horizontal",
@@ -65,9 +69,9 @@ export const Level1 = {
             speed: 1600,
         },
 
-        { x: 3900, y: 460, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4250, y: 530, texture: "platform_4x1", scaleY: 1.4 },
-        { x: 4550, y: 520, texture: "platform_3x1", scaleY: 1.4 },
+        { x: 3900, y: 460, texture: "platform_4x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 4250, y: 530, texture: "platform_4x1", scaleX: 1.0, scaleY: 1.4 },
+        { x: 4550, y: 520, texture: "platform_3x1", scaleX: 1.0, scaleY: 1.4 },
     ],
 
     // Jump pad configurations
@@ -139,73 +143,5 @@ export const Level1 = {
         // Set camera visibility for backgrounds
         if (scene.bottomCamera) scene.bottomCamera.ignore(scene.backgroundContainer);
         if (scene.topCamera) scene.topCamera.ignore(scene.mirrorBackgroundContainer);
-    },
-
-    createPlatforms: scene => {
-        scene.platformGroup = scene.add.group();
-
-        for (const cfg of Level2.platforms) {
-            const platform =
-                cfg.isStatic !== false
-                    ? scene.physics.add.staticImage(cfg.x, cfg.y, cfg.texture)
-                    : scene.physics.add.image(cfg.x, cfg.y, cfg.texture);
-
-            const scaleX = cfg.scaleX || 1;
-            const scaleY = cfg.scaleY || 1.4;
-
-            platform.setScale(scaleX, scaleY);
-            platform.body.setAllowGravity(false);
-            platform.body.immovable = true;
-
-            // Shrink the collider size (80% width and 50% height of the original scaled size)
-            const frame = scene.textures.get(cfg.texture).getSourceImage();
-            const bodyWidth = frame.width * scaleX * 0.8;
-            const bodyHeight = frame.height * scaleY * 0.2; // Give it proper height
-            platform.body.setSize(bodyWidth, bodyHeight, true);
-
-            if (platform.refreshBody) platform.refreshBody();
-
-            scene.platformGroup.add(platform);
-
-            if (!cfg.isStatic && cfg.motion) {
-                const tweenConfig = {
-                    targets: platform,
-                    duration: cfg.speed || 2000,
-                    repeat: -1,
-                    yoyo: true,
-                    ease: "Sine.easeInOut",
-                };
-
-                if (cfg.motion === "vertical") {
-                    tweenConfig.y = cfg.y - (cfg.range || 80);
-                } else if (cfg.motion === "horizontal") {
-                    tweenConfig.x = cfg.x - (cfg.range || 80);
-                }
-
-                scene.tweens.add(tweenConfig);
-            }
-        }
-    },
-
-    setupMovingPlatforms: scene => {
-        for (const platform of scene.platformGroup.getChildren()) {
-            if (platform.body?.immovable === false) {
-                const data = Level2.platforms.find(p => p.x === platform.x && p.y === platform.y);
-                if (!data || !data.motion) continue;
-
-                const tween = {
-                    targets: platform,
-                    duration: data.speed || 2000,
-                    repeat: -1,
-                    yoyo: true,
-                    ease: "Sine.easeInOut",
-                };
-
-                if (data.motion === "vertical") tween.y = platform.y - (data.range || 80);
-                else if (data.motion === "horizontal") tween.x = platform.x - (data.range || 80);
-
-                scene.tweens.add(tween);
-            }
-        }
-    },
+    }
 };

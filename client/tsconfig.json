@@ -1,0 +1,78 @@
+{
+  "compilerOptions": {
+    // Output configuration
+    "outDir": "./built",
+    "rootDir": ".",
+    
+    // Module system
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    
+    // JavaScript compatibility
+    "allowJs": true,
+    "checkJs": false,
+    
+    // Type checking
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": false,
+    "strictPropertyInitialization": false,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    
+    // Additional checks (can be enabled gradually)
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitOverride": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
+    
+    // Emit configuration
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": true,
+    "removeComments": false,
+    "noEmit": true,
+    
+    // Advanced options
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    // Types
+    "types": ["vite/client"],
+    
+    // Path mapping (if needed)
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/components/*": ["src/game/components/*"],
+      "@/entities/*": ["src/game/entities/*"],
+      "@/levels/*": ["src/game/levels/*"],
+      "@/scenes/*": ["src/game/scenes/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "vite/**/*",
+    "*.js",
+    "*.mjs"
+, "log.js"  ],
+  "exclude": [
+    "node_modules",
+    "built",
+    "dist",
+    "electron"
+  ],
+  "ts-node": {
+    "esm": true
+  }
+}
